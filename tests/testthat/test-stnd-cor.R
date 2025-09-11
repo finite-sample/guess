@@ -10,3 +10,4 @@ test_that("Standard Guessing Correction Happens Correctly", {
   res <- stnd_cor(pre_test, pst_test, lucky)
   expect_that(res, is_a("list"))
 })
+

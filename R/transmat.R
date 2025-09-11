@@ -23,43 +23,50 @@
 
 transmat <- function(pre_test_var, pst_test_var, subgroup = NULL,
                     force9 = FALSE) {
-
-  if ( !is.null(subgroup)) {
-
-    pre_test_var <- subset(pre_test_var, subgroup)
-    pst_test_var <- subset(pst_test_var, subgroup)
+  
+  # Input validation
+  if (is.null(pre_test_var) || is.null(pst_test_var)) {
+    stop("Both pre_test_var and pst_test_var must be provided.")
+  }
+  
+  if (length(pre_test_var) != length(pst_test_var)) {
+    stop("pre_test_var and pst_test_var must have the same length.")
+  }
+  
+  if (length(pre_test_var) == 0) {
+    stop("Input vectors cannot be empty.")
   }
 
-  # No NAs
-  pre_test_nona <- nona(as.character(pre_test_var))
-  pst_test_nona <- nona(as.character(pst_test_var))
-
-  # Check if the vector has only one of the 4 values
-  if (!all(unique(c(pre_test_nona, pst_test_nona)) %in% c(NA, "1", "0", "d"))) {
-    stop("The input vectors can only contain: 0, 1, NA, d")
+  # Apply subgroup filter if provided
+  if (!is.null(subgroup)) {
+    if (length(subgroup) != length(pre_test_var)) {
+      stop("subgroup must have the same length as input vectors.")
+    }
+    if (!is.logical(subgroup)) {
+      stop("subgroup must be a logical vector.")
+    }
+    pre_test_var <- pre_test_var[subgroup]
+    pst_test_var <- pst_test_var[subgroup]
   }
 
-  pre_pst <- paste0(pre_test_nona, pst_test_nona)
-
-  # Get the numbers
-  x00     <- sum(pre_pst == "00")
-  x10     <- sum(pre_pst == "10")
-  x01     <- sum(pre_pst == "01")
-  x11     <- sum(pre_pst == "11")
-  xd0     <- sum(pre_pst == "d0")
-  xd1     <- sum(pre_pst == "d1")
-  x1d     <- sum(pre_pst == "1d")
-  xdd     <- sum(pre_pst == "dd")
-  x0d     <- sum(pre_pst == "0d")
-
-  res <- c(x00, x01, x10, x11)
-  names(res) <- c("x00", "x01", "x10", "x11")
-
-  if ( (xd0 + xd1 + x1d + xdd != 0) | force9) {
-
-    res <- c(x00, x01, x0d, x10, x11, x1d, xd0, xd1, xdd)
-    names(res) <- c("x00", "x01", "x0d", "x10", "x11", "x1d",
-                    "xd0", "xd1", "xdd")
+  # Process and validate responses
+  pre_test_clean <- nona(as.character(pre_test_var))
+  pst_test_clean <- nona(as.character(pst_test_var))
+  
+  # Use validation utility
+  validate_transition_values(pre_test_clean, pst_test_clean)
+  
+  # Count transitions using utility function
+  transitions <- count_transitions(pre_test_clean, pst_test_clean)
+  
+  # Force DK matrix format if requested
+  if (force9 && length(transitions) == 4) {
+    # Convert 4-element to 9-element format with zeros for DK transitions
+    dk_transitions <- rep(0, 9)
+    names(dk_transitions) <- c("x00", "x01", "x0d", "x10", "x11", "x1d", "xd0", "xd1", "xdd")
+    dk_transitions[c("x00", "x01", "x10", "x11")] <- transitions[c("x00", "x01", "x10", "x11")]
+    transitions <- dk_transitions
   }
-  return(invisible(res))
+  
+  return(invisible(transitions))
 }

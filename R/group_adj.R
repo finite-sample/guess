@@ -15,10 +15,20 @@
 #' gamma <- c(.25)
 #' group_adj(pre_test_var, pst_test_var, gamma)
 
-group_adj <- function(pre = NULL, pst = NULL, gamma = NULL, dk = .03) {
+group_adj <- function(pre = NULL, pst = NULL, gamma = NULL, dk = 0.03) {
+  
+  # Input validation
+  validate_dataframe(pre, "pre")
+  validate_dataframe(pst, "pst") 
+  validate_compatible_dataframes(pre, pst)
+  validate_gamma(gamma)
+  
+  if (dk < 0 || dk > 1) {
+    stop("dk parameter must be between 0 and 1.")
+  }
 
-  if ( sum(is.na(pre)) > 0 | sum(is.na(pst)) > 0 ) {
-    cat("NAs will be converted to 0. MCAR is assumed.\n")
+  if (sum(is.na(pre)) > 0 || sum(is.na(pst)) > 0) {
+    message("NAs will be converted to 0. MCAR is assumed.")
     pre <- as.data.frame(lapply(pre, function(x) nona(x)))
     pst <- as.data.frame(lapply(pst, function(x) nona(x)))
   }

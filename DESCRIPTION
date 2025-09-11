@@ -1,15 +1,16 @@
 Package: guess
 Title: Adjust Estimates of Learning for Guessing
 Version: 0.2.0
+Author: Gaurav Sood [aut, cre], Ken Cor [aut]
 Authors@R: c(person("Gaurav", "Sood", email = "gsood07@gmail.com", role = c("aut", "cre")),
 			 person("Ken", "Cor", email = "mcor@ualberta.ca", role = c("aut")))
 Maintainer: Gaurav Sood <gsood07@gmail.com>
 Description: Adjust Estimates of Learning for Guessing. The package provides 
     standard guessing correction, and a latent class model that leverages
     informative pre-post transitions. For details of the latent class model,
-    see <http://gsood.com/research/papers/guess.pdf>.
-URL: http://github.com/soodoku/guess
-BugReports: http://github.com/soodoku/guess/issues
+    see <https://gsood.com/research/papers/guess.pdf>.
+URL: https://github.com/finite-sample/guess
+BugReports: https://github.com/finite-sample/guess/issues
 Depends:
     R (>= 3.2.1)
 Imports:
@@ -22,4 +23,5 @@ Suggests:
     rmarkdown,
     testthat,
     lintr
-RoxygenNote: 6.0.1
+RoxygenNote: 7.3.2
+Encoding: UTF-8

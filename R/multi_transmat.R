@@ -21,23 +21,21 @@
 multi_transmat <- function (pre_test = NULL, pst_test = NULL,
                             subgroup = NULL, force9 = FALSE, agg = FALSE) {
 
-  # Checks
-  # pre_test data frame is missing
-  if (!is.data.frame(pre_test)) stop("Specify pre_test data.frame.")
+  # Input validation using utilities
+  validate_dataframe(pre_test, "pre_test")
+  validate_dataframe(pst_test, "pst_test")
+  validate_compatible_dataframes(pre_test, pst_test)
 
-  # post_test data frame is missing
-  if (!is.data.frame(pst_test)) stop("Specify pst_test data.frame.")
-
-  # If different no. of items
-  if (length(pre_test) != length(pst_test)) {
-    stop("Lengths of pre_test and pst_test must be the same.")
-  }
-
-  # Subset
+  # Apply subgroup filter if provided
   if (!is.null(subgroup)) {
-
-    pre_test <- subset(pre_test, subgroup)
-    pst_test <- subset(pst_test, subgroup)
+    if (length(subgroup) != nrow(pre_test)) {
+      stop("subgroup must have the same length as number of rows in data frames.")
+    }
+    if (!is.logical(subgroup)) {
+      stop("subgroup must be a logical vector.")
+    }
+    pre_test <- pre_test[subgroup, , drop = FALSE]
+    pst_test <- pst_test[subgroup, , drop = FALSE]
   }
 
   # No. of items
@@ -53,20 +51,8 @@ multi_transmat <- function (pre_test = NULL, pst_test = NULL,
     res[[i]] <- transmat(pre_test[, i], pst_test[, i], force9 = force9)
   }
 
-  # Prepping results
-  row_names <- paste0("item", 1:n_items)
-  col_names <- names(res[[1]])
-
-  res       <- matrix(unlist(res),
-                      nrow = n_items,
-                      byrow = TRUE,
-                      dimnames = list(row_names, col_names))
-
-  if (agg == TRUE) {
-
-    res       <- rbind(res, colSums(res, na.rm = T))
-    rownames(res)[nrow(res)] <- "agg"
-  }
-
-  invisible(res)
+  # Format results using utility function
+  result_matrix <- format_transition_matrix(res, n_items, add_aggregate = agg)
+  
+  invisible(result_matrix)
 }

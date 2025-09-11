@@ -24,3 +24,4 @@ test_that("transmat and multi_transmat works correctly", {
   colnames(cor_ans) <- c("x00", "x01", "x10", "x11")
   expect_that(res, equals(cor_ans))
 })
+

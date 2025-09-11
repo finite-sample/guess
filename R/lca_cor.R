@@ -13,17 +13,35 @@
 #' transmatrix <- multi_transmat(pre_test, pst_test)
 #' res <- lca_cor(transmatrix)
 
-lca_cor <- function(transmatrix = NULL, nodk_priors = c(.3, .1, .1, .25),
-                   dk_priors = c(.3, .1, .2, .05, .1, .1, .05, .25)) {
+lca_cor <- function(transmatrix = NULL, nodk_priors = c(0.3, 0.1, 0.1, 0.25),
+                   dk_priors = c(0.3, 0.1, 0.2, 0.05, 0.1, 0.1, 0.05, 0.25)) {
+  
+  # Input validation
+  if (is.null(transmatrix)) {
+    stop("transmatrix cannot be NULL.")
+  }
+  if (!is.matrix(transmatrix)) {
+    stop("transmatrix must be a matrix.")
+  }
+  if (nrow(transmatrix) == 0) {
+    stop("transmatrix cannot be empty.")
+  }
+  
+  # Validate priors
+  if (ncol(transmatrix) == 4) {
+    validate_priors(nodk_priors, 4, "nodk_priors")
+  } else if (ncol(transmatrix) == 9) {
+    validate_priors(dk_priors, 8, "dk_priors")
+  } else {
+    stop("transmatrix must have either 4 or 9 columns.")
+  }
 
   # Initialize results mat
   nitems  <- nrow(transmatrix)
   nparams <- ifelse(ncol(transmatrix) == 4, 4, 8)
   est.opt <- matrix(ncol = nitems, nrow = nparams)
 
-  # priors
-  nodk_priors <- nodk_priors
-  dk_priors   <- dk_priors
+  # Use appropriate priors based on model type
 
   # effects
   effects  <- matrix(ncol = nitems, nrow = 1)
@@ -47,7 +65,7 @@ lca_cor <- function(transmatrix = NULL, nodk_priors = c(.3, .1, .1, .25),
     for (i in 1:nitems) {
       est.opt[, i]   <- tryCatch(solnp(dk_priors,
                                        guessdk_lik,
-                                       eqfun = eqn1dk,
+                                       eqfun = eq1dk,
                                        eqB = c(1),
                                        LB = rep(0, 8),
                                        UB = rep(1, 8),
@@ -58,13 +76,11 @@ lca_cor <- function(transmatrix = NULL, nodk_priors = c(.3, .1, .1, .25),
     effects[, 1:nitems]   <- est.opt[2, ] + est.opt[6, ]
   }
 
-  # Assign row names
-  if (nrow(est.opt) == 8) {
-
-    row.names(est.opt)   <-
-        c("lgg", "lgk", "lgc", "lkk", "lcg", "lck", "lcc", "gamma")
+  # Assign row names based on model type
+  if (nparams == 8) {
+    row.names(est.opt) <- c("lgg", "lgk", "lgc", "lkk", "lcg", "lck", "lcc", "gamma")
   } else {
-    row.names(est.opt)   <- c("lgg", "lgk",  "lkk", "gamma")
+    row.names(est.opt) <- c("lgg", "lgk", "lkk", "gamma")
   }
 
   list(param.lca = est.opt, est.learning = effects)

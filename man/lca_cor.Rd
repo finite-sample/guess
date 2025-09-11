@@ -4,8 +4,11 @@
 \alias{lca_cor}
 \title{Calculate item level and aggregate learning}
 \usage{
-lca_cor(transmatrix = NULL, nodk_priors = c(0.3, 0.1, 0.1, 0.25),
-  dk_priors = c(0.3, 0.1, 0.2, 0.05, 0.1, 0.1, 0.05, 0.25))
+lca_cor(
+  transmatrix = NULL,
+  nodk_priors = c(0.3, 0.1, 0.1, 0.25),
+  dk_priors = c(0.3, 0.1, 0.2, 0.05, 0.1, 0.1, 0.05, 0.25)
+)
 }
 \arguments{
 \item{transmatrix}{transition matrix returned from \code{\link{multi_transmat}}}

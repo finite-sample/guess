@@ -8,6 +8,13 @@
 ^revdep$
 ^docs$
 ^cran-comments.md$
-.lintr
+^\.lintr$
 ^_pkgdown\.yml$
-.github
+^\.github$
+^\.claude$
+^tests/_covrpage\.Rmd$
+^\.lintr_cache$
+\.lintr_cache$
+^doc$
+^Meta$
+^CRAN-SUBMISSION$

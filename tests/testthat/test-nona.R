@@ -5,3 +5,4 @@ test_that("nona works correctly", {
   y <- nona(x)
   expect_that(y, equals(c(0, 1, 0)))
 })
+

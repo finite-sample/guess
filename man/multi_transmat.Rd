@@ -4,8 +4,13 @@
 \alias{multi_transmat}
 \title{Creates a transition matrix for each item.}
 \usage{
-multi_transmat(pre_test = NULL, pst_test = NULL, subgroup = NULL,
-  force9 = FALSE, agg = FALSE)
+multi_transmat(
+  pre_test = NULL,
+  pst_test = NULL,
+  subgroup = NULL,
+  force9 = FALSE,
+  agg = FALSE
+)
 }
 \arguments{
 \item{pre_test}{Required. data.frame carrying responses to pre-test questions.}

@@ -4,8 +4,7 @@
 \alias{stnd_cor}
 \title{Standard Guessing Correction for Learning}
 \usage{
-stnd_cor(pre_test = NULL, pst_test = NULL, lucky = NULL,
-  item_names = NULL)
+stnd_cor(pre_test = NULL, pst_test = NULL, lucky = NULL, item_names = NULL)
 }
 \arguments{
 \item{pre_test}{Required. data.frame carrying responses to pre-test questions.}

@@ -1,18 +1,5 @@
-#' fit_nodk
-#'
-#' @title Goodness of fit statistics for data with don't know
-#' 
-#' @description For data with Don't Know, chi-square goodness of fit between true and model based multivariate distribution
-#'
-#' @param pre_test data.frame carrying pre_test items
-#' @param pst_test data.frame carrying pst_test items 
-#' @param g     estimates of \eqn{\gamma} produced from \code{\link{lca_cor}}
-#' @param est.param estimated parameters produced from \code{\link{lca_cor}}
-#' @param force9       Optional. There are cases where DK data doesn't have DK. But we need the entire matrix. By default it is FALSE.
-#' @return matrix with two rows: top row carrying chi-square value, and bottom row probability of observing that value
-#' @export
-#' @examples
-#' \dontrun{fit_dk(pre_test, pst_test, g, est.param)}
+# Deprecated - use fit_model instead
+# This function is provided for backward compatibility only
 
 fit_dk <- function(pre_test, pst_test, g, est.param, force9 = FALSE) {
 

@@ -8,3 +8,4 @@ test_that("interleave works correctly", {
               equals(c("t1a", "t2a", "t1b", "t2b",
                        "t1c", "t2c", "t1d", "t2d", "t1e", "t2e")))
 })
+

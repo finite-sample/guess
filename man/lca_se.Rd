@@ -4,8 +4,13 @@
 \alias{lca_se}
 \title{Bootstrapped standard errors of effect size estimates}
 \usage{
-lca_se(pre_test = NULL, pst_test = NULL, nsamps = 100, seed = 31415,
-  force9 = FALSE)
+lca_se(
+  pre_test = NULL,
+  pst_test = NULL,
+  nsamps = 100,
+  seed = 31415,
+  force9 = FALSE
+)
 }
 \arguments{
 \item{pre_test}{data.frame carrying pre_test items}

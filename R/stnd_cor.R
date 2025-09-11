@@ -27,19 +27,11 @@
 stnd_cor <- function(pre_test = NULL, pst_test = NULL, lucky = NULL,
                      item_names = NULL) {
 
-  # pre_test data frame is missing
-  if ( !is.data.frame(pre_test)) stop("Specify pre_test data.frame.")
-
-  # post_test data frame is missing
-  if ( !is.data.frame(pst_test)) stop("Specify pst_test data.frame.")
-
-  # lucky vector is missing
-  if ( is.null(lucky))    stop("Specify lucky vector.")
-
-  if ( length(unique(length(pre_test), length(pst_test), length(lucky))) != 1) {
-    stop("Length of input varies.
-          Length of pre_test, pst_test, and lucky must be the same.")
-  }
+  # Input validation using utilities
+  validate_dataframe(pre_test, "pre_test")
+  validate_dataframe(pst_test, "pst_test")
+  validate_compatible_dataframes(pre_test, pst_test)
+  validate_lucky_vector(lucky, length(pre_test))
 
   pre_test_cor  <- pst_test_cor <- stnd_cor <- NA
 

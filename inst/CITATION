@@ -1,15 +1,13 @@
-citHeader("To cite package 'guess' in publications use:")
-     
-year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", meta$Date, perl = TRUE)
-vers <- paste("R package version", meta$Version)
- 
-citEntry(entry="Manual",
-		  title = "guess: Guessing Adjusted Estimates of Learning.",
-		  author = personList(as.person("Gaurav Sood"), as.person("Ken Cor")),
-		  year = year,
-		  note = vers,
-		  textVersion =
-		  paste("Gaurav Sood and Ken Cor (",
-				year,
-				"). guess: Guessing Adjusted Estimates of Learning. ",
-				vers, ".", sep=""))
+bibentry(
+  bibtype = "Manual",
+  title = "guess: Guessing Adjusted Estimates of Learning",
+  author = c(person("Gaurav", "Sood"), person("Ken", "Cor")),
+  year = sub(".*([0-9]{4})-.*", "\\1", meta$Date),
+  note = paste("R package version", meta$Version),
+  url = "https://github.com/finite-sample/guess",
+  
+  textVersion = paste0("Sood, Gaurav and Cor, Ken (", 
+                       sub(".*([0-9]{4})-.*", "\\1", meta$Date), 
+                       "). guess: Guessing Adjusted Estimates of Learning. R package version ", 
+                       meta$Version, ". https://github.com/finite-sample/guess")
+)

@@ -3,3 +3,8 @@
 .RData
 .Rproj
 dev/
+/doc/
+/Meta/
+.DS_Store
+/..Rcheck
+/tests/testthat/.lintr_cache

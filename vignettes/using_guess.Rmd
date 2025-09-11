@@ -13,9 +13,9 @@ vignette: >
 
 Over informative processes, naive estimator of learning---difference between post and pre process scores---underestimates actual learning. A heuristic account for why the naive estimator is negatively biased is as follows: people know as much or more after exposed to an informative process than before it. And the less people know, the larger the number of items they don't know. And greater the opportunity to guess. 
 
-Guessing, even when random, only increases the proportion correct. Thus, bias due to guessing for naive measures of knowledge is always positive. On average, thus, there is more positive bias in the pre-process scores than post-process scores. And naturally, subtracting pre-process scores from post-process provides an attenuated estimate of actual learning. For a more complete treatment of the issue, read [this paper](http://gsood.com/research/papers/guess.pdf) by Ken Cor and Gaurav Sood.
+Guessing, even when random, only increases the proportion correct. Thus, bias due to guessing for naive measures of knowledge is always positive. On average, thus, there is more positive bias in the pre-process scores than post-process scores. And naturally, subtracting pre-process scores from post-process provides an attenuated estimate of actual learning. For a more complete treatment of the issue, read [this paper](https://gsood.com/research/papers/guess.pdf) by Ken Cor and Gaurav Sood.
 
-We provide a few different ways to adjust estimates of learning for guessing. For now, we limit our attention to cases where the same battery of knowledge questions has been asked in both the pre- and the post-process wave. And to cases where closed-ended questions have been asked. (Guessing is not a serious issue on open-ended items. See more evidence for that in [DK Means DK](http://johnbullock.org/papers/DKs/DK.pdf) by Robert Luskin and John Bullock.)  More generally, the package implements the methods to adjust learning for guessing discussed in [this paper](http://gsood.com/research/papers/guess.pdf).
+We provide a few different ways to adjust estimates of learning for guessing. For now, we limit our attention to cases where the same battery of knowledge questions has been asked in both the pre- and the post-process wave. And to cases where closed-ended questions have been asked. (Guessing is not a serious issue on open-ended items. See more evidence for that in [DK Means DK](https://johnbullock.org/papers/DKs/DK.pdf) by Robert Luskin and John Bullock.)  More generally, the package implements the methods to adjust learning for guessing discussed in [this paper](https://gsood.com/research/papers/guess.pdf).
 
 ### Measuring Learning:
 
@@ -30,7 +30,7 @@ Measurement of knowledge is fundamentally reactive -- we must probe to learn. Bu
 If you assume that the data are missing completely at random, you can simply ignore them. Generally, however, respondents tend to skip items they don't know. So missing responses on knowledge questions typically indicate ignorance. (Of course, it is important to investigate other potential reasons behind missing data. And we encourage researchers to take all precautions.) In our treatment, however, for simplicity sake, we treat missing as indicators of ignorance. 
 
 2. **Dealing with Don't Knows**  
-We now know a little bit about Don't Know. One generally strategy is to treat Don't Know responses as ignorance. But research suggests that on average there is approximately 3\% hidden knowledge behind Don't Know responses. See [DK Means DK](http://johnbullock.org/papers/DKs/DK.pdf) by Robert Luskin and John Bullock. Thus one can also choose to replace Don't Know responses with .03.
+We now know a little bit about Don't Know. One generally strategy is to treat Don't Know responses as ignorance. But research suggests that on average there is approximately 3\% hidden knowledge behind Don't Know responses. See [DK Means DK](https://johnbullock.org/papers/DKs/DK.pdf) by Robert Luskin and John Bullock. Thus one can also choose to replace Don't Know responses with .03.
 
 3. **Related Knowledge**  
 People either know a particular piece of information or they don't. On an open-ended question, they may struggle to remember it but those kinds of concerns don't apply to closed-ended questions where the task is simply to identify the correct answer. What does on occassion happen on closed-ended questions is that people have related cognitions. So for instance, asked to identify the prime minister of France, the respondents sometimes know that one of the options is the king of Sudan and may guess randomly between the remaining options. But that isn't the same as knowing the prime minister of France. 
@@ -41,7 +41,7 @@ The standard correction for guessing assumes that people guess randomly. And tha
 
 #### Latent Class Correction for Guessing
 
-See the [paper](http://gsood.com/research/papers/guess.pdf) for details.
+See the [paper](https://gsood.com/research/papers/guess.pdf) for details.
 
 ----
 

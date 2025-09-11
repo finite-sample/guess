@@ -1,0 +1,14 @@
+url: http://soodoku.github.io/guess
+
+template:
+  params:
+    bootswatch: cosmo
+    docsearch:
+      api_key: d9b2198580fb6e978e06524d7bc58092
+      index_name: guess
+
+authors:
+  Gaurav Sood:
+    href: https://github.com/soodoku
+  Ken Cor:
+    href: https://github.com/corkencor

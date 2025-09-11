@@ -1,7 +1,10 @@
-#' \pkg{guess} adjusts estimates of learning for guessing related bias.
+#' \pkg{guess} adjust estimates of learning for guessing related bias.
 #'
-#' It implements the method discussed in \url{http://gsood.com/research/papers/guess.pdf}
-#' @name guess
+#' It implements the method discussed in \url{https://gsood.com/research/papers/guess.pdf}
+#' @name guess-package
+#' @aliases guess
 #' @docType package
+#' @keywords internal
 #' @importFrom stats chisq.test sd
-NULL
+#' @importFrom Rsolnp solnp
+"_PACKAGE"

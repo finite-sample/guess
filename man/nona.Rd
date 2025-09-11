@@ -19,4 +19,3 @@ Converts NAs to 0s
 x <- c(NA, 1, 0); nona(x)
 x <- c(NA, "dk", 0); nona(x)
 }
-

@@ -1,0 +1,16 @@
+cache_directory: ".lintr_cache"
+linters: linters_with_defaults(
+    line_length_linter = line_length_linter(80),
+    commented_code_linter = NULL,
+    trailing_whitespace_linter = NULL
+ )
+exclusions: list(
+    "data-raw" = list(
+        trailing_whitespace_linter = Inf,
+        line_length_linter = Inf
+    ),
+    "vignettes" = list(
+        line_length_linter = Inf
+    ),
+    "tests/_covrpage.Rmd" = Inf
+ )

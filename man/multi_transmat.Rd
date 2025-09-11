@@ -4,8 +4,13 @@
 \alias{multi_transmat}
 \title{Creates a transition matrix for each item.}
 \usage{
-multi_transmat(pre_test = NULL, pst_test = NULL, subgroup = NULL,
-  force9 = FALSE)
+multi_transmat(
+  pre_test = NULL,
+  pst_test = NULL,
+  subgroup = NULL,
+  force9 = FALSE,
+  agg = FALSE
+)
 }
 \arguments{
 \item{pre_test}{Required. data.frame carrying responses to pre-test questions.}
@@ -15,6 +20,8 @@ multi_transmat(pre_test = NULL, pst_test = NULL, subgroup = NULL,
 \item{subgroup}{a Boolean vector identifying the subset. Default is NULL.}
 
 \item{force9}{Optional. There are cases where DK data doesn't have DK. But we need the entire matrix. By default it is FALSE.}
+
+\item{agg}{Optional. Boolean. Whether or not to add a row of aggregate transitions at the end of the matrix. Default is FALSE.}
 }
 \value{
 matrix with rows = total number of items + 1 (last row contains aggregate distribution across items)
@@ -29,9 +36,8 @@ The function is used internally. It calls transmat.
 multi_transmat: transition matrix of all the items
 }
 \examples{
-pre_test <- data.frame(pre_item1=c(1,0,0,1,0), pre_item2=c(1,NA,0,1,0)) 
-pst_test <- data.frame(pst_item1=pre_test[,1] + c(0,1,1,0,0), 
-					  pst_item2 = pre_test[,2] + c(0,1,0,0,1))
+pre_test <- data.frame(pre_item1 = c(1,0,0,1,0), pre_item2 = c(1,NA,0,1,0)) 
+pst_test <- data.frame(pst_item1 = pre_test[,1] + c(0,1,1,0,0), 
+             pst_item2 = pre_test[,2] + c(0,1,0,0,1))
 multi_transmat(pre_test, pst_test)
 }
-

@@ -8,8 +8,8 @@
 #' x <- c(NA, 1, 0); nona(x)
 #' x <- c(NA, "dk", 0); nona(x)
 
-nona <- function(vec = NULL)
-{
-    vec[is.na(vec)] <- 0 
-    vec
+nona <- function(vec = NULL) {
+
+  vec[is.na(vec)] <- 0
+  vec
 }

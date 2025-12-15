@@ -12,8 +12,8 @@
 * **Documentation improvements**: Enhanced validation function documentation with proper `@importFrom` declarations
 
 ## Development Workflow Improvements
-* **Local code coverage**: Replaced Codecov.io with local coverage reporting
-  - Added `tools/check_coverage.R` for local coverage analysis
+* **Local code coverage**: Replaced Codecov.io with simple local coverage reporting
+  - Added `make coverage` command for quick coverage analysis
   - Created `Makefile` for common development tasks
   - Removed external Codecov dependency and badge
 * **Fixed CRAN URL**: Updated to canonical CRAN package URL format

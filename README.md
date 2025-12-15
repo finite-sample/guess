@@ -55,7 +55,8 @@ make doc
 Or run coverage directly in R:
 ```r
 # Check code coverage
-source("tools/check_coverage.R")
+cov <- covr::package_coverage()
+print(cov)
 ```
 
 ### Key Functions

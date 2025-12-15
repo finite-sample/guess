@@ -1,9 +1,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^data-raw$
-^\.travis\.yml$
-^appveyor\.yml$
-^codecov\.yml$
 ^dev$
 ^revdep$
 ^docs$

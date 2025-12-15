@@ -41,7 +41,8 @@ This version includes modernization updates, code quality improvements, and enha
 
 ## Additional checks
 * All URLs verified and working (urlchecker::url_check())
-* Spelling checked (spelling::spell_check_package())
+* Spelling checked (spelling::spell_check_package()) - No spelling errors found
+* Added inst/WORDLIST to handle technical terms and proper names
 * Test coverage: >95% for all core modules
 * 264 tests pass successfully
 

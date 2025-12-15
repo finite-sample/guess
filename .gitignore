@@ -23,6 +23,7 @@ Thumbs.db
 # R check files
 *.Rcheck/
 .lintr_cache/
+.lintr
 
 # Coverage reports
 cobertura.xml

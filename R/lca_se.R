@@ -42,40 +42,43 @@ lca_se <- function(pre_test = NULL, pst_test = NULL, nsamps = 100,
 
   #extracting samples from the data
   set.seed(seed)
-  resamples <- lapply(1:nsamps, function(i) {
-                                  df[sample(1:nrow(df), replace = T), ]
+  resamples <- lapply(seq_len(nsamps), function(i) {
+                                  df[sample(seq_len(nrow(df)), replace = TRUE), ]
                                 })
 
   # Looping through the samples; estimating based one each
-  for (i in 1:length(resamples)) {
+  for (i in seq_along(resamples)) {
 
-    print(i)
+    # Progress indicator (silent by default)
+    if (getOption("guess.verbose", FALSE)) {
+      if (i %% 10 == 0) message("Bootstrap iteration: ", i, "/", length(resamples))
+    }
     transmatrix_i         <- multi_transmat(
-                                resamples[[i]][, 1:nitems],
+                                resamples[[i]][, seq_len(nitems)],
                                 resamples[[i]][, (nitems + 1):(2 * nitems)],
-                                force9 = force9, agg = T
+                                force9 = force9, agg = TRUE
                                 )
     resamps.results[[i]]  <- lca_cor(transmatrix_i)
     resamps.lca.eff[i, ]  <- resamps.results[[i]]$est.learning
     resamps.agg[i, ]      <- transmatrix_i[nitems, ]
 
-      for (j in 1:nitems) {
+      for (j in seq_len(nitems)) {
       resamps.lca.params[[j]][i, ]    <- resamps.results[[i]]$param.lca[, j]
     }
   }
 
   # Now getting standard error and means of different effects
-  stnderrs.effects[1, ] <- sapply(as.data.frame(resamps.lca.eff), sd, na.rm = T)
+  stnderrs.effects[1, ] <- sapply(as.data.frame(resamps.lca.eff), sd, na.rm = TRUE)
   avg.effects[1, ]      <- sapply(
                                   as.data.frame(resamps.lca.eff),
-                                  mean, na.rm = T
+                                  mean, na.rm = TRUE
                                   )
 
-  for (j in 1:nitems) {
+  for (j in seq_len(nitems)) {
 
     stnderrs.lca.params[, j]  <- sapply(
                                        as.data.frame(resamps.lca.params[[j]]),
-                                       sd, na.rm = T
+                                       sd, na.rm = TRUE
                                        )
   }
 

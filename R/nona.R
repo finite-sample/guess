@@ -9,7 +9,11 @@
 #' x <- c(NA, "dk", 0); nona(x)
 
 nona <- function(vec = NULL) {
-
+  
+  if (is.null(vec)) {
+    stop("Input vector cannot be NULL")
+  }
+  
   vec[is.na(vec)] <- 0
   vec
 }

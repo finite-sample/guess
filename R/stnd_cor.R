@@ -40,13 +40,13 @@ stnd_cor <- function(pre_test = NULL, pst_test = NULL, lucky = NULL,
                       sum(x == 1, na.rm = TRUE) -
                       sum(x == 0, na.rm = TRUE) / (1 / y - 1)
                     },
-                    pre_test, lucky)
+                    pre_test, lucky, SIMPLIFY = TRUE, USE.NAMES = FALSE)
   pst_test_cor <- mapply(
                     function(x, y) {
                       sum(x == 1, na.rm = TRUE) -
                       sum(x == 0, na.rm = TRUE) / (1 / y - 1)
                     },
-                    pst_test, lucky)
+                    pst_test, lucky, SIMPLIFY = TRUE, USE.NAMES = FALSE)
   stnd_cor     <- pst_test_cor - pre_test_cor
 
   # Names of the return vector

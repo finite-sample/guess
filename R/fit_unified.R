@@ -52,7 +52,7 @@ fit_model <- function(pre_test, pst_test, g, est.param, force9 = FALSE) {
   rownames(fit_results) <- c("chi-square", "p-value")
   
   # Calculate fit statistics for each item
-  for (i in 1:n_items) {
+  for (i in seq_len(n_items)) {
     
     # Get item-specific gamma and parameters
     gamma_i <- if (is.list(g)) g[[i]] else g[i]

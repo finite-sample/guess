@@ -16,7 +16,7 @@ lca_adj <- function(pre = NULL, pst = NULL) {
 
   n <- nrow(pre)
 
-  if ( sum(is.na(pre)) > 0 | sum(is.na(pst)) > 0 ) {
+  if ( sum(is.na(pre)) > 0 || sum(is.na(pst)) > 0 ) {
     warning("NAs will be converted to 0. MCAR is assumed.\n")
     pre <- as.data.frame(lapply(pre, function(x) {
                                        x[is.na(x)] <- 0

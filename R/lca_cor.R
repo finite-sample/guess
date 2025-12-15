@@ -48,7 +48,7 @@ lca_cor <- function(transmatrix = NULL, nodk_priors = c(0.3, 0.1, 0.1, 0.25),
 
   # calculating parameter estimates
   if (nparams == 4) {
-    for (i in 1:nitems) {
+    for (i in seq_len(nitems)) {
       est.opt[, i]   <- tryCatch(solnp(nodk_priors,
                                        guess_lik,
                                        eqfun = eqn1,
@@ -62,7 +62,7 @@ lca_cor <- function(transmatrix = NULL, nodk_priors = c(0.3, 0.1, 0.1, 0.25),
     effects[, 1:nitems] <- est.opt[2, ]
 
   } else {
-    for (i in 1:nitems) {
+    for (i in seq_len(nitems)) {
       est.opt[, i]   <- tryCatch(solnp(dk_priors,
                                        guessdk_lik,
                                        eqfun = eq1dk,

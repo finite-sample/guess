@@ -1,10 +1,10 @@
 # https://github.com/jimhester/lintr
-# Style checks temporarily disabled for release
-# if (requireNamespace("lintr", quietly = TRUE)) {
-#   context("lints")
-#   test_that("Package Style", {
-#     skip_on_cran()
-#     lintr::expect_lint_free(cache = TRUE)
-#   })
-# }
+if (requireNamespace("lintr", quietly = TRUE)) {
+  context("lints")
+  test_that("Package Style", {
+    skip_on_cran()
+    skip_on_ci()  # Skip on CI initially to avoid build failures
+    lintr::expect_lint_free(cache = TRUE)
+  })
+}
 

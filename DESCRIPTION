@@ -1,27 +1,35 @@
 Package: guess
 Title: Adjust Estimates of Learning for Guessing
-Version: 0.2.0
-Author: Gaurav Sood [aut, cre], Ken Cor [aut]
-Authors@R: c(person("Gaurav", "Sood", email = "gsood07@gmail.com", role = c("aut", "cre")),
-			 person("Ken", "Cor", email = "mcor@ualberta.ca", role = c("aut")))
-Maintainer: Gaurav Sood <gsood07@gmail.com>
-Description: Adjust Estimates of Learning for Guessing. The package provides 
-    standard guessing correction, and a latent class model that leverages
-    informative pre-post transitions. For details of the latent class model,
-    see <https://gsood.com/research/papers/guess.pdf>.
-URL: https://github.com/finite-sample/guess
+Version: 0.2.1
+Authors@R: c(
+    person("Gaurav", "Sood", email = "gsood07@gmail.com", role = c("aut", "cre")),
+    person("Ken", "Cor", email = "mcor@ualberta.ca", role = c("aut"))
+    )
+Description: Provides tools to adjust estimates of learning for guessing-related 
+    bias in educational and survey research. Implements standard guessing 
+    correction methods and a sophisticated latent class model that leverages 
+    informative pre-post test transitions to account for guessing behavior. 
+    The package helps researchers obtain more accurate estimates of actual 
+    learning when respondents may guess on closed-ended knowledge items. 
+    For theoretical background and empirical validation, see Cor and Sood (2018) 
+    <https://gsood.com/research/papers/guess.pdf>.
+URL: https://github.com/finite-sample/guess, https://finite-sample.github.io/guess/
 BugReports: https://github.com/finite-sample/guess/issues
 Depends:
-    R (>= 3.2.1)
+    R (>= 4.0.0)
 Imports:
-    Rsolnp
+    Rsolnp,
+    stats
 License: MIT + file LICENSE
 LazyData: true
 VignetteBuilder: knitr
 Suggests:
     knitr (>= 1.11),
     rmarkdown,
-    testthat,
-    lintr
-RoxygenNote: 7.3.2
+    testthat (>= 3.0.0),
+    lintr,
+    covr
+RoxygenNote: 7.3.3
 Encoding: UTF-8
+Language: en-US
+Config/testthat/edition: 3

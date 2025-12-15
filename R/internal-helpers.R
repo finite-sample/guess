@@ -108,3 +108,14 @@ interleave <- function(a, b) {
   
   result
 }
+
+#' Constrain vector to [0,1] range  
+#' @description Constrains values in a vector to be between 0 and 1. Used internally.
+#' @keywords internal
+#' 
+#' @param x numeric vector to constrain
+#' @return numeric vector with values constrained to [0,1]
+
+zero1 <- function(x) {
+  pmax(0, pmin(1, x))
+}

@@ -17,23 +17,13 @@ lca_cor <- function(transmatrix = NULL, nodk_priors = c(0.3, 0.1, 0.1, 0.25),
                    dk_priors = c(0.3, 0.1, 0.2, 0.05, 0.1, 0.1, 0.05, 0.25)) {
   
   # Input validation
-  if (is.null(transmatrix)) {
-    stop("transmatrix cannot be NULL.")
-  }
-  if (!is.matrix(transmatrix)) {
-    stop("transmatrix must be a matrix.")
-  }
-  if (nrow(transmatrix) == 0) {
-    stop("transmatrix cannot be empty.")
-  }
+  validate_matrix(transmatrix, "transmatrix", valid_ncols = c(4, 9))
   
   # Validate priors
   if (ncol(transmatrix) == 4) {
     validate_priors(nodk_priors, 4, "nodk_priors")
   } else if (ncol(transmatrix) == 9) {
     validate_priors(dk_priors, 8, "dk_priors")
-  } else {
-    stop("transmatrix must have either 4 or 9 columns.")
   }
 
   # Initialize results mat

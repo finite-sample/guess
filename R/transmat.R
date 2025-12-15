@@ -25,26 +25,12 @@ transmat <- function(pre_test_var, pst_test_var, subgroup = NULL,
                     force9 = FALSE) {
   
   # Input validation
-  if (is.null(pre_test_var) || is.null(pst_test_var)) {
-    stop("Both pre_test_var and pst_test_var must be provided.")
-  }
+  validate_required(pre_test_var = pre_test_var, pst_test_var = pst_test_var)
+  validate_equal_length(pre_test_var, pst_test_var, "pre_test_var", "pst_test_var")
   
-  if (length(pre_test_var) != length(pst_test_var)) {
-    stop("pre_test_var and pst_test_var must have the same length.")
-  }
-  
-  if (length(pre_test_var) == 0) {
-    stop("Input vectors cannot be empty.")
-  }
-
   # Apply subgroup filter if provided
+  validate_subgroup(subgroup, length(pre_test_var))
   if (!is.null(subgroup)) {
-    if (length(subgroup) != length(pre_test_var)) {
-      stop("subgroup must have the same length as input vectors.")
-    }
-    if (!is.logical(subgroup)) {
-      stop("subgroup must be a logical vector.")
-    }
     pre_test_var <- pre_test_var[subgroup]
     pst_test_var <- pst_test_var[subgroup]
   }

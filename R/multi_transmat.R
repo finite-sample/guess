@@ -27,13 +27,8 @@ multi_transmat <- function (pre_test = NULL, pst_test = NULL,
   validate_compatible_dataframes(pre_test, pst_test)
 
   # Apply subgroup filter if provided
+  validate_subgroup(subgroup, nrow(pre_test))
   if (!is.null(subgroup)) {
-    if (length(subgroup) != nrow(pre_test)) {
-      stop("subgroup must have the same length as number of rows in data frames.")
-    }
-    if (!is.logical(subgroup)) {
-      stop("subgroup must be a logical vector.")
-    }
     pre_test <- pre_test[subgroup, , drop = FALSE]
     pst_test <- pst_test[subgroup, , drop = FALSE]
   }

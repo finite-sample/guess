@@ -6,9 +6,9 @@ test_that("validate_dataframe works correctly", {
   expect_true(validate_dataframe(df, "test_df"))
   
   # Invalid inputs
-  expect_error(validate_dataframe(list(x = 1:3), "test_df"), "Specify test_df data.frame.")
-  expect_error(validate_dataframe(1:3, "test_df"), "Specify test_df data.frame.")
-  expect_error(validate_dataframe(data.frame(), "test_df"), "test_df cannot be empty.")
+  expect_error(validate_dataframe(list(x = 1:3), "test_df"), "data.frame")
+  expect_error(validate_dataframe(1:3, "test_df"), "data.frame")
+  expect_error(validate_dataframe(data.frame(), "test_df"), "rows")
 })
 
 test_that("validate_compatible_dataframes works correctly", {
@@ -19,9 +19,9 @@ test_that("validate_compatible_dataframes works correctly", {
   
   expect_true(validate_compatible_dataframes(df1, df2))
   expect_error(validate_compatible_dataframes(df1, df3), 
-               "Lengths of pre_test and pst_test must be the same.")
+               "Lengths of pre_test and pst_test must be the same")
   expect_error(validate_compatible_dataframes(df1, df4), 
-               "Number of rows in pre_test and pst_test must be the same.")
+               "Number of rows in pre_test and pst_test must be the same")
 })
 
 test_that("validate_lucky_vector works correctly", {
@@ -29,14 +29,14 @@ test_that("validate_lucky_vector works correctly", {
   expect_true(validate_lucky_vector(c(0.25, 0.33, 0.5), 3))
   
   # Invalid inputs
-  expect_error(validate_lucky_vector(NULL, 3), "Specify lucky vector.")
-  expect_error(validate_lucky_vector(c(0.25, 0.33), 3), "Length of input varies.")
+  expect_error(validate_lucky_vector(NULL, 3), "NULL")
+  expect_error(validate_lucky_vector(c(0.25, 0.33), 3), "length")
   expect_error(validate_lucky_vector(c(0, 0.25, 0.5), 3), 
-               "All lucky values must be between 0 and 1")
+               "exclusive")
   expect_error(validate_lucky_vector(c(0.25, 1, 0.5), 3), 
-               "All lucky values must be between 0 and 1")
+               "exclusive")
   expect_error(validate_lucky_vector(c(0.25, -0.1, 0.5), 3), 
-               "All lucky values must be between 0 and 1")
+               "Element 2 is not")
 })
 
 test_that("validate_transition_values works correctly", {
@@ -49,7 +49,7 @@ test_that("validate_transition_values works correctly", {
   pre_invalid <- c("1", "0", "2")  # Invalid value "2"
   pst_invalid <- c("0", "1", "0")
   expect_error(validate_transition_values(pre_invalid, pst_invalid), 
-               "The input vectors can only contain: 0, 1, NA, d")
+               "subset")
 })
 
 test_that("validate_gamma works correctly", {
@@ -58,10 +58,10 @@ test_that("validate_gamma works correctly", {
   expect_true(validate_gamma(c(0.25, 0.33, 0.5)))
   
   # Invalid inputs
-  expect_error(validate_gamma(NULL), "Gamma parameter cannot be NULL.")
-  expect_error(validate_gamma(c(0.25, NA, 0.5)), "Gamma parameter cannot contain NA values.")
-  expect_error(validate_gamma(c(0.25, -0.1, 0.5)), "Gamma parameter must be between 0 and 1.")
-  expect_error(validate_gamma(c(0.25, 1.1, 0.5)), "Gamma parameter must be between 0 and 1.")
+  expect_error(validate_gamma(NULL), "NULL")
+  expect_error(validate_gamma(c(0.25, NA, 0.5)), "missing")
+  expect_error(validate_gamma(c(0.25, -0.1, 0.5)), "Element 2 is not")
+  expect_error(validate_gamma(c(0.25, 1.1, 0.5)), "Element 2 is not")
 })
 
 test_that("validate_priors works correctly", {
@@ -70,13 +70,13 @@ test_that("validate_priors works correctly", {
   
   # Invalid inputs
   expect_error(validate_priors(c("0.3", "0.1"), 2, "test_priors"), 
-               "test_priors must be numeric.")
+               "numeric")
   expect_error(validate_priors(c(0.3, 0.1), 3, "test_priors"), 
-               "test_priors must have length 3")
+               "length")
   expect_error(validate_priors(c(0.3, -0.1, 0.1), 3, "test_priors"), 
-               "All test_priors values must be between 0 and 1.")
+               "Element 2 is not")
   expect_error(validate_priors(c(0.3, 1.1, 0.1), 3, "test_priors"), 
-               "All test_priors values must be between 0 and 1.")
+               "Element 2 is not")
 })
 
 test_that("count_transitions works correctly", {

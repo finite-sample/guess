@@ -23,3 +23,5 @@
 ^\.Rhistory$
 ^\.RData$
 ^\.Ruserdata$
+^Makefile$
+^tools$

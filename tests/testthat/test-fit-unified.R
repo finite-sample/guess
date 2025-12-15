@@ -29,13 +29,13 @@ test_that("fit_model validates inputs correctly", {
   
   # Test NULL inputs
   expect_error(fit_model(NULL, test_data$pst_test, c(0.25, 0.25), matrix(0.1, 3, 2)), 
-               "Specify pre_test data.frame.")
+               "Must be of type 'data.frame'")
   expect_error(fit_model(test_data$pre_test, NULL, c(0.25, 0.25), matrix(0.1, 3, 2)), 
-               "Specify pst_test data.frame.")
+               "Must be of type 'data.frame'")
   expect_error(fit_model(test_data$pre_test, test_data$pst_test, NULL, matrix(0.1, 3, 2)), 
-               "Both g and est.param must be provided.")
+               "g must be provided")
   expect_error(fit_model(test_data$pre_test, test_data$pst_test, c(0.25, 0.25), NULL), 
-               "Both g and est.param must be provided.")
+               "est.param must be provided")
   
   # Test mismatched data frames
   wrong_pst <- data.frame(item1 = 1:3)

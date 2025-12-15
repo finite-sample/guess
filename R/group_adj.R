@@ -23,9 +23,7 @@ group_adj <- function(pre = NULL, pst = NULL, gamma = NULL, dk = 0.03) {
   validate_compatible_dataframes(pre, pst)
   validate_gamma(gamma)
   
-  if (dk < 0 || dk > 1) {
-    stop("dk parameter must be between 0 and 1.")
-  }
+  validate_dk(dk)
 
   if (sum(is.na(pre)) > 0 || sum(is.na(pst)) > 0) {
     message("NAs will be converted to 0. MCAR is assumed.")

@@ -1,8 +1,7 @@
 ## guess: Adjust Estimates of Learning for Guessing
 
 [![R-CMD-check](https://github.com/finite-sample/guess/workflows/R-CMD-check/badge.svg)](https://github.com/finite-sample/guess/actions)
-[![Codecov test coverage](https://codecov.io/gh/finite-sample/guess/branch/master/graph/badge.svg)](https://app.codecov.io/gh/finite-sample/guess?branch=master)
-[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/guess)](https://cran.r-project.org/package=guess)
+[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/guess)](https://CRAN.R-project.org/package=guess)
 ![](http://cranlogs.r-pkg.org/badges/grand-total/guess)
 [![Github Stars](https://img.shields.io/github/stars/finite-sample/guess.svg?style=social&label=Github)](https://github.com/finite-sample/guess)
 
@@ -33,6 +32,30 @@ To learn about how to use the package, see the [vignette](vignettes/using_guess.
 ```r
 # Overview of the package
 vignette("using_guess", package = "guess")
+```
+
+### Development
+
+For developers and contributors:
+
+```bash
+# Run tests
+make test
+
+# Check code coverage locally
+make coverage
+
+# Run R CMD check
+make check
+
+# Build documentation
+make doc
+```
+
+Or run coverage directly in R:
+```r
+# Check code coverage
+source("tools/check_coverage.R")
 ```
 
 ### Key Functions

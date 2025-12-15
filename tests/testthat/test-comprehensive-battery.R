@@ -236,9 +236,9 @@ test_that("Backward compatibility and edge case validation", {
   })
   
   # Test validation functions
-  expect_error(multi_transmat(data.frame(), post_test), "cannot be empty")
+  expect_error(multi_transmat(data.frame(), post_test), "Must have at least 1 rows")
   expect_error(stnd_cor(pre_test, post_test, lucky = c(-0.1, rep(0.25, nitems-1))), 
-               "must be between 0 and 1")
+               "Element 1 is not")
 })
 
 test_that("Performance and stress testing", {

@@ -1,3 +1,23 @@
+# version 0.2.2 2025-12-15
+
+## Validation System Modernization
+* **Complete migration to checkmate**: Replaced all manual input validation with robust checkmate assertions
+* **Enhanced validation utilities**: Added comprehensive validation helper functions in `utils-validation.R`
+* **Standardized error messages**: All validation errors now use consistent checkmate format
+* **Improved code quality**: Eliminated all manual `stop()` calls and `::` namespace patterns
+* **Dependency optimization**: 
+  - Added `checkmate` dependency for robust input validation
+  - Removed `goji` dependency by implementing internal `zero1` function
+* **Test suite updates**: Updated all test expectations to match new validation patterns
+* **Documentation improvements**: Enhanced validation function documentation with proper `@importFrom` declarations
+
+## Development Workflow Improvements
+* **Local code coverage**: Replaced Codecov.io with local coverage reporting
+  - Added `tools/check_coverage.R` for local coverage analysis
+  - Created `Makefile` for common development tasks
+  - Removed external Codecov dependency and badge
+* **Fixed CRAN URL**: Updated to canonical CRAN package URL format
+
 # version 0.2.1 2024-12-15
 
 ## Infrastructure & Modernization

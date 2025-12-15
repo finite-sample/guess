@@ -2,24 +2,24 @@ context("Test LCA Correction Function")
 
 test_that("lca_cor validates inputs correctly", {
   # Test NULL input
-  expect_error(lca_cor(NULL), "transmatrix cannot be NULL.")
+  expect_error(lca_cor(NULL), "Must be of type 'matrix'")
   
   # Test non-matrix input
-  expect_error(lca_cor(data.frame(x = 1:4)), "transmatrix must be a matrix.")
+  expect_error(lca_cor(data.frame(x = 1:4)), "Must be of type 'matrix'")
   
   # Test empty matrix
-  expect_error(lca_cor(matrix(nrow = 0, ncol = 4)), "transmatrix cannot be empty.")
+  expect_error(lca_cor(matrix(nrow = 0, ncol = 4)), "Must have at least 1 rows")
   
   # Test wrong dimensions
   expect_error(lca_cor(matrix(1:6, nrow = 2, ncol = 3)), 
-               "transmatrix must have either 4 or 9 columns.")
+               "Must be element of set")
   
   # Test invalid priors
   expect_error(lca_cor(matrix(1:4, nrow = 1), nodk_priors = c(0.3, 0.1, -0.1, 0.25)), 
-               "All nodk_priors values must be between 0 and 1.")
+               "Element 3 is not")
   
   expect_error(lca_cor(matrix(1:4, nrow = 1), nodk_priors = c(0.3, 0.1)), 
-               "nodk_priors must have length 4")
+               "Must have length 4")
 })
 
 test_that("lca_cor works with no-DK data", {

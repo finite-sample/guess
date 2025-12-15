@@ -1,6 +1,6 @@
 Package: guess
 Title: Adjust Estimates of Learning for Guessing
-Version: 0.2.1
+Version: 0.2.2
 Authors@R: c(
     person("Gaurav", "Sood", email = "gsood07@gmail.com", role = c("aut", "cre")),
     person("Ken", "Cor", email = "mcor@ualberta.ca", role = c("aut"))
@@ -19,7 +19,8 @@ Depends:
     R (>= 4.0.0)
 Imports:
     Rsolnp,
-    stats
+    stats,
+    checkmate
 License: MIT + file LICENSE
 LazyData: true
 VignetteBuilder: knitr

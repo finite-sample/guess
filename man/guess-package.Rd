@@ -12,6 +12,7 @@ It implements the method discussed in \url{https://gsood.com/research/papers/gue
 Useful links:
 \itemize{
   \item \url{https://github.com/finite-sample/guess}
+  \item \url{https://finite-sample.github.io/guess/}
   \item Report bugs at \url{https://github.com/finite-sample/guess/issues}
 }
 

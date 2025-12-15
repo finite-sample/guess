@@ -69,14 +69,12 @@ test_that("complete workflow with DK works", {
   # Generate mixed responses including DK
   pre_test <- data.frame(
     item1 = sample(c("0", "1", "d"), n_obs, replace = TRUE, prob = c(0.4, 0.3, 0.3)),
-    item2 = sample(c("0", "1", "d"), n_obs, replace = TRUE, prob = c(0.5, 0.2, 0.3)),
-    stringsAsFactors = FALSE
+    item2 = sample(c("0", "1", "d"), n_obs, replace = TRUE, prob = c(0.5, 0.2, 0.3))
   )
   
   pst_test <- data.frame(
     item1 = sample(c("0", "1", "d"), n_obs, replace = TRUE, prob = c(0.3, 0.4, 0.3)),
-    item2 = sample(c("0", "1", "d"), n_obs, replace = TRUE, prob = c(0.2, 0.5, 0.3)),
-    stringsAsFactors = FALSE
+    item2 = sample(c("0", "1", "d"), n_obs, replace = TRUE, prob = c(0.2, 0.5, 0.3))
   )
   
   # Full workflow

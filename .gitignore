@@ -1,10 +1,29 @@
+# R files
 .Rproj.user
 .Rhistory
 .RData
-.Rproj
+.Ruserdata
+*.Rproj
+
+# Development directories
 dev/
-/doc/
-/Meta/
+inst/doc
+doc/
+Meta/
+
+# Build artifacts
+*.o
+*.so
+*.dll
+
+# OS files
 .DS_Store
-/..Rcheck
-/tests/testthat/.lintr_cache
+Thumbs.db
+
+# R check files
+*.Rcheck/
+.lintr_cache/
+
+# Coverage reports
+cobertura.xml
+coverage/

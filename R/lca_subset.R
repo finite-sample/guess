@@ -14,6 +14,10 @@
 
 lca_adj <- function(pre = NULL, pst = NULL) {
 
+  validate_dataframe(pre, "pre")
+  validate_dataframe(pst, "pst")
+  validate_compatible_dataframes(pre, pst)
+
   n <- nrow(pre)
 
   if ( sum(is.na(pre)) > 0 || sum(is.na(pst)) > 0 ) {

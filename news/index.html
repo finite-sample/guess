@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">guess</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.2</span>
       </span>
     </div>
 
@@ -63,7 +63,42 @@
     </div>
 
     <div class="section level2">
-<h2 class="page-header" data-toc-text="0.2.1" id="version-021-2024-12-15">version 0.2.1 2024-12-15<a class="anchor" aria-label="anchor" href="#version-021-2024-12-15"></a></h2>
+<h2 class="page-header" data-toc-text="0.2.2" id="version-022-2025-12-15">version 0.2.2 2025-12-15<a class="anchor" aria-label="anchor" href="#version-022-2025-12-15"></a></h2>
+<div class="section level3">
+<h3 id="validation-system-modernization-0-2-2">Validation System Modernization<a class="anchor" aria-label="anchor" href="#validation-system-modernization-0-2-2"></a></h3>
+<ul><li>
+<strong>Complete migration to checkmate</strong>: Replaced all manual input validation with robust checkmate assertions</li>
+<li>
+<strong>Enhanced validation utilities</strong>: Added comprehensive validation helper functions in <code>utils-validation.R</code>
+</li>
+<li>
+<strong>Standardized error messages</strong>: All validation errors now use consistent checkmate format</li>
+<li>
+<strong>Improved code quality</strong>: Eliminated all manual <code><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop()</a></code> calls and <code>::</code> namespace patterns</li>
+<li>
+<strong>Dependency optimization</strong>:
+<ul><li>Added <code>checkmate</code> dependency for robust input validation</li>
+<li>Removed <code>goji</code> dependency by implementing internal <code>zero1</code> function</li>
+</ul></li>
+<li>
+<strong>Test suite updates</strong>: Updated all test expectations to match new validation patterns</li>
+<li>
+<strong>Documentation improvements</strong>: Enhanced validation function documentation with proper <code>@importFrom</code> declarations</li>
+</ul></div>
+<div class="section level3">
+<h3 id="development-workflow-improvements-0-2-2">Development Workflow Improvements<a class="anchor" aria-label="anchor" href="#development-workflow-improvements-0-2-2"></a></h3>
+<ul><li>
+<strong>Local code coverage</strong>: Replaced Codecov.io with local coverage reporting
+<ul><li>Added <code>tools/check_coverage.R</code> for local coverage analysis</li>
+<li>Created <code>Makefile</code> for common development tasks</li>
+<li>Removed external Codecov dependency and badge</li>
+</ul></li>
+<li>
+<strong>Fixed CRAN URL</strong>: Updated to canonical CRAN package URL format</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="0.2.1" id="version-021-2024-12-15">version 0.2.1 2024-12-15<small>2025-12-15</small><a class="anchor" aria-label="anchor" href="#version-021-2024-12-15"></a></h2>
 <div class="section level3">
 <h3 id="infrastructure--modernization-0-2-1">Infrastructure &amp; Modernization<a class="anchor" aria-label="anchor" href="#infrastructure--modernization-0-2-1"></a></h3>
 <ul><li>Added comprehensive GitHub Actions CI/CD workflows for R CMD check, test coverage, and pkgdown</li>

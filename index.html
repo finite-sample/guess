@@ -35,7 +35,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">guess</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.2</span>
       </span>
     </div>
 
@@ -88,7 +88,7 @@
 <div class="section level2">
 <h2 id="guess-adjust-estimates-of-learning-for-guessing">guess: Adjust Estimates of Learning for Guessing<a class="anchor" aria-label="anchor" href="#guess-adjust-estimates-of-learning-for-guessing"></a>
 </h2>
-<p><a href="https://github.com/finite-sample/guess/actions" class="external-link"><img src="https://github.com/finite-sample/guess/workflows/R-CMD-check/badge.svg" alt="R-CMD-check"></a> <a href="https://app.codecov.io/gh/finite-sample/guess?branch=master" class="external-link"><img src="https://codecov.io/gh/finite-sample/guess/branch/master/graph/badge.svg" alt="Codecov test coverage"></a> <a href="https://cran.r-project.org/package=guess" class="external-link"><img src="http://www.r-pkg.org/badges/version/guess" alt="CRAN_Status_Badge"></a> <img src="http://cranlogs.r-pkg.org/badges/grand-total/guess"><a href="https://github.com/finite-sample/guess" class="external-link"><img src="https://img.shields.io/github/stars/finite-sample/guess.svg?style=social&amp;label=Github" alt="Github Stars"></a></p>
+<p><a href="https://github.com/finite-sample/guess/actions" class="external-link"><img src="https://github.com/finite-sample/guess/workflows/R-CMD-check/badge.svg" alt="R-CMD-check"></a> <a href="https://CRAN.R-project.org/package=guess" class="external-link"><img src="http://www.r-pkg.org/badges/version/guess" alt="CRAN_Status_Badge"></a> <img src="http://cranlogs.r-pkg.org/badges/grand-total/guess"><a href="https://github.com/finite-sample/guess" class="external-link"><img src="https://img.shields.io/github/stars/finite-sample/guess.svg?style=social&amp;label=Github" alt="Github Stars"></a></p>
 <p>Over informative processes, naive estimator of learning—difference between post and pre process scores—underestimates actual learning. A heuristic account for why the naive estimator is negatively biased is as follows: people know as much or more after exposed to an informative process than before it. And the less people know, the larger the number of items they don’t know. And greater the opportunity to guess.</p>
 <p>Guessing, even when random, only increases the proportion correct. Thus, bias due to guessing for naive measures of knowledge is always positive. On average, thus, there is more positive bias in the pre-process scores than post-process scores. And naturally, subtracting pre-process scores from post-process provides an attenuated estimate of actual learning. For a more complete treatment of the issue, read <a href="https://gsood.com/research/papers/guess.pdf" class="external-link">this paper</a> by Ken Cor and Gaurav Sood.</p>
 <p>We provide a few different ways to adjust estimates of learning for guessing. For now, we limit our attention to cases where the same battery of knowledge questions has been asked in both the pre- and the post-process wave. And to cases where closed-ended questions have been asked. (Guessing is not a serious issue on open-ended items. See more evidence for that in <a href="https://johnbullock.org/papers/DKs/DK.pdf" class="external-link">DK Means DK</a> by Robert Luskin and John Bullock.) More generally, the package implements the methods to adjust learning for guessing discussed in <a href="https://gsood.com/research/papers/guess.pdf" class="external-link">this paper</a>.</p>
@@ -113,6 +113,26 @@
 <span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"using_guess"</span>, package <span class="op">=</span> <span class="st">"guess"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
+<h3 id="development">Development<a class="anchor" aria-label="anchor" href="#development"></a>
+</h3>
+<p>For developers and contributors:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># Run tests</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">make</span> test</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co"># Check code coverage locally</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="fu">make</span> coverage</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co"># Run R CMD check</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="fu">make</span> check</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co"># Build documentation</span></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="fu">make</span> doc</span></code></pre></div>
+<p>Or run coverage directly in R:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Check code coverage</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/check_coverage.R"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
 <h3 id="key-functions">Key Functions<a class="anchor" aria-label="anchor" href="#key-functions"></a>
 </h3>
 <p>The package provides several methods for adjusting learning estimates:</p>
@@ -132,7 +152,7 @@
 <h3 id="handling-groups">Handling Groups<a class="anchor" aria-label="anchor" href="#handling-groups"></a>
 </h3>
 <p><strong>Important</strong>: The <code><a href="reference/group_adj.html">group_adj()</a></code> function handles different groups implicitly through their <strong>gamma values</strong> (propensity to guess), rather than requiring explicit group identifiers. Groups with different guessing behaviors should use different gamma parameters:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Example: Different groups with different guessing rates</span></span>
 <span><span class="va">high_ability_gamma</span> <span class="op">&lt;-</span> <span class="fl">0.15</span>   <span class="co"># Lower guessing rate</span></span>
 <span><span class="va">low_ability_gamma</span> <span class="op">&lt;-</span> <span class="fl">0.35</span>    <span class="co"># Higher guessing rate</span></span>

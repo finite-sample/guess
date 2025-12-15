@@ -28,3 +28,6 @@ Thumbs.db
 # Coverage reports
 cobertura.xml
 coverage/
+tests/README.html
+tests/README.md
+tests/_covrpage.Rmd

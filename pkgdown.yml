@@ -3,7 +3,7 @@ pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
   using_guess: using_guess.html
-last_built: 2025-12-15T22:53Z
+last_built: 2025-12-15T23:01Z
 urls:
   reference: https://finite-sample.github.io/guess/reference
   article: https://finite-sample.github.io/guess/articles

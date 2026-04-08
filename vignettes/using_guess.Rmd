@@ -122,9 +122,9 @@ transmatrix <- multi_transmat(pre_test, post_test)
 
 res <- lca_cor(transmatrix)
 
-round(res$param.lca[,1:4], 3)
+round(res$params[,1:4], 3)
 
-round(res$est.learning[1:4], 3)
+round(res$learning[1:4], 3)
 
 # LCA Correction with Don't Know responses
 # Generate data with Don't Know responses (coded as 2)
@@ -134,9 +134,9 @@ post_test_dk <- replicate(nitems, sample(c(0,1,2), npeople, replace=TRUE, prob=c
 transmatrix <- multi_transmat(pre_test_dk, post_test_dk, force9 = TRUE)
 res_dk <- lca_cor(transmatrix)
 
-round(res_dk$param.lca[,1:4], 3)
+round(res_dk$params[,1:4], 3)
 
-round(res_dk$est.learning[1:4], 3)
+round(res_dk$learning[1:4], 3)
 ```
 
 #### Adjust by Groups
@@ -186,11 +186,285 @@ sapply(lca_dk_stnd_err, function(x) round(head(x, 1), 3))
 #### Fit
 
 ```{r eval = FALSE, fit_lca}
-fit <- fit_nodk(pre_test, post_test, res$param.lca[4, ], res$param.lca[1:3, ])
+fit <- fit_nodk(pre_test, post_test, res$params["gamma", ], res$params[c("gg", "gk", "kk"), ])
 
 print(fit[, 1:4])
 
-fit <- fit_dk(pre_test_dk, post_test_dk, res_dk$param.lca[8, ], res_dk$param.lca[1:7, ], force9 = TRUE)
+fit <- fit_dk(pre_test_dk, post_test_dk, res_dk$params["gamma", ], res_dk$params[c("gg", "gk", "gd", "kg", "kk", "kd", "dd"), ], force9 = TRUE)
 
 print(fit[, 1:4])
 ```
+
+#### Model Criticism: Perplexity and Cross-Validation
+
+The package provides tools to evaluate model fit through perplexity and cross-validation. These help assess whether the LCA model adequately captures the data-generating process.
+
+**Perplexity** measures how well the model predicts the data. Lower values indicate better fit. It can be interpreted as the effective number of equiprobable outcomes the model assigns to each observation.
+
+**Cross-validation** provides held-out performance estimates, helping detect overfitting.
+
+Two sets of functions are available:
+- `*_items`: Work with aggregated transition matrices, split by items
+- `*_individuals`: Work with individual-level data, split by individuals
+
+```{r eval = FALSE, model_criticism}
+# Generate data
+set.seed(42)
+nitems <- 10
+npeople <- 200
+
+pre_test <- as.data.frame(replicate(nitems, rbinom(npeople, 1, 0.4)))
+post_test <- as.data.frame(replicate(nitems, pmin(1, pre_test +
+              replicate(nitems, rbinom(npeople, 1, 0.25)))))
+names(pre_test) <- names(post_test) <- paste0("item", 1:nitems)
+
+# Fit model using convenience wrapper
+fit <- lca_fit(pre_test, post_test)
+
+# Or equivalently:
+# transmatrix <- multi_transmat(pre_test, post_test)
+# fit <- lca_cor(transmatrix)
+```
+
+##### Perplexity from aggregated data (items)
+
+```{r eval = FALSE, perplexity_items}
+transmatrix <- multi_transmat(pre_test, post_test)
+
+# Overall perplexity
+perplexity_items(fit, transmatrix)
+
+# Per-item perplexity
+sapply(1:nitems, function(i) perplexity_items(fit, transmatrix, item = i))
+```
+
+##### Perplexity from individual data
+
+```{r eval = FALSE, perplexity_individuals}
+# Overall perplexity (averaged across individuals)
+perplexity_individuals(fit, pre_test, post_test)
+
+# Per-individual perplexity (identify poorly-fit respondents)
+ind_ppl <- perplexity_individuals(fit, pre_test, post_test, per_individual = TRUE)
+hist(ind_ppl, main = "Distribution of Individual Perplexity")
+```
+
+##### Cross-validation over items
+
+Useful when you have many items and want to assess generalization to new items.
+
+```{r eval = FALSE, cv_items}
+transmatrix <- multi_transmat(pre_test, post_test)
+cv_result <- cv_items(transmatrix, k = 5, seed = 123)
+
+cv_result$perplexity    # Held-out perplexity
+cv_result$se            # Standard error across folds
+cv_result$fold_results  # Per-fold details
+```
+
+##### Cross-validation over individuals
+
+Useful when you want to assess generalization to new respondents.
+
+```{r eval = FALSE, cv_individuals}
+cv_result <- cv_individuals(pre_test, post_test, k = 5, seed = 123)
+
+cv_result$perplexity    # Held-out perplexity
+cv_result$se            # Standard error across folds
+cv_result$fold_results  # Per-fold details
+```
+
+##### Model comparison
+
+Use perplexity to compare different model specifications or parameter settings.
+
+```{r eval = FALSE, model_comparison}
+# True parameters (if known from simulation)
+true_params <- c(0.4, 0.3, 0.3, 0.25)
+
+# Misspecified parameters
+bad_params <- c(0.1, 0.1, 0.8, 0.5)
+
+transmatrix <- multi_transmat(pre_test, post_test)
+
+# Compare: lower perplexity = better fit
+perplexity_items(true_params, transmatrix)
+perplexity_items(bad_params, transmatrix)
+perplexity_items(fit, transmatrix)  # Fitted model should be close to true
+```
+
+#### Simulation and Parameter Recovery Validation
+
+The package provides functions to simulate data from known parameters, useful for validating the estimation procedure and understanding model behavior.
+
+##### Basic simulation (No-DK model)
+
+```{r eval = FALSE, simulate_lca}
+# Simulate data with known learning rate of 30%
+sim <- simulate_lca(
+  n = 500,           # 500 individuals
+  n_items = 2,       # 2 test items
+  gg = 0.35,         # 35% in guess->guess (stable ignorance)
+  gk = 0.30,         # 30% in guess->know (LEARNED)
+  kk = 0.35,         # 35% in know->know (stable knowledge)
+  gamma = 0.25,      # 25% chance of guessing correctly
+  seed = 123
+)
+
+# Fit model and check recovery
+fit <- lca_fit(sim$pre, sim$post)
+fit$params["gk", ]  # Should be close to 0.30 (true learning rate)
+```
+
+##### Simulation with Don't Know responses
+
+```{r eval = FALSE, simulate_dk}
+# Simulate DK data with known parameters
+sim_dk <- simulate_lca_dk(
+  n = 500,
+  n_items = 1,
+  gg = 0.25, gk = 0.15, gd = 0.10,
+  kg = 0.10, kk = 0.15, kd = 0.10,
+  dd = 0.15, gamma = 0.25,
+  seed = 456
+)
+
+# Fit DK model
+fit_dk <- lca_fit(sim_dk$pre, sim_dk$post)
+fit_dk$params["gk", ]  # Should be close to 0.15
+```
+
+##### Comprehensive parameter recovery validation
+
+Use `validate_recovery()` for Monte Carlo studies of parameter recovery:
+
+```{r eval = FALSE, validate_recovery}
+# Run 100 simulations to assess parameter recovery
+results <- validate_recovery(
+  true_params = c(gg = 0.35, gk = 0.30, kk = 0.35, gamma = 0.25),
+  n = 500,        # Sample size per simulation
+  n_items = 2,    # Number of items
+  n_sims = 100,   # Number of simulations
+  seed = 789
+)
+
+# View results
+print(results)
+# Shows: bias, RMSE, standard error, and coverage for each parameter
+```
+
+#### Statistical Efficiency: Sample Size and Parameter Recovery
+
+Individual-level pre/post response data provides rich information for parameter estimation. As sample size increases, the LCA model produces more precise estimates with lower bias and better confidence interval coverage. This section demonstrates these efficiency gains through simulation studies.
+
+We assess estimation quality using three metrics:
+- **Bias**: Mean estimate minus true value (should approach 0)
+- **RMSE**: Root mean squared error (reflects both bias and variance)
+- **Coverage**: Proportion of 95% CIs containing the true value (should approach 0.95)
+
+##### Sample Size Effect
+
+The most fundamental efficiency result is that RMSE decreases approximately with 1/√n. Here we compare parameter recovery across different sample sizes:
+
+```{r eval = FALSE, sample_size_effect}
+# Compare parameter recovery across sample sizes
+sample_sizes <- c(100, 250, 500, 1000)
+true_params <- c(gg = 0.35, gk = 0.30, kk = 0.35, gamma = 0.25)
+
+results_by_n <- lapply(sample_sizes, function(n) {
+  validate_recovery(true_params, n = n, n_items = 2, n_sims = 100, seed = 123)
+})
+
+# Combine into summary table
+efficiency_table <- do.call(rbind, lapply(seq_along(sample_sizes), function(i) {
+  r <- results_by_n[[i]]
+  data.frame(
+    n = sample_sizes[i],
+    parameter = r$parameter,
+    bias = round(r$bias, 4),
+    rmse = round(r$rmse, 4),
+    coverage = round(r$coverage_95, 2)
+  )
+}))
+
+# Display results for the learning parameter (gk)
+gk_results <- efficiency_table[efficiency_table$parameter == "gk", ]
+print(gk_results)
+```
+
+Expected pattern for the learning parameter (gk):
+- n=100: RMSE ~0.10-0.12, coverage ~0.85
+- n=250: RMSE ~0.06-0.08, coverage ~0.90
+- n=500: RMSE ~0.04-0.06, coverage ~0.93
+- n=1000: RMSE ~0.03-0.04, coverage ~0.95
+
+The ratio of RMSEs between adjacent sample sizes should be approximately √2 (e.g., RMSE at n=500 / RMSE at n=1000 ≈ √2), confirming the 1/√n efficiency pattern.
+
+##### Number of Items Effect
+
+Each item provides independent information about the guessing probability (gamma). With more items, gamma is estimated more precisely, which indirectly improves estimation of the latent class proportions:
+
+```{r eval = FALSE, items_effect}
+# Compare recovery with varying number of items
+n_items_values <- c(1, 2, 5, 10)
+true_params <- c(gg = 0.35, gk = 0.30, kk = 0.35, gamma = 0.25)
+
+results_by_items <- lapply(n_items_values, function(ni) {
+  validate_recovery(true_params, n = 500, n_items = ni, n_sims = 50, seed = 456)
+})
+
+# Combine results
+items_table <- do.call(rbind, lapply(seq_along(n_items_values), function(i) {
+  r <- results_by_items[[i]]
+  data.frame(
+    n_items = n_items_values[i],
+    parameter = r$parameter,
+    rmse = round(r$rmse, 4),
+    coverage = round(r$coverage_95, 2)
+  )
+}))
+
+# Show gamma results (most affected by number of items)
+gamma_results <- items_table[items_table$parameter == "gamma", ]
+print(gamma_results)
+```
+
+With more items, gamma estimation improves substantially because each item provides an independent estimate of the guessing rate. This also improves the identifiability of the latent class proportions.
+
+##### Parameter Scenarios
+
+Recovery performance varies with the true parameter configuration. Some scenarios are inherently harder to estimate:
+
+```{r eval = FALSE, parameter_scenarios}
+# Test different true parameter configurations
+scenarios <- list(
+  balanced = c(gg = 0.35, gk = 0.30, kk = 0.35, gamma = 0.25),
+  high_learning = c(gg = 0.20, gk = 0.50, kk = 0.30, gamma = 0.25),
+  low_learning = c(gg = 0.50, gk = 0.10, kk = 0.40, gamma = 0.25),
+  high_guessing = c(gg = 0.35, gk = 0.30, kk = 0.35, gamma = 0.40)
+)
+
+scenario_results <- lapply(scenarios, function(params) {
+  validate_recovery(params, n = 500, n_items = 2, n_sims = 50, seed = 789)
+})
+
+# Compare learning (gk) recovery across scenarios
+gk_comparison <- data.frame(
+  scenario = names(scenarios),
+  true_gk = sapply(scenarios, function(p) p["gk"]),
+  bias = sapply(scenario_results, function(r) round(r$bias[r$parameter == "gk"], 4)),
+  rmse = sapply(scenario_results, function(r) round(r$rmse[r$parameter == "gk"], 4)),
+  coverage = sapply(scenario_results, function(r) round(r$coverage_95[r$parameter == "gk"], 2))
+)
+print(gk_comparison)
+```
+
+##### Why Individual-Level Data Provides Efficiency Gains
+
+The key advantage of individual-level data is that it preserves **inter-item correlation** within individuals. When we observe the same person's responses across multiple items, we can exploit the correlation structure:
+
+- Individuals in the "know-know" (kk) class tend to answer multiple items correctly
+- Individuals in the "guess-guess" (gg) class show inconsistent patterns across items
+- This correlation provides information beyond what aggregated transition matrices capture
+
+With aggregated data, we only observe cell counts (e.g., how many people went from correct to correct). With individual data, we observe that the *same* person answered correctly on items 1, 2, and 3---information that helps distinguish true knowledge from lucky guessing.

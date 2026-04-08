@@ -2,12 +2,12 @@
 % Please edit documentation in R/internal-helpers.R
 \name{eqn1}
 \alias{eqn1}
-\title{Constraints: Sum to 1}
+\title{Sum to 1 constraint (no DK)}
 \usage{
 eqn1(x, g1 = NA, data)
 }
 \arguments{
-\item{x}{lgg, lgk, lkk}
+\item{x}{gg, gk, kk}
 
 \item{g1}{guess}
 

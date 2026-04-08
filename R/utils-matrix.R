@@ -42,8 +42,6 @@ count_transitions <- function(pre_responses, pst_responses) {
 #' @param add_aggregate whether to add aggregate row
 #' @return formatted matrix
 format_transition_matrix <- function(transition_list, n_items, add_aggregate = FALSE) {
-  # Determine matrix dimensions
-  ncols <- length(transition_list[[1]])
   
   # Create matrix
   result_matrix <- matrix(
@@ -72,24 +70,29 @@ format_transition_matrix <- function(transition_list, n_items, add_aggregate = F
 #' @param model_type "nodk" or "dk" model
 #' @return vector of expected values
 calculate_expected_values <- function(gamma_i, params, total_obs, model_type = "nodk") {
+  g <- gamma_i
+
   if (model_type == "nodk") {
+    names(params) <- c("gg", "gk", "kk")
     expected <- numeric(4)
-    expected[1] <- (1 - gamma_i) * (1 - gamma_i) * params[1] * total_obs
-    expected[2] <- ((1 - gamma_i) * gamma_i * params[1] + (1 - gamma_i) * params[2]) * total_obs
-    expected[3] <- (1 - gamma_i) * params[3] * params[1] * total_obs
-    expected[4] <- (gamma_i * gamma_i * params[1] + gamma_i * params[2] + params[3]) * total_obs
+    expected[CELL_00] <- (1 - g) * (1 - g) * params["gg"] * total_obs
+    expected[CELL_01] <- ((1 - g) * g * params["gg"] + (1 - g) * params["gk"]) * total_obs
+    expected[CELL_10] <- (1 - g) * g * params["gg"] * total_obs
+    expected[CELL_11] <- (g * g * params["gg"] + g * params["gk"] + params["kk"]) * total_obs
   } else {
+    names(params) <- c("gg", "gk", "gd", "kg", "kk", "kd", "dd")
     expected <- numeric(9)
-    expected[1] <- (1 - gamma_i) * (1 - gamma_i) * params[1] * total_obs
-    expected[2] <- ((1 - gamma_i) * gamma_i * params[1] + (1 - gamma_i) * params[2]) * total_obs
-    expected[3] <- (1 - gamma_i) * params[3] * total_obs
-    expected[4] <- (1 - gamma_i) * gamma_i * params[1] * total_obs
-    expected[5] <- (gamma_i * gamma_i * params[1] + gamma_i * params[2] + params[4]) * total_obs
-    expected[6] <- gamma_i * params[3] * total_obs
-    expected[7] <- (1 - gamma_i) * params[5] * total_obs
-    expected[8] <- (gamma_i * params[5] + params[6]) * total_obs
-    expected[9] <- params[7] * total_obs
+    expected[CELL_00_DK] <- (1 - g) * (1 - g) * params["gg"] * total_obs
+    expected[CELL_01_DK] <- ((1 - g) * g * params["gg"] + (1 - g) * params["gk"]) * total_obs
+    expected[CELL_0D] <- (1 - g) * params["gd"] * total_obs
+    expected[CELL_10_DK] <- ((1 - g) * g * params["gg"] + params["kg"]) * total_obs
+    expected[CELL_11_DK] <- (g * g * params["gg"] + g * params["gk"] +
+                               g * params["kg"] + params["kk"]) * total_obs
+    expected[CELL_1D] <- (g * params["gd"] + params["kd"]) * total_obs
+    expected[CELL_D0] <- params["kg"] * total_obs
+    expected[CELL_D1] <- (g * params["gk"] + params["kd"]) * total_obs
+    expected[CELL_DD] <- params["dd"] * total_obs
   }
-  
+
   expected
 }

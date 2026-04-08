@@ -7,7 +7,7 @@
 eq1dk(x, g1 = NA, data)
 }
 \arguments{
-\item{x}{lgg, lgk, lkk}
+\item{x}{gg, gk, gd, kg, kk, kd, dd}
 
 \item{g1}{guess}
 

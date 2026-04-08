@@ -5,11 +5,13 @@
 #' @param pre_test_var Required. A vector carrying pre-test scores of a particular item. Only 
 #' @param pst_test_var Required. A vector carrying post-test scores of a particular item
 #' @param subgroup     Optional. A Boolean vector indicating rows of the relevant subset.  
-#' @param force9       Optional. There are cases where DK data doesn't have DK. But we need the entire matrix. By default it is FALSE.
+#' @param force9       Optional. There are cases where DK data doesn't have DK.
+#'   But we need the entire matrix. By default it is FALSE.
 #' @return a numeric vector. 
 #' Assume 1 denotes correct answer, 0 and NA incorrect, and d 'don't know.'
 #' When there is no don't know option and no missing, the entries are: x00, x10, x01, x11
-#' When there is a don't know option, the entries of the vector are: x00, x10, xd0, x01, x11, xd1, xd0, x1d, xdd
+#' When there is a don't know option, the entries of the vector are:
+#'   x00, x10, xd0, x01, x11, xd1, xd0, x1d, xdd
 #' @export
 #' @examples
 #' pre_test_var <- c(1,0,0,1,0,1,0)
@@ -22,29 +24,15 @@
 #' transmat(pre_test_var, pst_test_var)
 
 transmat <- function(pre_test_var, pst_test_var, subgroup = NULL,
-                    force9 = FALSE) {
+                     force9 = FALSE) {
   
   # Input validation
-  if (is.null(pre_test_var) || is.null(pst_test_var)) {
-    stop("Both pre_test_var and pst_test_var must be provided.")
-  }
+  validate_required(pre_test_var = pre_test_var, pst_test_var = pst_test_var)
+  validate_equal_length(pre_test_var, pst_test_var, "pre_test_var", "pst_test_var")
   
-  if (length(pre_test_var) != length(pst_test_var)) {
-    stop("pre_test_var and pst_test_var must have the same length.")
-  }
-  
-  if (length(pre_test_var) == 0) {
-    stop("Input vectors cannot be empty.")
-  }
-
   # Apply subgroup filter if provided
+  validate_subgroup(subgroup, length(pre_test_var))
   if (!is.null(subgroup)) {
-    if (length(subgroup) != length(pre_test_var)) {
-      stop("subgroup must have the same length as input vectors.")
-    }
-    if (!is.logical(subgroup)) {
-      stop("subgroup must be a logical vector.")
-    }
     pre_test_var <- pre_test_var[subgroup]
     pst_test_var <- pst_test_var[subgroup]
   }
@@ -68,5 +56,5 @@ transmat <- function(pre_test_var, pst_test_var, subgroup = NULL,
     transitions <- dk_transitions
   }
   
-  return(invisible(transitions))
+  invisible(transitions)
 }

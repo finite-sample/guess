@@ -8,7 +8,7 @@
 #' @param pre_test data.frame carrying pre_test items
 #' @param pst_test data.frame carrying pst_test items 
 #' @param g estimates of gamma produced from \code{\link{lca_cor}}
-#' @param est.param estimated parameters produced from \code{\link{lca_cor}}
+#' @param est_param estimated parameters produced from \code{\link{lca_cor}}
 #' @param force9 Optional. Force 9-column format even if no DK responses. Default is FALSE.
 #' @return matrix with two rows: top row carrying chi-square value, bottom row p-values
 #' @export
@@ -19,20 +19,18 @@
 #' res <- lca_cor(transmatrix)
 #' 
 #' # Calculate goodness of fit
-#' fit_stats <- fit_model(pre_test, pst_test, res$param.lca[nrow(res$param.lca), ], 
-#'                        res$param.lca[-nrow(res$param.lca), ])
+#' fit_stats <- fit_model(pre_test, pst_test, res$params[nrow(res$params), ],
+#'                        res$params[-nrow(res$params), ])
 #' }
 
-fit_model <- function(pre_test, pst_test, g, est.param, force9 = FALSE) {
+fit_model <- function(pre_test, pst_test, g, est_param, force9 = FALSE) {
   
   # Input validation
   validate_dataframe(pre_test, "pre_test")
   validate_dataframe(pst_test, "pst_test")
   validate_compatible_dataframes(pre_test, pst_test)
   
-  if (is.null(g) || is.null(est.param)) {
-    stop("Both g and est.param must be provided.")
-  }
+  validate_required(g = g, est_param = est_param)
   
   # Generate transition matrix
   data <- multi_transmat(pre_test, pst_test, force9 = force9)
@@ -56,7 +54,7 @@ fit_model <- function(pre_test, pst_test, g, est.param, force9 = FALSE) {
     
     # Get item-specific gamma and parameters
     gamma_i <- if (is.list(g)) g[[i]] else g[i]
-    params_i <- if (is.matrix(est.param)) est.param[, i] else est.param
+    params_i <- if (is.matrix(est_param)) est_param[, i] else est_param
     
     # Calculate expected values using utility function
     total_obs <- sum(data[i, ])
@@ -71,9 +69,10 @@ fit_model <- function(pre_test, pst_test, g, est.param, force9 = FALSE) {
     }
     
     # Perform chi-square test
-    observed_probs <- data[i, ] / total_obs
+    observed <- data[i, ]
+    expected_probs <- expected / sum(expected)
     chi_test <- suppressWarnings(
-      chisq.test(expected, p = observed_probs)
+      chisq.test(observed, p = expected_probs)
     )
     
     # Store results
@@ -87,12 +86,12 @@ fit_model <- function(pre_test, pst_test, g, est.param, force9 = FALSE) {
 # Maintain backward compatibility with existing function names
 #' @rdname fit_model
 #' @export
-fit_dk <- function(pre_test, pst_test, g, est.param, force9 = FALSE) {
-  fit_model(pre_test, pst_test, g, est.param, force9 = force9)
+fit_dk <- function(pre_test, pst_test, g, est_param, force9 = FALSE) {
+  fit_model(pre_test, pst_test, g, est_param, force9 = force9)
 }
 
 #' @rdname fit_model  
 #' @export
-fit_nodk <- function(pre_test, pst_test, g, est.param) {
-  fit_model(pre_test, pst_test, g, est.param, force9 = FALSE)
+fit_nodk <- function(pre_test, pst_test, g, est_param) {
+  fit_model(pre_test, pst_test, g, est_param, force9 = FALSE)
 }

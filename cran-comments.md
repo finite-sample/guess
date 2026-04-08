@@ -1,51 +1,33 @@
-## Resubmission (v0.2.1)
-This version includes modernization updates, code quality improvements, and enhanced CI/CD infrastructure.
+## Submission (v0.4.0)
+This version fixes DK model parameter names and formulas, and improves code maintainability with named parameter access.
 
 ## Test environments
-* local macOS 15.2 (Darwin 25.2.0), R 4.5.1
-* win-builder: R-devel (submitted, awaiting results)  
-* win-builder: R-release (submitted, awaiting results)
+* local macOS 15.4 (Darwin 25.3.0), R 4.5.1
 * GitHub Actions (ubuntu-latest): R-devel, R-release, R-oldrel-1
-* GitHub Actions (windows-latest): R-release  
+* GitHub Actions (windows-latest): R-release
 * GitHub Actions (macOS-latest): R-release
 
 ## R CMD check results
-0 errors ✔ | 0 warnings ✔ | 1 note ✖
+0 errors | 0 warnings | 0 notes
 
-* NOTE: unable to verify current time (local system issue only)
+## Changes since v0.3.0
 
-## Changes in version 0.2.1
+### Breaking Changes
+* DK model parameter names now match the likelihood function:
+  - Old: lgg, lgk, lgc, lkk, lcg, lck, lcc, gamma
+  - New: lgg, lgk, lgd, lkg, lkk, lkd, ldd, gamma
 
-### Infrastructure & Modernization
-* Added comprehensive GitHub Actions CI/CD workflows (R CMD check, coverage, pkgdown)
-* Updated minimum R version requirement to 4.0.0
-* Enhanced package metadata in DESCRIPTION
+### Improvements
+* All internal code uses named row access instead of numeric indices
+* GOF functions (fit_model, fit_dk, fit_nodk) use formulas consistent with likelihood
+* lca_adj correctly handles both DK and non-DK models
+* Model criticism functions use correct DK model formulas
+* Improved README with clearer user documentation
 
-### Code Modernization  
-* Replaced `T`/`F` with `TRUE`/`FALSE` throughout package
-* Updated logical operators to use `||` for scalar comparisons
-* Replaced `1:n` patterns with `seq_len(n)` for safer loops
-* Removed deprecated `stringsAsFactors` arguments
-* Replaced deprecated `expect_that()` with modern testthat functions
+### Bug Fixes
+* Fixed DK model cell probabilities in cell_probs()
+* Fixed expected values calculation in calculate_expected_values()
 
-### Code Quality
-* Removed debug print statements, added optional progress indicators
-* Added input validation to `nona()` function  
-* Re-enabled and configured lintr for code quality checks
-* Improved .gitignore and .Rbuildignore patterns
-
-### Documentation
-* Updated pkgdown configuration URLs
-* Updated README with modern CI badges
-* Comprehensive NEWS.md update
-
-## Additional checks
-* All URLs verified and working (urlchecker::url_check())
-* Spelling checked (spelling::spell_check_package()) - No spelling errors found
-* Added inst/WORDLIST to handle technical terms and proper names
-* Test coverage: >95% for all core modules
-* 264 tests pass successfully
-
-## Backward compatibility
-* All changes maintain full backward compatibility
-* Deprecated functions retained with proper documentation
+### Testing
+* 678 tests passing
+* R CMD check: 0 errors, 0 warnings, 0 notes

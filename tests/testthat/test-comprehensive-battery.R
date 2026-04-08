@@ -52,14 +52,14 @@ test_that("Large-scale simulation data validation (based on data-raw/fakeNoDK.R)
   expect_equal(ncol(trans_matrix), 4)
   expect_true(all(rowSums(trans_matrix) > 0))  # No empty items
   
-  # Test 2: LCA correction 
+  # Test 2: LCA correction
   lca_results <- lca_cor(trans_matrix)
   expect_true(is.list(lca_results))
-  expect_true("param.lca" %in% names(lca_results))
-  expect_true("est.learning" %in% names(lca_results))
-  expect_equal(nrow(lca_results$param.lca), 4)  # lgg, lgk, lkk, gamma
-  expect_equal(ncol(lca_results$param.lca), nitems)
-  expect_equal(length(lca_results$est.learning), nitems)
+  expect_true("params" %in% names(lca_results))
+  expect_true("learning" %in% names(lca_results))
+  expect_equal(nrow(lca_results$params), 4)  # gg, gk, kk, gamma
+  expect_equal(ncol(lca_results$params), nitems)
+  expect_equal(length(lca_results$learning), nitems)
   
   # Test 3: Standard correction
   std_results <- stnd_cor(pre_test, post_test, lucky = gamma)
@@ -70,8 +70,8 @@ test_that("Large-scale simulation data validation (based on data-raw/fakeNoDK.R)
   
   # Test 4: Unified fit function
   fit_results <- fit_model(pre_test, post_test,
-                          lca_results$param.lca[4, ],
-                          lca_results$param.lca[1:3, ])
+                          lca_results$params["gamma", ],
+                          lca_results$params[c("gg", "gk", "kk"), ])
   expect_true(is.matrix(fit_results) || is.data.frame(fit_results))
   expect_true(ncol(fit_results) >= nitems)
   
@@ -89,7 +89,7 @@ test_that("Large-scale simulation data validation (based on data-raw/fakeNoDK.R)
   
   # Test 7: Validation of learning estimates
   true_learning <- colMeans(wave2 - wave1, na.rm = TRUE)
-  lca_learning <- lca_results$est.learning
+  lca_learning <- lca_results$learning
   
   expect_true(all(lca_learning >= -1 & lca_learning <= 1))
   expect_true(mean(lca_learning) >= 0)  # Should show positive learning on average
@@ -172,18 +172,18 @@ test_that("Don't Know simulation validation (based on data-raw/fakeDK.R)", {
   
   # Test LCA with DK
   lca_results_dk <- lca_cor(trans_matrix_dk)
-  expect_equal(nrow(lca_results_dk$param.lca), 8)  # 7 lambdas + 1 gamma
-  expect_equal(ncol(lca_results_dk$param.lca), nitems)
-  
+  expect_equal(nrow(lca_results_dk$params), 8)  # 7 lambdas + 1 gamma
+  expect_equal(ncol(lca_results_dk$params), nitems)
+
   # Test fit with DK
   fit_results_dk <- fit_model(pre_df, post_df,
-                             lca_results_dk$param.lca[8, ],
-                             lca_results_dk$param.lca[1:7, ],
+                             lca_results_dk$params["gamma", ],
+                             lca_results_dk$params[c("gg", "gk", "gd", "kg", "kk", "kd", "dd"), ],
                              force9 = TRUE)
   expect_true(is.matrix(fit_results_dk) || is.data.frame(fit_results_dk))
-  
+
   # Validate learning estimates
-  expect_true(all(lca_results_dk$est.learning >= -1 & lca_results_dk$est.learning <= 1))
+  expect_true(all(lca_results_dk$learning >= -1 & lca_results_dk$learning <= 1))
 })
 
 test_that("Backward compatibility and edge case validation", {
@@ -214,17 +214,17 @@ test_that("Backward compatibility and edge case validation", {
   trans_matrix <- multi_transmat(pre_test, post_test)
   lca_results <- lca_cor(trans_matrix)
   
-  # Test backward compatibility - old and new fit functions should work
-  old_fit <- fit_nodk(pre_test, post_test,
-                     lca_results$param.lca[4, ],
-                     lca_results$param.lca[1:3, ])
-  
-  new_fit <- fit_model(pre_test, post_test,
-                      lca_results$param.lca[4, ],
-                      lca_results$param.lca[1:3, ])
-  
-  expect_equal(dim(old_fit), dim(new_fit))
-  expect_true(all(abs(old_fit - new_fit) < 1e-10))  # Should be identical
+  # Test backward compatibility - fit_nodk and fit_model should work
+  fit_nodk_result <- fit_nodk(pre_test, post_test,
+                     lca_results$params["gamma", ],
+                     lca_results$params[c("gg", "gk", "kk"), ])
+
+  fit_model_result <- fit_model(pre_test, post_test,
+                      lca_results$params["gamma", ],
+                      lca_results$params[c("gg", "gk", "kk"), ])
+
+  expect_equal(dim(fit_nodk_result), dim(fit_model_result))
+  expect_true(all(abs(fit_nodk_result - fit_model_result) < 1e-10))
   
   # Test edge case - all correct responses
   all_correct_pre <- data.frame(item1 = rep(1, n), item2 = rep(1, n))
@@ -236,9 +236,9 @@ test_that("Backward compatibility and edge case validation", {
   })
   
   # Test validation functions
-  expect_error(multi_transmat(data.frame(), post_test), "cannot be empty")
+  expect_error(multi_transmat(data.frame(), post_test), "Must have at least 1 rows")
   expect_error(stnd_cor(pre_test, post_test, lucky = c(-0.1, rep(0.25, nitems-1))), 
-               "must be between 0 and 1")
+               "Element 1 is not")
 })
 
 test_that("Performance and stress testing", {
@@ -272,6 +272,6 @@ test_that("Performance and stress testing", {
   elapsed <- as.numeric(difftime(end_time, start_time, units = "secs"))
   
   expect_true(elapsed < 30)  # Should complete in under 30 seconds
-  expect_equal(length(lca_results$est.learning), nitems)
+  expect_equal(length(lca_results$learning), nitems)
   expect_equal(length(std_results$learn), nitems)
 })

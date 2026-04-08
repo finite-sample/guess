@@ -2,12 +2,12 @@ context("Test Multi Transition Matrix Function")
 
 test_that("multi_transmat validates inputs correctly", {
   # Test NULL inputs
-  expect_error(multi_transmat(NULL, data.frame(x = 1:3)), "Specify pre_test data.frame.")
-  expect_error(multi_transmat(data.frame(x = 1:3), NULL), "Specify pst_test data.frame.")
+  expect_error(multi_transmat(NULL, data.frame(x = 1:3)), "Must be of type 'data.frame'")
+  expect_error(multi_transmat(data.frame(x = 1:3), NULL), "Must be of type 'data.frame'")
   
   # Test non-dataframe inputs
-  expect_error(multi_transmat(c(1, 2, 3), data.frame(x = 1:3)), "Specify pre_test data.frame.")
-  expect_error(multi_transmat(data.frame(x = 1:3), c(1, 2, 3)), "Specify pst_test data.frame.")
+  expect_error(multi_transmat(c(1, 2, 3), data.frame(x = 1:3)), "Must be of type 'data.frame'")
+  expect_error(multi_transmat(data.frame(x = 1:3), c(1, 2, 3)), "Must be of type 'data.frame'")
   
   # Test mismatched dimensions
   pre_test_diff <- data.frame(x = 1:3, y = 4:6)  # 2 columns
@@ -25,9 +25,9 @@ test_that("multi_transmat validates inputs correctly", {
   pre_test <- data.frame(x = 1:3)
   pst_test <- data.frame(y = 1:3)
   expect_error(multi_transmat(pre_test, pst_test, subgroup = c(TRUE, FALSE)), 
-               "subgroup must have the same length as number of rows")
+               "Must have length 3")
   expect_error(multi_transmat(pre_test, pst_test, subgroup = c(1, 0, 1)), 
-               "subgroup must be a logical vector.")
+               "Must be of type 'logical'")
 })
 
 test_that("multi_transmat works correctly without DK", {

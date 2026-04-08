@@ -15,7 +15,9 @@ lca_adj(pre = NULL, pst = NULL)
 list of pre and post adjusted responses
 }
 \description{
-Adjusts observed 1s based on item level parameters of the LCA model. Currently only takes data with Don't Know. And treats don't know responses as true confessions on ignorance.
+Adjusts observed 1s based on item level parameters of the LCA
+  model. Currently only takes data with Don't Know. And treats don't know
+  responses as true confessions on ignorance.
 If NAs are observed in the data, they are treating as acknowledgments of ignorance.
 }
 \examples{

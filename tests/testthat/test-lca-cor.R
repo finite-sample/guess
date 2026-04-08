@@ -37,18 +37,17 @@ test_that("lca_cor works with no-DK data", {
   
   # Check output structure
   expect_true(is.list(result))
-  expect_true("param.lca" %in% names(result))
-  expect_true("est.learning" %in% names(result))
-  
+  expect_true("params" %in% names(result))
+  expect_true("learning" %in% names(result))
+
   # Check parameter matrix structure
-  expect_true(is.matrix(result$param.lca))
-  expect_equal(nrow(result$param.lca), 4)
-  expect_equal(ncol(result$param.lca), 2)
-  expect_equal(rownames(result$param.lca), c("lgg", "lgk", "lkk", "gamma"))
-  
+  expect_true(is.matrix(result$params))
+  expect_equal(nrow(result$params), 4)
+  expect_equal(ncol(result$params), 2)
+  expect_equal(rownames(result$params), c("gg", "gk", "kk", "gamma"))
+
   # Check learning estimates
-  expect_true(is.matrix(result$est.learning))
-  expect_equal(ncol(result$est.learning), 2)
+  expect_equal(length(result$learning), 2)
 })
 
 test_that("lca_cor works with DK data", {
@@ -63,14 +62,14 @@ test_that("lca_cor works with DK data", {
   
   # Check output structure
   expect_true(is.list(result))
-  expect_true("param.lca" %in% names(result))
-  expect_true("est.learning" %in% names(result))
-  
+  expect_true("params" %in% names(result))
+  expect_true("learning" %in% names(result))
+
   # Check parameter matrix structure for DK model
-  expect_true(is.matrix(result$param.lca))
-  expect_equal(nrow(result$param.lca), 8)
-  expect_equal(ncol(result$param.lca), 2)
-  expect_equal(rownames(result$param.lca), c("lgg", "lgk", "lgc", "lkk", "lcg", "lck", "lcc", "gamma"))
+  expect_true(is.matrix(result$params))
+  expect_equal(nrow(result$params), 8)
+  expect_equal(ncol(result$params), 2)
+  expect_equal(rownames(result$params), c("gg", "gk", "gd", "kg", "kk", "kd", "dd", "gamma"))
 })
 
 test_that("lca_cor handles edge cases", {
@@ -80,8 +79,8 @@ test_that("lca_cor handles edge cases", {
   rownames(transmat_single) <- "item1"
   
   result <- lca_cor(transmat_single)
-  expect_equal(ncol(result$param.lca), 1)
-  expect_equal(ncol(result$est.learning), 1)
+  expect_equal(ncol(result$params), 1)
+  expect_equal(length(result$learning), 1)
   
   # All zeros case (should handle gracefully)
   transmat_zeros <- matrix(rep(0, 8), nrow = 2)
@@ -103,10 +102,10 @@ test_that("lca_cor parameter bounds are respected", {
   result <- lca_cor(transmat)
   
   # All parameters should be between 0 and 1
-  expect_true(all(result$param.lca >= 0, na.rm = TRUE))
-  expect_true(all(result$param.lca <= 1, na.rm = TRUE))
-  
+  expect_true(all(result$params >= 0, na.rm = TRUE))
+  expect_true(all(result$params <= 1, na.rm = TRUE))
+
   # Learning estimates should be reasonable
-  expect_true(all(result$est.learning >= -1, na.rm = TRUE))  # Allow some negative learning
-  expect_true(all(result$est.learning <= 1, na.rm = TRUE))
+  expect_true(all(result$learning >= -1, na.rm = TRUE))
+  expect_true(all(result$learning <= 1, na.rm = TRUE))
 })

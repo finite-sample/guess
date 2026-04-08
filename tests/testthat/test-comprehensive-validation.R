@@ -37,9 +37,9 @@ test_that("All core functions work together in realistic workflow", {
     std_results <- stnd_cor(pre_test, post_test, lucky = rep(0.25, n_items))
     
     # 4. Test fit
-    fit_results <- fit_model(pre_test, post_test, 
-                           lca_results$param.lca[4, ],
-                           lca_results$param.lca[1:3, ])
+    fit_results <- fit_model(pre_test, post_test,
+                           lca_results$params["gamma", ],
+                           lca_results$params[c("gg", "gk", "kk"), ])
     
     # 5. Test group adjustment  
     group_results <- group_adj(pre_test, post_test, rep(0.25, n_items))
@@ -48,13 +48,14 @@ test_that("All core functions work together in realistic workflow", {
   # Validate results structure
   expect_equal(nrow(trans_matrix), n_items)
   expect_equal(ncol(trans_matrix), 4)
-  expect_true(all(names(lca_results) %in% c("param.lca", "est.learning")))
+  expect_true(inherits(lca_results, "guess_fit"))
+  expect_true(all(c("params", "learning") %in% names(lca_results)))
   expect_equal(length(std_results$learn), n_items)
   expect_true(is.list(group_results))
   expect_equal(length(group_results$learn), n_items)
   
   # Validate learning estimates are reasonable
-  expect_true(all(lca_results$est.learning >= -1 & lca_results$est.learning <= 1))
+  expect_true(all(lca_results$learning >= -1 & lca_results$learning <= 1))
   expect_true(all(std_results$learn >= -1 & std_results$learn <= 1))
 })
 
@@ -88,14 +89,14 @@ test_that("Functions handle Don't Know responses correctly", {
     
     # Test fit with DK
     fit_results_dk <- fit_model(pre_test_dk, post_test_dk,
-                              lca_results_dk$param.lca[8, ],
-                              lca_results_dk$param.lca[1:7, ],
+                              lca_results_dk$params["gamma", ],
+                              lca_results_dk$params[c("gg", "gk", "gd", "kg", "kk", "kd", "dd"), ],
                               force9 = TRUE)
   })
-  
+
   # Validate DK-specific results
   expect_equal(ncol(trans_matrix_dk), 9)  # 3x3 transition matrix
-  expect_equal(nrow(lca_results_dk$param.lca), 8)  # 7 lambdas + 1 gamma
+  expect_equal(nrow(lca_results_dk$params), 8)  # 7 lambdas + 1 gamma
   expect_true(is.matrix(fit_results_dk) || is.data.frame(fit_results_dk))
 })
 
@@ -139,19 +140,19 @@ test_that("Backward compatibility maintained", {
   trans_mat <- multi_transmat(pre_test, post_test)
   lca_result <- lca_cor(trans_mat)
   
-  # Test that old fit functions still work
+  # Test that both fit functions work
   expect_no_error({
-    old_fit_nodk <- fit_nodk(pre_test, post_test,
-                           lca_result$param.lca[4, ],
-                           lca_result$param.lca[1:3, ])
+    fit_nodk_result <- fit_nodk(pre_test, post_test,
+                           lca_result$params["gamma", ],
+                           lca_result$params[c("gg", "gk", "kk"), ])
   })
-  
+
   expect_no_error({
-    new_fit <- fit_model(pre_test, post_test,
-                        lca_result$param.lca[4, ],
-                        lca_result$param.lca[1:3, ])
+    fit_model_result <- fit_model(pre_test, post_test,
+                        lca_result$params["gamma", ],
+                        lca_result$params[c("gg", "gk", "kk"), ])
   })
-  
+
   # Results should be equivalent
-  expect_equal(dim(old_fit_nodk), dim(new_fit))
+  expect_equal(dim(fit_nodk_result), dim(fit_model_result))
 })

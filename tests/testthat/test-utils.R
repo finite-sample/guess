@@ -129,7 +129,7 @@ test_that("format_transition_matrix works correctly", {
 
 test_that("calculate_expected_values works correctly for nodk model", {
   gamma_i <- 0.25
-  params <- c(0.3, 0.1, 0.1)  # lgg, lgk, lkk
+  params <- c(0.3, 0.1, 0.1)  # gg, gk, kk
   total_obs <- 100
   
   expected <- calculate_expected_values(gamma_i, params, total_obs, "nodk")
@@ -143,10 +143,30 @@ test_that("calculate_expected_values works correctly for dk model", {
   gamma_i <- 0.25
   params <- c(0.3, 0.1, 0.2, 0.05, 0.1, 0.1, 0.05)  # 7 parameters for DK model
   total_obs <- 100
-  
+
   expected <- calculate_expected_values(gamma_i, params, total_obs, "dk")
-  
+
   expect_equal(length(expected), 9)
   expect_true(all(expected >= 0))
   expect_true(sum(expected) <= total_obs * 1.1)  # Allow tolerance
+})
+
+test_that("calculate_expected_values matches likelihood formulas for nodk model", {
+  gamma_i <- 0.3
+  gg <- 0.4
+  gk <- 0.3
+  kk <- 0.3
+  params <- c(gg, gk, kk)
+  total_obs <- 1
+
+  expected <- calculate_expected_values(gamma_i, params, total_obs, "nodk")
+
+  vec <- numeric(4)
+  vec[1] <- (1 - gamma_i) * (1 - gamma_i) * gg
+  vec[2] <- (1 - gamma_i) * gamma_i * gg + (1 - gamma_i) * gk
+  vec[3] <- (1 - gamma_i) * gamma_i * gg
+  vec[4] <- gamma_i * gamma_i * gg + gamma_i * gk + kk
+
+  expect_equal(expected, vec)
+  expect_equal(sum(vec), 1.0)
 })

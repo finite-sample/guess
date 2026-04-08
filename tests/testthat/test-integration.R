@@ -33,19 +33,19 @@ test_that("complete workflow without DK works", {
   lca_results <- lca_cor(trans_matrix)
   
   expect_true(is.list(lca_results))
-  expect_true("param.lca" %in% names(lca_results))
-  expect_true("est.learning" %in% names(lca_results))
-  expect_equal(ncol(lca_results$param.lca), n_items)
-  expect_equal(nrow(lca_results$param.lca), 4)  # lgg, lgk, lkk, gamma
-  
+  expect_true("params" %in% names(lca_results))
+  expect_true("learning" %in% names(lca_results))
+  expect_equal(ncol(lca_results$params), n_items)
+  expect_equal(nrow(lca_results$params), 4)  # gg, gk, kk, gamma
+
   # Parameters should be reasonable
-  expect_true(all(lca_results$param.lca >= 0, na.rm = TRUE))
-  expect_true(all(lca_results$param.lca <= 1, na.rm = TRUE))
-  
+  expect_true(all(lca_results$params >= 0, na.rm = TRUE))
+  expect_true(all(lca_results$params <= 1, na.rm = TRUE))
+
   # Step 3: Calculate goodness of fit
-  fit_stats <- fit_model(pre_test, pst_test, 
-                         lca_results$param.lca["gamma", ], 
-                         lca_results$param.lca[1:3, ])
+  fit_stats <- fit_model(pre_test, pst_test,
+                         lca_results$params["gamma", ],
+                         lca_results$params[c("gg", "gk", "kk"), ])
   
   expect_true(is.matrix(fit_stats))
   expect_equal(dim(fit_stats), c(2, n_items))
@@ -87,12 +87,12 @@ test_that("complete workflow with DK works", {
   # LCA with DK data
   lca_results <- lca_cor(trans_matrix)
   
-  expect_equal(nrow(lca_results$param.lca), 8)  # DK model has 8 parameters
-  expect_equal(ncol(lca_results$param.lca), 2)
-  
+  expect_equal(nrow(lca_results$params), 8)  # DK model has 8 parameters
+  expect_equal(ncol(lca_results$params), 2)
+
   # All parameters should be valid
-  expect_true(all(lca_results$param.lca >= 0, na.rm = TRUE))
-  expect_true(all(lca_results$param.lca <= 1, na.rm = TRUE))
+  expect_true(all(lca_results$params >= 0, na.rm = TRUE))
+  expect_true(all(lca_results$params <= 1, na.rm = TRUE))
 })
 
 test_that("workflow handles edge cases gracefully", {
@@ -111,7 +111,7 @@ test_that("workflow handles edge cases gracefully", {
   
   # LCA should still work
   lca_results <- lca_cor(trans_matrix)
-  expect_true(all(lca_results$est.learning <= 0.1, na.rm = TRUE))  # Little to no learning
+  expect_true(all(lca_results$learning <= 0.1, na.rm = TRUE))  # Little to no learning
   
   # Case 2: Perfect learning (all wrong -> all right)
   pre_wrong <- data.frame(item1 = rep(0, 10))
@@ -164,8 +164,8 @@ test_that("workflows are consistent between approaches", {
   
   # Results should be identical
   expect_equal(trans1, trans2)
-  expect_equal(lca1$param.lca, lca2$param.lca)
-  expect_equal(lca1$est.learning, lca2$est.learning)
+  expect_equal(lca1$params, lca2$params)
+  expect_equal(lca1$learning, lca2$learning)
   
   # Standard correction should be deterministic
   lucky <- c(0.25, 0.25)
@@ -202,10 +202,10 @@ test_that("subgroup analysis works in complete workflow", {
   expect_equal(sum(trans_sub), sum(trans_full) / 2)
   
   # Both should produce valid results
-  expect_true(all(lca_full$param.lca >= 0, na.rm = TRUE))
-  expect_true(all(lca_sub$param.lca >= 0, na.rm = TRUE))
-  expect_true(all(lca_full$param.lca <= 1, na.rm = TRUE))
-  expect_true(all(lca_sub$param.lca <= 1, na.rm = TRUE))
+  expect_true(all(lca_full$params >= 0, na.rm = TRUE))
+  expect_true(all(lca_sub$params >= 0, na.rm = TRUE))
+  expect_true(all(lca_full$params <= 1, na.rm = TRUE))
+  expect_true(all(lca_sub$params <= 1, na.rm = TRUE))
   
   # Standard correction with subgroup
   std_full <- stnd_cor(pre_test, pst_test, c(0.25, 0.25))

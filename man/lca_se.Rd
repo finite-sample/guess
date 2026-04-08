@@ -7,7 +7,7 @@
 lca_se(
   pre_test = NULL,
   pst_test = NULL,
-  nsamps = 100,
+  n_resamples = 100,
   seed = 31415,
   force9 = FALSE
 )
@@ -17,21 +17,27 @@ lca_se(
 
 \item{pst_test}{data.frame carrying pst_test items}
 
-\item{nsamps}{number of resamples, default is 100}
+\item{n_resamples}{number of resamples, default is 100}
 
 \item{seed}{random seed, default is 31415}
 
-\item{force9}{Optional. There are cases where DK data doesn't have DK. But we need the entire matrix. By default it is FALSE.}
+\item{force9}{Optional. Force 9-column format even if no DK responses.
+Default is FALSE.}
 }
 \value{
-list with standard error of parameters, estimates of learning, standard error of learning by item
+list with:
+  \item{se_params}{standard errors of parameters by item}
+  \item{avg_effects}{mean learning estimates}
+  \item{se_effects}{standard error of learning by item}
 }
 \description{
-guess_stnderr
+Bootstrapped Standard Errors
 }
 \examples{
-pre_test <- data.frame(pre_item1 = c(1,0,0,1,0), pre_item2 = c(1,NA,0,1,0)) 
-pst_test <- data.frame(pst_item1 = pre_test[,1] + c(0,1,1,0,0), 
-             pst_item2 = pre_test[,2] + c(0,1,0,0,1))
-\dontrun{lca_se(pre_test, pst_test, nsamps = 10, seed = 31415)}
+pre_test <- data.frame(pre_item1 = c(1, 0, 0, 1, 0), pre_item2 = c(1, NA, 0, 1, 0))
+pst_test <- data.frame(
+  pst_item1 = pre_test[, 1] + c(0, 1, 1, 0, 0),
+  pst_item2 = pre_test[, 2] + c(0, 1, 0, 0, 1)
+)
+\dontrun{lca_se(pre_test, pst_test, n_resamples = 10, seed = 31415)}
 }

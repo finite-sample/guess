@@ -31,3 +31,6 @@ coverage/
 tests/README.html
 tests/README.md
 tests/_covrpage.Rmd
+/doc/
+/Meta/
+vignettes/.build.timestamp

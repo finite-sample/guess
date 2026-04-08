@@ -6,11 +6,11 @@
 \alias{fit_nodk}
 \title{Goodness of fit statistics for transition matrix data}
 \usage{
-fit_model(pre_test, pst_test, g, est.param, force9 = FALSE)
+fit_model(pre_test, pst_test, g, est_param, force9 = FALSE)
 
-fit_dk(pre_test, pst_test, g, est.param, force9 = FALSE)
+fit_dk(pre_test, pst_test, g, est_param, force9 = FALSE)
 
-fit_nodk(pre_test, pst_test, g, est.param)
+fit_nodk(pre_test, pst_test, g, est_param)
 }
 \arguments{
 \item{pre_test}{data.frame carrying pre_test items}
@@ -19,7 +19,7 @@ fit_nodk(pre_test, pst_test, g, est.param)
 
 \item{g}{estimates of gamma produced from \code{\link{lca_cor}}}
 
-\item{est.param}{estimated parameters produced from \code{\link{lca_cor}}}
+\item{est_param}{estimated parameters produced from \code{\link{lca_cor}}}
 
 \item{force9}{Optional. Force 9-column format even if no DK responses. Default is FALSE.}
 }
@@ -40,7 +40,7 @@ transmatrix <- multi_transmat(pre_test, pst_test)
 res <- lca_cor(transmatrix)
 
 # Calculate goodness of fit
-fit_stats <- fit_model(pre_test, pst_test, res$param.lca[nrow(res$param.lca), ], 
-                       res$param.lca[-nrow(res$param.lca), ])
+fit_stats <- fit_model(pre_test, pst_test, res$params[nrow(res$params), ],
+                       res$params[-nrow(res$params), ])
 }
 }

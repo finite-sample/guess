@@ -13,9 +13,11 @@ lca_cor(
 \arguments{
 \item{transmatrix}{transition matrix returned from \code{\link{multi_transmat}}}
 
-\item{nodk_priors}{Optional. Vector of length 4. Priors for the parameters for model that fits data without Don't Knows}
+\item{nodk_priors}{Optional. Vector of length 4. Priors for the parameters
+for model that fits data without Don't Knows}
 
-\item{dk_priors}{Optional. Vector of length 8. Priors for the parameters for model that fits data with Don't Knows}
+\item{dk_priors}{Optional. Vector of length 8. Priors for the parameters
+for model that fits data with Don't Knows}
 }
 \value{
 list with two items: parameter estimates and estimates of learning

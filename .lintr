@@ -16,7 +16,9 @@ exclusions: list(
     "vignettes" = list(
         line_length_linter = Inf
     ),
-    "tests/testthat.R" = Inf,
-    "tests/_covrpage.Rmd" = Inf,
-    "R/RcppExports.R" = Inf
+    "tests" = Inf,
+    "R/RcppExports.R" = Inf,
+    "R/utils-constants.R" = list(
+        object_name_linter = Inf
+    )
  )

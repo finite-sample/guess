@@ -50,7 +50,7 @@ test_that("fit_model works with no-DK data", {
   
   # Use simple parameters that should work
   gamma <- list(0.25)  # gamma as list (like lca_cor returns)
-  params <- matrix(c(0.4, 0.3, 0.3), nrow = 3, ncol = 1)  # lgg, lgk, lkk for item1
+  params <- matrix(c(0.4, 0.3, 0.3), nrow = 3, ncol = 1)  # gg, gk, kk for item1
   
   # Should not crash
   expect_silent({

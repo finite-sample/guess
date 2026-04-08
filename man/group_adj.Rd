@@ -7,19 +7,23 @@
 group_adj(pre = NULL, pst = NULL, gamma = NULL, dk = 0.03)
 }
 \arguments{
-\item{pre}{pre data frame. Required. Each vector within the data frame should only take values 0, 1, and 'd'.}
+\item{pre}{pre data frame. Required. Each vector within the data frame
+should only take values 0, 1, and 'd'.}
 
-\item{pst}{pst data frame. Required. Each vector within the data frame should only take values 0, 1, and 'd'.}
+\item{pst}{pst data frame. Required. Each vector within the data frame
+should only take values 0, 1, and 'd'.}
 
 \item{gamma}{probability of getting the right answer without knowledge}
 
-\item{dk}{Numeric. Between 0 and 1. Hidden knowledge behind don't know responses. Default is .03.}
+\item{dk}{Numeric. Between 0 and 1. Hidden knowledge behind don't know
+responses. Default is .03.}
 }
 \value{
 nested list of pre and post adjusted responses, and adjusted learning estimates
 }
 \description{
-Adjusts observed 1s based on propensity to guess (based on observed 0s) and item level \eqn{\gamma}. 
+Adjusts observed 1s based on propensity to guess (based on
+  observed 0s) and item level gamma.
 You can also put in your best estimate of hidden knowledge behind don't know responses.
 }
 \examples{

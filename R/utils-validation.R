@@ -1,6 +1,7 @@
 # Input Validation Utilities
 # Internal validation functions using checkmate
-#' @importFrom checkmate assert_data_frame assert_numeric assert_subset assert_matrix assert_choice assert_logical assert
+#' @importFrom checkmate assert_data_frame assert_numeric assert_subset
+#'   assert_matrix assert_choice assert_logical assert assert_int assert_flag
 NULL
 
 #' Validate that input is a data frame

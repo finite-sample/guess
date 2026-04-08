@@ -7,7 +7,7 @@
 guess_lik(x, g1 = x[4], data)
 }
 \arguments{
-\item{x}{lgg, lgk, lkk}
+\item{x}{gg, gk, kk}
 
 \item{g1}{guess}
 

@@ -34,7 +34,6 @@ lca_se <- function(pre_test = NULL, pst_test = NULL, n_resamples = 100,
 
   resamp_results <- list()
   resamp_effects <- matrix(ncol = n_items + 1, nrow = n_resamples)
-  resamp_agg <- matrix(ncol = ncol(df), nrow = n_resamples)
   se_params <- matrix(ncol = n_items, nrow = n_params)
   se_effects <- matrix(ncol = n_items + 1, nrow = 1)
   avg_effects <- matrix(ncol = n_items + 1, nrow = 1)
@@ -56,7 +55,14 @@ lca_se <- function(pre_test = NULL, pst_test = NULL, n_resamples = 100,
     )
     resamp_results[[i]] <- lca_cor(transmatrix_i)
     resamp_effects[i, ] <- resamp_results[[i]]$learning
-    resamp_agg[i, ] <- transmatrix_i[n_items, ]
+    # A `resamp_agg` matrix used to be filled here and never read again. It was
+    # allocated 2 * n_items wide while a transition row is 4 wide (or 9 with
+    # don't-know responses), so the assignment errored unless those happened to
+    # be multiples of each other. That made lca_se() fail outright on 3 items,
+    # 5 items, and on every item count tested when the data contained DK
+    # responses -- while silently recycling the row at 4 and 8 items. It also
+    # read row `n_items`, which is the last item rather than the aggregate row
+    # at `n_items + 1`. Since nothing consumed it, it is gone.
 
     for (j in seq_len(n_items)) {
       resamp_params[[j]][i, ] <- resamp_results[[i]]$params[, j]

@@ -11,4 +11,8 @@ on:
 
 jobs:
   pkgdown:
+    # A called workflow cannot grant itself more than the caller has, and the
+    # default token here is read-only. The deploy to gh-pages needs write.
+    permissions:
+      contents: write
     uses: gojiplus/r-canon/.github/workflows/reusable-pkgdown.yml@v1

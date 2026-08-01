@@ -58,9 +58,27 @@ stnd_cor <- function(pre_test = NULL, pst_test = NULL, lucky = NULL,
     names(pre_test_cor) <- names(pst_test_cor) <- names(stnd_cor) <- item_names
   }
 
-  pre   <- pre_test_cor / nrow(pre_test)
-  pst   <- pst_test_cor / nrow(pst_test)
-  learn <- stnd_cor / nrow(pre_test)
+  # Divide by the number of responses each item actually has, not by the row
+  # count. The numerators above use na.rm = TRUE, so dividing by nrow() shrank
+  # every item with missing data toward zero in proportion to its missingness:
+  # on one item with true learning 0.384, a 10% missing rate returned 0.341 and
+  # a 40% rate returned 0.227. That biases learning *downward*, which is the
+  # very bias this package exists to remove.
+  #
+  # `learn` is a difference, so it is scaled by the people who answered the item
+  # at both waves. Taking a numerator over one set of respondents and a
+  # denominator over another is what caused the problem in the first place.
+  n_pre <- vapply(pre_test, function(x) sum(!is.na(x)), integer(1))
+  n_pst <- vapply(pst_test, function(x) sum(!is.na(x)), integer(1))
+  n_both <- vapply(
+    seq_along(pre_test),
+    function(j) sum(!is.na(pre_test[[j]]) & !is.na(pst_test[[j]])),
+    integer(1)
+  )
+
+  pre   <- pre_test_cor / pmax(n_pre, 1L)
+  pst   <- pst_test_cor / pmax(n_pst, 1L)
+  learn <- stnd_cor / pmax(n_both, 1L)
 
   list(pre = pre, pst = pst, learn = learn)
 }

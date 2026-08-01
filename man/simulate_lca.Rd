@@ -71,8 +71,8 @@ When difficulty is specified, gamma values are derived using an IRT-like
 transformation: gamma_i = base_rate + (1 - base_rate) * plogis(-difficulty_i).
 This means:
 - difficulty = 0: gamma = base_rate + 0.5 * (1 - base_rate) (middle)
-- difficulty → +∞: gamma → base_rate (hard item, random guessing)
-- difficulty → -∞: gamma → 1 (easy item, always correct)
+- difficulty -> +Inf: gamma -> base_rate (hard item, random guessing)
+- difficulty -> -Inf: gamma -> 1 (easy item, always correct)
 }
 \examples{
 # Simulate data with 30\% learning

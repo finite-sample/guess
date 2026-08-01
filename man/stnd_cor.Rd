@@ -16,15 +16,22 @@ stnd_cor(pre_test = NULL, pst_test = NULL, lucky = NULL, item_names = NULL)
 \item{item_names}{Optional. A vector carrying item names.}
 }
 \value{
-a list of three vectors, carrying pre-treatment corrected scores, post-treatment scores, and adjusted estimates of learning
+a list of three vectors, carrying pre-treatment corrected scores,
+  post-treatment scores, and adjusted estimates of learning
 }
 \description{
-Estimate of learning adjusted with standard correction for guessing. Correction is based on number of options per question.
-The function takes separate pre-test and post-test dataframes. Why do we need dataframes? To accomodate multiple items.
-The items can carry NA (missing). Items must be in the same order in each dataframe. Assumes that respondents are posed same questions twice. 
-The function also takes a \code{lucky} vector --- the chance of getting a correct answer if guessing randomly. Each entry is 1/(number of options).
-The function also optionally takes a vector carrying names of the items. By default, the vector carrying adjusted learning estimates takes same 
-item names as the pre_test items. However you can assign a vector of names separately via \code{item_names}.
+Estimate of learning adjusted with standard correction for guessing.
+Correction is based on number of options per question.
+The function takes separate pre-test and post-test dataframes. Why do we
+need dataframes? To accomodate multiple items. The items can carry NA
+(missing). Items must be in the same order in each dataframe. Assumes that
+respondents are posed same questions twice.
+The function also takes a \code{lucky} vector --- the chance of getting a
+correct answer if guessing randomly. Each entry is 1/(number of options).
+The function also optionally takes a vector carrying names of the items.
+By default, the vector carrying adjusted learning estimates takes same
+item names as the pre_test items. However you can assign a vector of names
+separately via \code{item_names}.
 }
 \examples{
 # Without DK

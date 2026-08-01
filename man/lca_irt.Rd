@@ -15,7 +15,7 @@ lca_irt(
 \item{transmatrix}{Transition matrix returned from \code{\link{multi_transmat}}}
 
 \item{base_rate}{Numeric. Minimum guessing probability (random chance). Default 0.25
-(1/4 for 4-choice items). This is the floor for gamma when difficulty → +∞.}
+(1/4 for 4-choice items). This is the floor for gamma when difficulty -> +Inf.}
 
 \item{nodk_priors}{Optional. Vector of length 4. Starting values for
 (gg, gk, kk, difficulty). First 3 must sum to 1.}
@@ -45,8 +45,8 @@ The relationship between difficulty (d) and gamma is:
 Where logistic(x) = 1/(1+exp(-x)). This means:
 \itemize{
   \item d = 0: gamma = base_rate + 0.5*(1-base_rate) (middle difficulty)
-  \item d → +∞: gamma → base_rate (hard item, random guessing)
-  \item d → -∞: gamma → 1 (easy item, always correct even when guessing)
+  \item d -> +Inf: gamma -> base_rate (hard item, random guessing)
+  \item d -> -Inf: gamma -> 1 (easy item, always correct even when guessing)
 }
 }
 \examples{

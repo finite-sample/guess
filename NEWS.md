@@ -1,3 +1,51 @@
+# version 0.5.1 2026-07-31
+
+## Bug Fixes
+
+* **`stnd_cor()` understated learning when responses were missing.** The numerators
+  counted observed responses but the denominator was `nrow()`, so every item with
+  missing data was shrunk toward zero in proportion to its missingness. On one item with
+  true learning 0.384, a 10% missing rate returned 0.341 and a 40% rate returned 0.227 --
+  a 41% understatement. Scores are now divided by the number of responses each item
+  actually has, and `learn` by the respondents who answered at both waves. This is the
+  bias the package exists to remove, so it mattered more than its size suggests.
+
+* **`lca_se()` failed for most item counts.** A `resamp_agg` matrix was allocated
+  `2 * n_items` wide while a transition row is 4 wide (or 9 with don't-know responses),
+  and it indexed row `n_items` -- the last item -- rather than the aggregate row at
+  `n_items + 1`. It errored outright on 3 and 5 items, and on every item count tried when
+  the data contained DK responses, while silently recycling the row at 4 and 8 items.
+  Nothing ever read the variable, so it has been removed. Bootstrapped standard errors
+  now work for any item count, with or without DK.
+
+* **Removed `R/fit_nodk.R` and `R/fit_dk.R`.** Both were shadowed at load time by the
+  wrappers in `R/fit_unified.R`, which defines the same names later in alphabetical
+  order, so the code never ran. The dead copies passed model-expected counts to
+  `chisq.test()` as the observed vector and observed proportions as `p` -- had load order
+  ever changed, they would have returned chi-square statistics between 0.83x and 2.08x
+  the correct ones. `fit_nodk()` and `fit_dk()` remain exported and unchanged in
+  behaviour.
+
+* **The optimiser no longer prints its iteration trace.** `solnp()` is called with
+  `control = list(trace = 0)`, so `lca_fit()` and `lca_se()` are silent. A 100-resample
+  bootstrap previously emitted hundreds of lines, which is how a genuine warning gets
+  lost.
+
+## Documentation
+
+* Replaced the Unicode arrows and infinity signs in the `lca_irt()` and `simulate_lca()`
+  documentation with ASCII. They produced LaTeX errors when building the PDF manual, so
+  `R CMD check --as-cran` reported an ERROR and two WARNINGs on any machine with a
+  working TeX installation.
+
+## Testing
+
+* New `tests/testthat/test-audit-regressions.R`: 22 tests covering the above, each of
+  which fails against the previous release.
+
+`R CMD check --as-cran` is clean: 0 errors, 0 warnings, and the one NOTE is the absence
+of the optional `V8` package for math rendering.
+
 # version 0.5.0 2026-04-05
 
 ## Breaking Changes

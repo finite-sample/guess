@@ -22,6 +22,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Gaurav Sood \email{gsood07@gmail.com}
   \item Ken Cor \email{mcor@ualberta.ca}
 }
 

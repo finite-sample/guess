@@ -19,16 +19,20 @@ multi_transmat(
 
 \item{subgroup}{a Boolean vector identifying the subset. Default is NULL.}
 
-\item{force9}{Optional. There are cases where DK data doesn't have DK. But we need the entire matrix. By default it is FALSE.}
+\item{force9}{Optional. There are cases where DK data doesn't have DK.
+But we need the entire matrix. By default it is FALSE.}
 
-\item{agg}{Optional. Boolean. Whether or not to add a row of aggregate transitions at the end of the matrix. Default is FALSE.}
+\item{agg}{Optional. Boolean. Whether or not to add a row of aggregate
+transitions at the end of the matrix. Default is FALSE.}
 }
 \value{
-matrix with rows = total number of items + 1 (last row contains aggregate distribution across items)
+matrix with rows = total number of items + 1 (last row contains
+  aggregate distribution across items)
 number of columns = 4 when no don't know, and 9 when there is a don't know option
 }
 \description{
-Needs an 'interleaved' dataframe (see interleave function). Pre-test item should be followed by corresponding post-item item etc. 
+Needs an 'interleaved' dataframe (see interleave function).
+Pre-test item should be followed by corresponding post-item item etc. 
 Don't knows must be coded as NA. Function handles items without don't know responses.
 The function is used internally. It calls transmat.
 }

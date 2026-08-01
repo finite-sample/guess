@@ -88,14 +88,19 @@ stnd_cor(pre_test, post_test, lucky = c(0.25, 0.25))
 
 ### `fit_model()` - Goodness of Fit
 
-Test whether the LCA model fits your data:
+Test whether the LCA model fits your data. This requires don't-know responses:
+the model without them has 3 free parameters against 3 free cell probabilities,
+so it is saturated and cannot be tested. `fit_model()` returns `NA` in that case
+rather than a p-value that counts none of the parameters it estimated.
 
 ```r
-result <- lca_fit(pre_test, post_test)
-gof <- fit_model(pre_test, post_test,
+result <- lca_fit(pre_dk, post_dk)
+gof <- fit_model(pre_dk, post_dk,
                  result$params["gamma", ],
-                 result$params[c("gg", "gk", "kk"), ])
-# High p-values indicate good fit
+                 result$params[c("gg", "gk", "gd", "kk", "dg", "dk", "dd"), ],
+                 force9 = TRUE)
+# High p-values indicate good fit. The test has 1 degree of freedom -- the
+# restriction that x1d/x0d equals x10/x00.
 ```
 
 ## Handling "Don't Know" Responses
@@ -110,7 +115,7 @@ post_dk <- data.frame(item1 = c("1", "1", "1", "d", "0"))
 trans <- multi_transmat(pre_dk, post_dk, force9 = TRUE)
 result <- lca_cor(trans)
 
-# DK model has 8 parameters: gg, gk, gd, kg, kk, kd, dd, gamma
+# DK model has 8 parameters: gg, gk, gd, kk, dg, dk, dd, gamma
 ```
 
 ## Understanding the Parameters
@@ -132,13 +137,17 @@ Parameter names follow the pattern `{pre_state}{post_state}` where:
 | Parameter | Meaning |
 |-----------|---------|
 | `gg` | guess→guess |
-| `gk` | guess→know (learned) |
+| `gk` | guess→know (**LEARNED**) |
 | `gd` | guess→dk |
-| `kg` | know→guess (forgot) |
 | `kk` | know→know |
-| `kd` | know→dk |
+| `dg` | dk→guess |
+| `dk` | dk→know (**LEARNED**) |
 | `dd` | dk→dk |
 | `gamma` | Guessing probability |
+
+Learning is `gk + dk`. There is no know→guess or know→dk class: the model is
+identified by the assumption that people do not lose knowledge over a short
+informative process, which sets both to zero.
 
 ## Simulation and Validation
 

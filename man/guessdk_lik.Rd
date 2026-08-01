@@ -7,7 +7,7 @@
 guessdk_lik(x, g1 = x[8], data)
 }
 \arguments{
-\item{x}{gg, gk, gd, kg, kk, kd, dd}
+\item{x}{gg, gk, gd, kk, dg, dk, dd}
 
 \item{g1}{guess}
 

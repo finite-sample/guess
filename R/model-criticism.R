@@ -24,30 +24,12 @@ cell_probs <- function(params) {
 
   if (n == 4L) {
     names(params) <- c("gg", "gk", "kk", "gamma")
+    nodk_cell_probs(params[1], params[2], params[3], params[4])
   } else {
-    names(params) <- c("gg", "gk", "gd", "kg", "kk", "kd", "dd", "gamma")
-  }
-
-  g <- params["gamma"]
-
-  if (n == 4L) {
-    c(
-      (1 - g)^2 * params["gg"],
-      (1 - g) * g * params["gg"] + (1 - g) * params["gk"],
-      (1 - g) * g * params["gg"],
-      g^2 * params["gg"] + g * params["gk"] + params["kk"]
-    )
-  } else {
-    c(
-      (1 - g)^2 * params["gg"],
-      (1 - g) * g * params["gg"] + (1 - g) * params["gk"],
-      (1 - g) * params["gd"],
-      (1 - g) * g * params["gg"] + params["kg"],
-      g^2 * params["gg"] + g * params["gk"] + g * params["kg"] + params["kk"],
-      g * params["gd"] + params["kd"],
-      params["kg"],
-      g * params["gk"] + params["kd"],
-      params["dd"]
+    names(params) <- c("gg", "gk", "gd", "kk", "dg", "dk", "dd", "gamma")
+    dk_cell_probs(
+      params[1], params[2], params[3], params[4],
+      params[5], params[6], params[7], params[8]
     )
   }
 }
@@ -690,7 +672,7 @@ cross_sectional_irt <- function(pre_test, pst_test, method = "logit", scale = 1)
 #'
 #' @param true_params Named numeric vector of true parameters.
 #'   For no-DK model: c(gg=, gk=, kk=, gamma=)
-#'   For DK model: c(gg=, gk=, gd=, kg=, kk=, kd=, dd=, gamma=)
+#'   For DK model: c(gg=, gk=, gd=, kk=, dg=, dk=, dd=, gamma=)
 #' @param n Integer. Sample size per simulation. Default 500.
 #' @param n_items Integer. Number of items. Default 2.
 #' @param n_sims Integer. Number of Monte Carlo simulations. Default 100.
@@ -713,8 +695,8 @@ cross_sectional_irt <- function(pre_test, pst_test, method = "logit", scale = 1)
 #'
 #' # Validate DK model recovery
 #' results_dk <- validate_recovery(
-#'   c(gg = 0.25, gk = 0.15, gd = 0.10, kg = 0.10,
-#'     kk = 0.15, kd = 0.10, dd = 0.15, gamma = 0.25),
+#'   c(gg = 0.25, gk = 0.15, gd = 0.10, kk = 0.20,
+#'     dg = 0.10, dk = 0.10, dd = 0.10, gamma = 0.25),
 #'   n = 500, n_sims = 50
 #' )
 #' }
@@ -730,7 +712,7 @@ validate_recovery <- function(true_params, n = 500, n_items = 2,
   is_dk <- n_params == 8L
 
   if (is_dk) {
-    expected_names <- c("gg", "gk", "gd", "kg", "kk", "kd", "dd", "gamma")
+    expected_names <- c("gg", "gk", "gd", "kk", "dg", "dk", "dd", "gamma")
   } else {
     expected_names <- c("gg", "gk", "kk", "gamma")
   }
@@ -749,7 +731,7 @@ validate_recovery <- function(true_params, n = 500, n_items = 2,
       sim_data <- simulate_lca_dk(
         n = n, n_items = n_items,
         gg = true_params["gg"], gk = true_params["gk"], gd = true_params["gd"],
-        kg = true_params["kg"], kk = true_params["kk"], kd = true_params["kd"],
+        kk = true_params["kk"], dg = true_params["dg"], dk = true_params["dk"],
         dd = true_params["dd"], gamma = true_params["gamma"]
       )
     } else {

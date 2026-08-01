@@ -62,13 +62,20 @@ simulate_with_learning <- function(n, learning_frac, gamma, kk = 0.3, n_items = 
 
 #' Simulate pre-post data with Don't Know responses
 #'
+#' The classes are, in order, gg, gk, gd, kk, dg, dk, dd -- the model's own,
+#' with no know->guess or know->dk. This helper used to draw both of those and
+#' no dk->know, so it generated knowledge loss the model forbids and none of the
+#' learning-from-confessed-ignorance the model defines. Data from it was not
+#' well specified, and any test calling it a Type I error rate was measuring
+#' correct rejection.
+#'
 #' @param n Number of observations
 #' @param lambdas Vector of 7 parameters for DK model
 #' @param gamma Guessing probability
 #' @return List with pre and post data frames (character type with "d")
 simulate_dk_prepost_data <- function(n, lambdas = NULL, gamma = 0.25) {
   if (is.null(lambdas)) {
-    lambdas <- c(0.25, 0.15, 0.10, 0.10, 0.15, 0.10, 0.15)
+    lambdas <- c(0.25, 0.15, 0.10, 0.20, 0.08, 0.12, 0.10)
   }
 
   classes <- sample(1:7, n, replace = TRUE, prob = lambdas)
@@ -89,13 +96,13 @@ simulate_dk_prepost_data <- function(n, lambdas = NULL, gamma = 0.25) {
       post[i] <- "d"
     } else if (cl == 4) {
       pre[i] <- "1"
-      post[i] <- ifelse(rbinom(1, 1, gamma) == 1, "1", "0")
-    } else if (cl == 5) {
-      pre[i] <- "1"
       post[i] <- "1"
+    } else if (cl == 5) {
+      pre[i] <- "d"
+      post[i] <- ifelse(rbinom(1, 1, gamma) == 1, "1", "0")
     } else if (cl == 6) {
-      pre[i] <- "1"
-      post[i] <- "d"
+      pre[i] <- "d"
+      post[i] <- "1"
     } else {
       pre[i] <- "d"
       post[i] <- "d"

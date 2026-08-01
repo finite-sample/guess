@@ -9,7 +9,7 @@ validate_recovery(true_params, n = 500, n_items = 2, n_sims = 100, seed = NULL)
 \arguments{
 \item{true_params}{Named numeric vector of true parameters.
 For no-DK model: c(gg=, gk=, kk=, gamma=)
-For DK model: c(gg=, gk=, gd=, kg=, kk=, kd=, dd=, gamma=)}
+For DK model: c(gg=, gk=, gd=, kk=, dg=, dk=, dd=, gamma=)}
 
 \item{n}{Integer. Sample size per simulation. Default 500.}
 
@@ -40,8 +40,8 @@ print(results)
 
 # Validate DK model recovery
 results_dk <- validate_recovery(
-  c(gg = 0.25, gk = 0.15, gd = 0.10, kg = 0.10,
-    kk = 0.15, kd = 0.10, dd = 0.15, gamma = 0.25),
+  c(gg = 0.25, gk = 0.15, gd = 0.10, kk = 0.20,
+    dg = 0.10, dk = 0.10, dd = 0.10, gamma = 0.25),
   n = 500, n_sims = 50
 )
 }

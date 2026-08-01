@@ -1,3 +1,80 @@
+# version 0.6.0 2026-07-31
+
+## Breaking Changes
+
+* **The don't-know model now matches the model in the paper.** The likelihood
+  implemented a different model from the one in Cor and Sood, equation (2). It kept the
+  two latent classes the paper's identifying assumption sets to zero, dropped the two
+  the paper keeps, and reused the survivors in the `d0` and `d1` cells:
+
+  | cell | paper | what the code computed |
+  |---|---|---|
+  | `x10` | `gamma(1-gamma)*gg` | `(1-gamma)*gamma*gg + kg` |
+  | `x11` | `gamma^2*gg + gamma*gk + kk` | `... + gamma*kg + kk` |
+  | `x1d` | `gamma*gd` | `gamma*gd + kd` |
+  | `xd0` | `(1-gamma)*dg` | `kg` |
+  | `xd1` | `gamma*dg + dk` | `gamma*gk + kd` |
+
+  In short, the know-to-guess class was conflated with don't-know-to-guess, and
+  know-to-don't-know with don't-know-to-know.
+
+* **DK parameters are renamed.** `kg` and `kd` are gone; `dg` (don't know -> guess) and
+  `dk` (don't know -> know) take their place. The order is now `gg, gk, gd, kk, dg, dk,
+  dd, gamma`. Code that indexes DK parameters by name or position must be updated.
+  Learning is `gk + dk` -- those who learned the item from guessing, plus those who
+  learned it from confessed ignorance. It was `gk + kd`, which the vignette rationalised
+  as "true learning plus those who learned but lost confidence".
+
+* **`simulate_lca_dk()` gains `dg` and `dk` arguments and loses `kg` and `kd`.** The
+  simulator drew the same classes the likelihood named, so it generated knowledge loss
+  and could never generate anyone who moved from a don't-know response to knowing --
+  which is half of what the model defines as learning. No test could catch the
+  likelihood bug while the simulator agreed with it.
+
+* **`fit_model()` returns `NA` for data without don't-know responses.** That model has
+  3 free parameters against 3 free cell probabilities. It is saturated, so there are no
+  degrees of freedom and no test to report. It previously reported a p-value computed on
+  `df = 3`, counting none of the parameters estimated from the same counts. For the DK
+  model the degrees of freedom are now 1 rather than 8, which is what makes the test
+  able to reject at all.
+
+## Why this matters
+
+The two consequences of the old cell equations were both invisible from outside:
+
+* **They were not a distribution.** They summed to between 1.02 and 2.29 rather than 1,
+  so the objective carried a spurious `-N log S(theta)` term worth up to ~182,000
+  log-likelihood units, with no statistical content.
+
+* **The parameters were not identified.** Fed exact model-implied counts with no
+  sampling noise, the old estimator returned parameters off by up to 0.041 while the
+  negative log-likelihood differed by 0.0009 in 1,741,431 -- observationally equivalent,
+  so no dataset of any size could separate them. The same test now recovers every
+  parameter to within 6e-05.
+
+The paper's model is identified in closed form -- `gamma/(1-gamma)` is `x10/x00`, and
+every lambda follows -- and over-identified by exactly one degree of freedom, the
+restriction `x1d/x0d = x10/x00`.
+
+## Internal
+
+* The nine DK and four no-DK cell probabilities had been written out in four separate
+  places, each carrying the same error. They now come from single definitions,
+  `dk_cell_probs()` and `nodk_cell_probs()`, which every likelihood, expected-count and
+  goodness-of-fit routine calls.
+
+## Testing
+
+* New `tests/testthat/test-dk-model-spec.R`: the cells sum to 1, the structural zeros
+  hold, the closed-form inversion recovers every parameter, the over-identifying
+  restriction holds, the estimator recovers the truth from exact counts, the simulator
+  can produce learning from confessed ignorance, and the goodness-of-fit test spends
+  1 degree of freedom.
+
+* `test-econometric-likelihood.R` used to restate the cell equations inline and assert
+  only that they were non-negative. They were, and they also summed to 2.29. It now
+  calls the function the likelihood uses and checks that they sum to 1.
+
 # version 0.5.1 2026-07-31
 
 ## Bug Fixes

@@ -77,7 +77,7 @@ test_that("DK model GOF test has reasonable Type I error rate", {
         fit_result <- fit_model(
           data$pre, data$post,
           result$params["gamma", ],
-          result$params[c("gg", "gk", "gd", "kg", "kk", "kd", "dd"), ],
+          result$params[c("gg", "gk", "gd", "kk", "dg", "dk", "dd"), ],
           force9 = TRUE
         )
 

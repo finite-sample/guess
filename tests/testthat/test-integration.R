@@ -50,8 +50,9 @@ test_that("complete workflow without DK works", {
   expect_true(is.matrix(fit_stats))
   expect_equal(dim(fit_stats), c(2, n_items))
   expect_equal(rownames(fit_stats), c("chi-square", "p-value"))
-  expect_true(all(fit_stats["chi-square", ] >= 0))
-  expect_true(all(fit_stats["p-value", ] >= 0 & fit_stats["p-value", ] <= 1))
+  # The no-DK model is saturated, so there is no goodness of fit test to run.
+  expect_true(all(is.na(fit_stats["chi-square", ])))
+  expect_true(all(is.na(fit_stats["p-value", ])))
   
   # Step 4: Standard correction for comparison
   lucky <- rep(0.25, n_items)  # Assume 4-option multiple choice

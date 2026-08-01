@@ -79,7 +79,7 @@ lca_se <- function(pre_test = NULL, pst_test = NULL, n_resamples = 100,
   row.names(avg_effects) <- row.names(se_effects) <- "lca"
 
   if (nrow(se_params) == 8) {
-    row.names(se_params) <- c("gg", "gk", "gd", "kg", "kk", "kd", "dd", "gamma")
+    row.names(se_params) <- c("gg", "gk", "gd", "kk", "dg", "dk", "dd", "gamma")
   } else {
     row.names(se_params) <- c("gg", "gk", "kk", "gamma")
   }

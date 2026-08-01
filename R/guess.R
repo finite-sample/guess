@@ -5,6 +5,6 @@
 #' @aliases guess
 #' @docType package
 #' @keywords internal
-#' @importFrom stats chisq.test sd
+#' @importFrom stats pchisq sd
 #' @importFrom Rsolnp solnp
 "_PACKAGE"

@@ -10,9 +10,9 @@ simulate_lca_dk(
   gg = 0.25,
   gk = 0.15,
   gd = 0.1,
-  kg = 0.1,
   kk = 0.15,
-  kd = 0.1,
+  dg = 0.1,
+  dk = 0.1,
   dd = 0.15,
   gamma = 0.25,
   difficulty = NULL,
@@ -31,11 +31,11 @@ simulate_lca_dk(
 
 \item{gd}{Numeric. Proportion: guess->dk. Default 0.10.}
 
-\item{kg}{Numeric. Proportion: know->guess (forgot). Default 0.10.}
-
 \item{kk}{Numeric. Proportion: know->know (stable knowledge). Default 0.15.}
 
-\item{kd}{Numeric. Proportion: know->dk. Default 0.10.}
+\item{dg}{Numeric. Proportion: dk->guess. Default 0.10.}
+
+\item{dk}{Numeric. Proportion: dk->know (learned). Default 0.10.}
 
 \item{dd}{Numeric. Proportion: dk->dk. Default 0.15.}
 
@@ -66,10 +66,14 @@ guess (g), know (k), and don't know (d) states:
 - **gg**: guess both times
 - **gk**: guess -> know (learned)
 - **gd**: guess -> dk
-- **kg**: know -> guess (forgot)
 - **kk**: know -> know
-- **kd**: know -> dk
+- **dg**: dk -> guess
+- **dk**: dk -> know (learned)
 - **dd**: dk -> dk
+
+The know -> guess and know -> dk classes are absent by design. The model is
+identified by the assumption that people do not lose knowledge over a short
+informative process, which sets both to zero. Learning is gk + dk.
 
 Parameters must sum to 1 (constraint enforced automatically).
 
@@ -78,7 +82,7 @@ transformation: gamma_i = base_rate + (1 - base_rate) * plogis(-difficulty_i).
 }
 \examples{
 # Simulate DK data
-sim <- simulate_lca_dk(n = 500, gk = 0.15, seed = 123)
+sim <- simulate_lca_dk(n = 5000, gk = 0.15, seed = 123)
 fit <- lca_fit(sim$pre, sim$post)
 fit$params["gk", ]  # Should be close to 0.15
 

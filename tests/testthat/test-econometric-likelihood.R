@@ -107,35 +107,42 @@ test_that("negative log-likelihood is minimized near true parameters", {
   }
 })
 
-test_that("DK model cell probabilities are non-negative", {
+test_that("DK model cell probabilities are non-negative and sum to 1", {
+  # This test used to restate the cell equations inline and assert only that
+  # they were non-negative. They were -- and they also summed to as much as
+  # 2.29, because they were not the model's equations. It now calls the
+  # function the likelihood actually uses, and checks the property that
+  # distinguishes a distribution from an arbitrary set of non-negative numbers.
   set.seed(44)
-  n_tests <- 50
 
-  for (i in seq_len(n_tests)) {
+  for (i in seq_len(200)) {
     lambdas <- runif(7)
     lambdas <- lambdas / sum(lambdas)
     gamma <- runif(1, 0.1, 0.9)
 
-    g <- gamma
-    gg <- lambdas[1]
-    gk <- lambdas[2]
-    gd <- lambdas[3]
-    kg <- lambdas[4]
-    kk <- lambdas[5]
-    kd <- lambdas[6]
-    dd <- lambdas[7]
+    vec <- dk_cell_probs(
+      lambdas[1], lambdas[2], lambdas[3], lambdas[4],
+      lambdas[5], lambdas[6], lambdas[7], gamma
+    )
 
-    vec <- numeric(9)
-    vec[1] <- (1 - g) * (1 - g) * gg
-    vec[2] <- (1 - g) * g * gg + (1 - g) * gk
-    vec[3] <- (1 - g) * gd
-    vec[4] <- (1 - g) * g * gg + kg
-    vec[5] <- g * g * gg + g * gk + g * kg + kk
-    vec[6] <- g * gd + kd
-    vec[7] <- kg
-    vec[8] <- g * gk + kd
-    vec[9] <- dd
-
+    expect_length(vec, 9)
     expect_true(all(vec >= 0))
+    expect_equal(sum(vec), 1)
+  }
+})
+
+test_that("no-DK cell probabilities are non-negative and sum to 1", {
+  set.seed(45)
+
+  for (i in seq_len(200)) {
+    lambdas <- runif(3)
+    lambdas <- lambdas / sum(lambdas)
+    gamma <- runif(1, 0.1, 0.9)
+
+    vec <- nodk_cell_probs(lambdas[1], lambdas[2], lambdas[3], gamma)
+
+    expect_length(vec, 4)
+    expect_true(all(vec >= 0))
+    expect_equal(sum(vec), 1)
   }
 })

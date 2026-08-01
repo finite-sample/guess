@@ -69,7 +69,7 @@ test_that("lca_cor works with DK data", {
   expect_true(is.matrix(result$params))
   expect_equal(nrow(result$params), 8)
   expect_equal(ncol(result$params), 2)
-  expect_equal(rownames(result$params), c("gg", "gk", "gd", "kg", "kk", "kd", "dd", "gamma"))
+  expect_equal(rownames(result$params), c("gg", "gk", "gd", "kk", "dg", "dk", "dd", "gamma"))
 })
 
 test_that("lca_cor handles edge cases", {

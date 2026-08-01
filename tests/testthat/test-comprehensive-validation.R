@@ -90,7 +90,7 @@ test_that("Functions handle Don't Know responses correctly", {
     # Test fit with DK
     fit_results_dk <- fit_model(pre_test_dk, post_test_dk,
                               lca_results_dk$params["gamma", ],
-                              lca_results_dk$params[c("gg", "gk", "gd", "kg", "kk", "kd", "dd"), ],
+                              lca_results_dk$params[c("gg", "gk", "gd", "kk", "dg", "dk", "dd"), ],
                               force9 = TRUE)
   })
 

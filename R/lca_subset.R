@@ -39,10 +39,12 @@ lca_adj <- function(pre = NULL, pst = NULL) {
   is_dk <- nrow(param_lca) == 8L
 
   if (is_dk) {
-    pk1 <- n * (param_lca["kk", ] + param_lca["kg", ] + param_lca["kd", ]) /
-      sapply(pre, function(x) sum(x == 1))
+    # Who knows the item at each wave. Knowledge is not lost over the process,
+    # so the only class knowing it beforehand is kk; afterwards it is kk plus
+    # those who learned it from either starting state.
+    pk1 <- n * param_lca["kk", ] / sapply(pre, function(x) sum(x == 1))
 
-    pk2 <- n * (param_lca["gk", ] + param_lca["kk", ] + param_lca["kd", ]) /
+    pk2 <- n * (param_lca["gk", ] + param_lca["kk", ] + param_lca["dk", ]) /
       sapply(pst, function(x) sum(x == 1))
   } else {
     pk1 <- n * param_lca["kk", ] / sapply(pre, function(x) sum(x == 1))

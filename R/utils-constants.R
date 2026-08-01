@@ -17,11 +17,11 @@ TRANSMAT_COLS_DK <- c("x00", "x01", "x0d", "x10", "x11", "x1d", "xd0", "xd1", "x
 
 # Parameter names for LCA models
 LCA_PARAM_NAMES_NODK <- c("gg", "gk", "kk", "gamma")
-LCA_PARAM_NAMES_DK <- c("gg", "gk", "gd", "kg", "kk", "kd", "dd", "gamma")
+LCA_PARAM_NAMES_DK <- c("gg", "gk", "gd", "kk", "dg", "dk", "dd", "gamma")
 
 # Default prior values
 DEFAULT_NODK_PRIORS <- c(0.3, 0.1, 0.1, 0.25)
-DEFAULT_DK_PRIORS <- c(0.3, 0.1, 0.2, 0.05, 0.1, 0.1, 0.05, 0.25)
+DEFAULT_DK_PRIORS <- c(0.30, 0.15, 0.10, 0.20, 0.05, 0.10, 0.10, 0.25)
 
 # Default don't know knowledge estimate
 DEFAULT_DK_KNOWLEDGE <- 0.03

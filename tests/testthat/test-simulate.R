@@ -92,8 +92,8 @@ test_that("validate_recovery returns expected structure", {
 
 test_that("validate_recovery works with DK model", {
   results <- validate_recovery(
-    c(gg = 0.25, gk = 0.15, gd = 0.10, kg = 0.10,
-      kk = 0.15, kd = 0.10, dd = 0.15, gamma = 0.25),
+    c(gg = 0.25, gk = 0.15, gd = 0.10, kk = 0.20,
+      dg = 0.10, dk = 0.10, dd = 0.10, gamma = 0.25),
     n = 100, n_sims = 3, seed = 444
   )
 

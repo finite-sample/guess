@@ -27,8 +27,15 @@ fit_nodk(pre_test, pst_test, g, est_param)
 matrix with two rows: top row carrying chi-square value, bottom row p-values
 }
 \description{
-Chi-square goodness of fit between true and model based multivariate distribution.
-Handles both data with and without don't know responses automatically.
+Pearson chi-square goodness of fit between the observed
+transition counts and those the fitted model implies. Handles data with and
+without don't know responses automatically.
+
+Degrees of freedom are the free cell probabilities less the parameters
+estimated from the same counts. The don't-know model leaves 1 degree of
+freedom. The model without don't know is saturated -- 3 free parameters
+against 3 free cell probabilities -- so no test is possible and both rows
+are `NA`.
 }
 \details{
 Unified Goodness of Fit Statistics

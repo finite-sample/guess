@@ -70,29 +70,14 @@ format_transition_matrix <- function(transition_list, n_items, add_aggregate = F
 #' @param model_type "nodk" or "dk" model
 #' @return vector of expected values
 calculate_expected_values <- function(gamma_i, params, total_obs, model_type = "nodk") {
-  g <- gamma_i
-
   if (model_type == "nodk") {
-    names(params) <- c("gg", "gk", "kk")
-    expected <- numeric(4)
-    expected[CELL_00] <- (1 - g) * (1 - g) * params["gg"] * total_obs
-    expected[CELL_01] <- ((1 - g) * g * params["gg"] + (1 - g) * params["gk"]) * total_obs
-    expected[CELL_10] <- (1 - g) * g * params["gg"] * total_obs
-    expected[CELL_11] <- (g * g * params["gg"] + g * params["gk"] + params["kk"]) * total_obs
+    probs <- nodk_cell_probs(params[1], params[2], params[3], gamma_i)
   } else {
-    names(params) <- c("gg", "gk", "gd", "kg", "kk", "kd", "dd")
-    expected <- numeric(9)
-    expected[CELL_00_DK] <- (1 - g) * (1 - g) * params["gg"] * total_obs
-    expected[CELL_01_DK] <- ((1 - g) * g * params["gg"] + (1 - g) * params["gk"]) * total_obs
-    expected[CELL_0D] <- (1 - g) * params["gd"] * total_obs
-    expected[CELL_10_DK] <- ((1 - g) * g * params["gg"] + params["kg"]) * total_obs
-    expected[CELL_11_DK] <- (g * g * params["gg"] + g * params["gk"] +
-                               g * params["kg"] + params["kk"]) * total_obs
-    expected[CELL_1D] <- (g * params["gd"] + params["kd"]) * total_obs
-    expected[CELL_D0] <- params["kg"] * total_obs
-    expected[CELL_D1] <- (g * params["gk"] + params["kd"]) * total_obs
-    expected[CELL_DD] <- params["dd"] * total_obs
+    probs <- dk_cell_probs(
+      params[1], params[2], params[3], params[4],
+      params[5], params[6], params[7], gamma_i
+    )
   }
 
-  expected
+  unname(probs * total_obs)
 }

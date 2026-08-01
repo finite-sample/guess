@@ -20,12 +20,80 @@ eqn1 <- function(x, g1 = NA, data) {
 #' Functions for constraining lambdas to sum to 1 and to bound params between 0 and 1
 #' @keywords internal
 #'
-#' @param x    gg, gk, gd, kg, kk, kd, dd
+#' @param x    gg, gk, gd, kk, dg, dk, dd
 #' @param g1   guess
 #' @param data transition matrix
 
 eq1dk <- function(x, g1 = NA, data) {
   sum(x[1:7])
+}
+
+#' Cell probabilities for the model without Don't Know
+#'
+#' @description The multinomial cell probabilities implied by the latent class
+#'   transition parameters. This is the single definition of the model; every
+#'   likelihood, expected-count and goodness-of-fit routine calls it rather than
+#'   restating the algebra.
+#'
+#'   Latent classes are named pre-state then post-state over guess (g) and know
+#'   (k), so `gk` is guess at the pretest and know at the posttest. Knowledge is
+#'   assumed not to be lost over the process, so the know-to-guess class is
+#'   identically zero and does not appear.
+#'
+#' @param gg proportion guess -> guess
+#' @param gk proportion guess -> know
+#' @param kk proportion know -> know
+#' @param g1 probability a guess is correct (gamma)
+#' @return numeric vector of length 4, ordered x00, x01, x10, x11
+#' @keywords internal
+
+nodk_cell_probs <- function(gg, gk, kk, g1) {
+  vec <- numeric(4)
+  vec[CELL_00] <- (1 - g1) * (1 - g1) * gg
+  vec[CELL_01] <- (1 - g1) * g1 * gg + (1 - g1) * gk
+  vec[CELL_10] <- (1 - g1) * g1 * gg
+  vec[CELL_11] <- g1 * g1 * gg + g1 * gk + kk
+  vec
+}
+
+#' Cell probabilities for the model with Don't Know
+#'
+#' @description The multinomial cell probabilities implied by the latent class
+#'   transition parameters, as in equation (2) of Cor and Sood. The nine latent
+#'   transitions among guess (g), know (k) and don't know (d) are reduced to
+#'   seven by the identifying assumption that people do not lose knowledge over
+#'   the course of a short informative process: the know-to-guess and
+#'   know-to-don't-know classes are identically zero and do not appear.
+#'
+#'   The seven remaining proportions sum to 1, and so do the nine cell
+#'   probabilities returned here. Given those probabilities the parameters are
+#'   recoverable in closed form -- gamma / (1 - gamma) is x10 / x00 -- with one
+#'   over-identifying restriction left over, x1d / x0d = x10 / x00.
+#'
+#' @param gg proportion guess -> guess
+#' @param gk proportion guess -> know
+#' @param gd proportion guess -> don't know
+#' @param kk proportion know -> know
+#' @param dg proportion don't know -> guess
+#' @param dk proportion don't know -> know
+#' @param dd proportion don't know -> don't know
+#' @param g1 probability a guess is correct (gamma)
+#' @return numeric vector of length 9, ordered x00, x01, x0d, x10, x11, x1d,
+#'   xd0, xd1, xdd
+#' @keywords internal
+
+dk_cell_probs <- function(gg, gk, gd, kk, dg, dk, dd, g1) {
+  vec <- numeric(9)
+  vec[CELL_00_DK] <- (1 - g1) * (1 - g1) * gg
+  vec[CELL_01_DK] <- (1 - g1) * g1 * gg + (1 - g1) * gk
+  vec[CELL_0D] <- (1 - g1) * gd
+  vec[CELL_10_DK] <- g1 * (1 - g1) * gg
+  vec[CELL_11_DK] <- g1 * g1 * gg + g1 * gk + kk
+  vec[CELL_1D] <- g1 * gd
+  vec[CELL_D0] <- (1 - g1) * dg
+  vec[CELL_D1] <- g1 * dg + dk
+  vec[CELL_DD] <- dd
+  vec
 }
 
 #' guess_lik
@@ -37,48 +105,21 @@ eq1dk <- function(x, g1 = NA, data) {
 #' @param data transition matrix
 
 guess_lik <- function(x, g1 = x[4], data) {
-  gg <- x[1]
-  gk <- x[2]
-  kk <- x[3]
-
-  vec <- numeric(4)
-  vec[CELL_00] <- (1 - g1) * (1 - g1) * gg
-  vec[CELL_01] <- (1 - g1) * g1 * gg + (1 - g1) * gk
-  vec[CELL_10] <- (1 - g1) * g1 * gg
-  vec[CELL_11] <- g1 * g1 * gg + g1 * gk + kk
-
-  -sum(data * log(vec))
+  -sum(data * log(nodk_cell_probs(x[1], x[2], x[3], g1)))
 }
 
 #' guessdk_lik
 #' @description Likelihood function for data with Don't Know. Used Internally.
 #' @keywords internal
 #'
-#' @param x     gg, gk, gd, kg, kk, kd, dd
+#' @param x     gg, gk, gd, kk, dg, dk, dd
 #' @param g1    guess
 #' @param data  transition matrix
 
 guessdk_lik <- function(x, g1 = x[8], data) {
-  gg <- x[1]
-  gk <- x[2]
-  gd <- x[3]
-  kg <- x[4]
-  kk <- x[5]
-  kd <- x[6]
-  dd <- x[7]
-
-  vec <- numeric(9)
-  vec[CELL_00_DK] <- (1 - g1) * (1 - g1) * gg
-  vec[CELL_01_DK] <- (1 - g1) * g1 * gg + (1 - g1) * gk
-  vec[CELL_0D] <- (1 - g1) * gd
-  vec[CELL_10_DK] <- (1 - g1) * g1 * gg + kg
-  vec[CELL_11_DK] <- g1 * g1 * gg + g1 * gk + g1 * kg + kk
-  vec[CELL_1D] <- g1 * gd + kd
-  vec[CELL_D0] <- kg
-  vec[CELL_D1] <- g1 * gk + kd
-  vec[CELL_DD] <- dd
-
-  -sum(data * log(vec))
+  -sum(data * log(
+    dk_cell_probs(x[1], x[2], x[3], x[4], x[5], x[6], x[7], g1)
+  ))
 }
 
 #' Interleave vectors
@@ -130,20 +171,8 @@ zero1 <- function(x) {
 
 make_guess_lik_irt <- function(base_rate = 0.25) {
   function(x, g1 = NA, data) {
-    gg <- x[1]
-    gk <- x[2]
-    kk <- x[3]
-    d <- x[4]
-
-    g1 <- base_rate + (1 - base_rate) * plogis(-d)
-
-    vec <- numeric(4)
-    vec[CELL_00] <- (1 - g1) * (1 - g1) * gg
-    vec[CELL_01] <- (1 - g1) * g1 * gg + (1 - g1) * gk
-    vec[CELL_10] <- (1 - g1) * g1 * gg
-    vec[CELL_11] <- g1 * g1 * gg + g1 * gk + kk
-
-    -sum(data * log(vec))
+    g1 <- base_rate + (1 - base_rate) * plogis(-x[4])
+    -sum(data * log(nodk_cell_probs(x[1], x[2], x[3], g1)))
   }
 }
 
@@ -157,29 +186,10 @@ make_guess_lik_irt <- function(base_rate = 0.25) {
 
 make_guessdk_lik_irt <- function(base_rate = 0.25) {
   function(x, g1 = NA, data) {
-    gg <- x[1]
-    gk <- x[2]
-    gd <- x[3]
-    kg <- x[4]
-    kk <- x[5]
-    kd <- x[6]
-    dd <- x[7]
-    d <- x[8]
-
-    g1 <- base_rate + (1 - base_rate) * plogis(-d)
-
-    vec <- numeric(9)
-    vec[CELL_00_DK] <- (1 - g1) * (1 - g1) * gg
-    vec[CELL_01_DK] <- (1 - g1) * g1 * gg + (1 - g1) * gk
-    vec[CELL_0D] <- (1 - g1) * gd
-    vec[CELL_10_DK] <- (1 - g1) * g1 * gg + kg
-    vec[CELL_11_DK] <- g1 * g1 * gg + g1 * gk + g1 * kg + kk
-    vec[CELL_1D] <- g1 * gd + kd
-    vec[CELL_D0] <- kg
-    vec[CELL_D1] <- g1 * gk + kd
-    vec[CELL_DD] <- dd
-
-    -sum(data * log(vec))
+    g1 <- base_rate + (1 - base_rate) * plogis(-x[8])
+    -sum(data * log(
+      dk_cell_probs(x[1], x[2], x[3], x[4], x[5], x[6], x[7], g1)
+    ))
   }
 }
 

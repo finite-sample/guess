@@ -178,7 +178,7 @@ test_that("Don't Know simulation validation (based on data-raw/fakeDK.R)", {
   # Test fit with DK
   fit_results_dk <- fit_model(pre_df, post_df,
                              lca_results_dk$params["gamma", ],
-                             lca_results_dk$params[c("gg", "gk", "gd", "kg", "kk", "kd", "dd"), ],
+                             lca_results_dk$params[c("gg", "gk", "gd", "kk", "dg", "dk", "dd"), ],
                              force9 = TRUE)
   expect_true(is.matrix(fit_results_dk) || is.data.frame(fit_results_dk))
 
@@ -224,7 +224,9 @@ test_that("Backward compatibility and edge case validation", {
                       lca_results$params[c("gg", "gk", "kk"), ])
 
   expect_equal(dim(fit_nodk_result), dim(fit_model_result))
-  expect_true(all(abs(fit_nodk_result - fit_model_result) < 1e-10))
+  # The no-DK model is saturated, so both return NA. expect_equal compares them
+  # as-is; subtracting would give NA and assert nothing.
+  expect_equal(fit_nodk_result, fit_model_result)
   
   # Test edge case - all correct responses
   all_correct_pre <- data.frame(item1 = rep(1, n), item2 = rep(1, n))

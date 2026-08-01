@@ -66,10 +66,29 @@ test_that("fit_model works with no-DK data", {
   expect_equal(rownames(result), c("chi-square", "p-value"))
   expect_equal(colnames(result), "item1")
   
-  # Check that values are reasonable
+  # The no-DK model is saturated -- 3 free parameters against 3 free cell
+  # probabilities -- so there are no degrees of freedom left and no test to
+  # report. It used to report a p-value computed on df = 3, which counted none
+  # of the parameters estimated from the very same counts.
+  expect_true(all(is.na(result["chi-square", ])))
+  expect_true(all(is.na(result["p-value", ])))
+})
+
+test_that("fit_model reports a goodness of fit test for the DK model", {
+  # The DK model has 7 free parameters against 8 free cell probabilities, so
+  # one degree of freedom survives: the restriction x1d/x0d = x10/x00.
+  sim <- simulate_lca_dk(n = 4000, n_items = 2, gamma = 0.25, seed = 202)
+  tm <- multi_transmat(sim$pre, sim$post, force9 = TRUE)
+  fit <- lca_cor(tm)
+
+  result <- fit_model(sim$pre, sim$post, fit$params["gamma", ],
+                      fit$params[1:7, ], force9 = TRUE)
+
   expect_true(all(result["chi-square", ] >= 0))
-  expect_true(all(result["p-value", ] >= 0))
-  expect_true(all(result["p-value", ] <= 1))
+  expect_true(all(result["p-value", ] >= 0 & result["p-value", ] <= 1))
+
+  # Well-specified data should not be rejected.
+  expect_true(all(result["p-value", ] > 0.01))
 })
 
 test_that("fit_model basic functionality works", {

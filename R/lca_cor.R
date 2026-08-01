@@ -17,7 +17,7 @@
 
 lca_cor <- function(transmatrix = NULL,
                     nodk_priors = c(0.3, 0.1, 0.1, 0.25),
-                    dk_priors = c(0.3, 0.1, 0.2, 0.05, 0.1, 0.1, 0.05, 0.25)) {
+                    dk_priors = c(0.30, 0.15, 0.10, 0.20, 0.05, 0.10, 0.10, 0.25)) {
 
   validate_matrix(transmatrix, "transmatrix", valid_ncols = c(4, 9))
 
@@ -35,7 +35,7 @@ lca_cor <- function(transmatrix = NULL,
   effects <- matrix(ncol = n_items, nrow = 1)
 
   if (is_dk) {
-    row.names(est_opt) <- c("gg", "gk", "gd", "kg", "kk", "kd", "dd", "gamma")
+    row.names(est_opt) <- c("gg", "gk", "gd", "kk", "dg", "dk", "dd", "gamma")
     for (i in seq_len(n_items)) {
       est_opt[, i] <- tryCatch(
         solnp(dk_priors, guessdk_lik, eqfun = eq1dk, eqB = 1,
@@ -44,7 +44,7 @@ lca_cor <- function(transmatrix = NULL,
         error = function(e) rep(NA, 8)
       )
     }
-    effects[, seq_len(n_items)] <- est_opt["gk", ] + est_opt["kd", ]
+    effects[, seq_len(n_items)] <- est_opt["gk", ] + est_opt["dk", ]
   } else {
     row.names(est_opt) <- c("gg", "gk", "kk", "gamma")
     for (i in seq_len(n_items)) {
@@ -125,7 +125,7 @@ lca_cor <- function(transmatrix = NULL,
 
 lca_irt <- function(transmatrix = NULL, base_rate = 0.25,
                     nodk_priors = c(0.35, 0.30, 0.35, 0),
-                    dk_priors = c(0.25, 0.15, 0.10, 0.10, 0.15, 0.10, 0.15, 0)) {
+                    dk_priors = c(0.25, 0.15, 0.10, 0.20, 0.10, 0.10, 0.10, 0)) {
 
   validate_matrix(transmatrix, "transmatrix", valid_ncols = c(4, 9))
   assert_numeric(base_rate, lower = 0, upper = 1, len = 1L)
@@ -149,7 +149,7 @@ lca_irt <- function(transmatrix = NULL, base_rate = 0.25,
   gamma_vec <- numeric(n_items)
 
   if (is_dk) {
-    row.names(est_opt) <- c("gg", "gk", "gd", "kg", "kk", "kd", "dd", "difficulty")
+    row.names(est_opt) <- c("gg", "gk", "gd", "kk", "dg", "dk", "dd", "difficulty")
     lik_fn <- make_guessdk_lik_irt(base_rate)
     for (i in seq_len(n_items)) {
       result <- tryCatch({
@@ -160,7 +160,7 @@ lca_irt <- function(transmatrix = NULL, base_rate = 0.25,
       est_opt[, i] <- result
       gamma_vec[i] <- difficulty_to_gamma(result[8], base_rate)
     }
-    effects[, seq_len(n_items)] <- est_opt["gk", ] + est_opt["kd", ]
+    effects[, seq_len(n_items)] <- est_opt["gk", ] + est_opt["dk", ]
   } else {
     row.names(est_opt) <- c("gg", "gk", "kk", "difficulty")
     lik_fn <- make_guess_lik_irt(base_rate)

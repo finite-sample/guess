@@ -160,9 +160,9 @@ simulate_lca <- function(n, n_items = 1, gg = 0.35, gk = 0.30, kk = 0.35,
 #' @param gg Numeric. Proportion: guess->guess (stable ignorance). Default 0.25.
 #' @param gk Numeric. Proportion: guess->know (learned). Default 0.15.
 #' @param gd Numeric. Proportion: guess->dk. Default 0.10.
-#' @param kg Numeric. Proportion: know->guess (forgot). Default 0.10.
 #' @param kk Numeric. Proportion: know->know (stable knowledge). Default 0.15.
-#' @param kd Numeric. Proportion: know->dk. Default 0.10.
+#' @param dg Numeric. Proportion: dk->guess. Default 0.10.
+#' @param dk Numeric. Proportion: dk->know (learned). Default 0.10.
 #' @param dd Numeric. Proportion: dk->dk. Default 0.15.
 #' @param gamma Numeric. Probability of guessing correctly. Can be scalar (same for
 #'   all items) or vector of length n_items. Default 0.25.
@@ -183,10 +183,14 @@ simulate_lca <- function(n, n_items = 1, gg = 0.35, gk = 0.30, kk = 0.35,
 #' - **gg**: guess both times
 #' - **gk**: guess -> know (learned)
 #' - **gd**: guess -> dk
-#' - **kg**: know -> guess (forgot)
 #' - **kk**: know -> know
-#' - **kd**: know -> dk
+#' - **dg**: dk -> guess
+#' - **dk**: dk -> know (learned)
 #' - **dd**: dk -> dk
+#'
+#' The know -> guess and know -> dk classes are absent by design. The model is
+#' identified by the assumption that people do not lose knowledge over a short
+#' informative process, which sets both to zero. Learning is gk + dk.
 #'
 #' Parameters must sum to 1 (constraint enforced automatically).
 #'
@@ -196,7 +200,7 @@ simulate_lca <- function(n, n_items = 1, gg = 0.35, gk = 0.30, kk = 0.35,
 #' @export
 #' @examples
 #' # Simulate DK data
-#' sim <- simulate_lca_dk(n = 500, gk = 0.15, seed = 123)
+#' sim <- simulate_lca_dk(n = 5000, gk = 0.15, seed = 123)
 #' fit <- lca_fit(sim$pre, sim$post)
 #' fit$params["gk", ]  # Should be close to 0.15
 #'
@@ -207,7 +211,7 @@ simulate_lca <- function(n, n_items = 1, gg = 0.35, gk = 0.30, kk = 0.35,
 #' sim_irt <- simulate_lca_dk(n = 500, n_items = 3, difficulty = c(1, 0, -1), seed = 789)
 simulate_lca_dk <- function(n, n_items = 1,
                             gg = 0.25, gk = 0.15, gd = 0.10,
-                            kg = 0.10, kk = 0.15, kd = 0.10,
+                            kk = 0.15, dg = 0.10, dk = 0.10,
                             dd = 0.15, gamma = 0.25, difficulty = NULL,
                             base_rate = 0.25, seed = NULL) {
 
@@ -216,9 +220,9 @@ simulate_lca_dk <- function(n, n_items = 1,
   assert_numeric(gg, lower = 0, upper = 1, len = 1L)
   assert_numeric(gk, lower = 0, upper = 1, len = 1L)
   assert_numeric(gd, lower = 0, upper = 1, len = 1L)
-  assert_numeric(kg, lower = 0, upper = 1, len = 1L)
   assert_numeric(kk, lower = 0, upper = 1, len = 1L)
-  assert_numeric(kd, lower = 0, upper = 1, len = 1L)
+  assert_numeric(dg, lower = 0, upper = 1, len = 1L)
+  assert_numeric(dk, lower = 0, upper = 1, len = 1L)
   assert_numeric(dd, lower = 0, upper = 1, len = 1L)
   assert_numeric(base_rate, lower = 0, upper = 1, len = 1L)
 
@@ -239,7 +243,7 @@ simulate_lca_dk <- function(n, n_items = 1,
     gamma_vec <- gamma
   }
 
-  lambdas <- c(gg, gk, gd, kg, kk, kd, dd)
+  lambdas <- c(gg, gk, gd, kk, dg, dk, dd)
   total <- sum(lambdas)
   if (abs(total - 1) > 1e-6) {
     lambdas <- lambdas / total
@@ -258,6 +262,9 @@ simulate_lca_dk <- function(n, n_items = 1,
     post <- character(n)
     g <- gamma_vec[item]
 
+    # Classes are, in order: gg, gk, gd, kk, dg, dk, dd. A guesser answers
+    # correctly with probability gamma; someone who knows always answers
+    # correctly; someone who confesses ignorance answers "d".
     for (i in seq_len(n)) {
       cl <- classes[i]
       if (cl == 1) {
@@ -271,13 +278,13 @@ simulate_lca_dk <- function(n, n_items = 1,
         post[i] <- "d"
       } else if (cl == 4) {
         pre[i] <- "1"
-        post[i] <- ifelse(rbinom(1, 1, g) == 1, "1", "0")
-      } else if (cl == 5) {
-        pre[i] <- "1"
         post[i] <- "1"
+      } else if (cl == 5) {
+        pre[i] <- "d"
+        post[i] <- ifelse(rbinom(1, 1, g) == 1, "1", "0")
       } else if (cl == 6) {
-        pre[i] <- "1"
-        post[i] <- "d"
+        pre[i] <- "d"
+        post[i] <- "1"
       } else {
         pre[i] <- "d"
         post[i] <- "d"

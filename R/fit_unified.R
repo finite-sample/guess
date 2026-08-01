@@ -2,8 +2,15 @@
 #'
 #' @title Goodness of fit statistics for transition matrix data
 #' 
-#' @description Chi-square goodness of fit between true and model based multivariate distribution.
-#' Handles both data with and without don't know responses automatically.
+#' @description Pearson chi-square goodness of fit between the observed
+#' transition counts and those the fitted model implies. Handles data with and
+#' without don't know responses automatically.
+#'
+#' Degrees of freedom are the free cell probabilities less the parameters
+#' estimated from the same counts. The don't-know model leaves 1 degree of
+#' freedom. The model without don't know is saturated -- 3 free parameters
+#' against 3 free cell probabilities -- so no test is possible and both rows
+#' are `NA`.
 #'
 #' @param pre_test data.frame carrying pre_test items
 #' @param pst_test data.frame carrying pst_test items 
@@ -68,16 +75,39 @@ fit_model <- function(pre_test, pst_test, g, est_param, force9 = FALSE) {
       next
     }
     
-    # Perform chi-square test
-    observed <- data[i, ]
-    expected_probs <- expected / sum(expected)
-    chi_test <- suppressWarnings(
-      chisq.test(observed, p = expected_probs)
-    )
-    
-    # Store results
-    fit_results[1, i] <- round(chi_test$statistic, 3)
-    fit_results[2, i] <- round(chi_test$p.value, 3)
+    # Pearson goodness of fit, against the right degrees of freedom.
+    #
+    # chisq.test(observed, p = expected_probs) charges df = cells - 1, which
+    # ignores every parameter estimated from these same counts. The no-DK model
+    # has 3 free parameters (gg, gk, kk sum to 1, plus gamma) against 3 free
+    # cell probabilities: it is saturated, df = 0, and there is nothing to test.
+    # The DK model has 7 free parameters against 8 free cell probabilities,
+    # leaving df = 1 -- the single over-identifying restriction x1d/x0d =
+    # x10/x00. Charging df = 8 there made the test almost incapable of
+    # rejecting.
+    observed <- as.numeric(data[i, ])
+    expected_counts <- expected / sum(expected) * total_obs
+
+    n_free <- if (model_type == "dk") 7L else 3L
+    df <- length(observed) - 1L - n_free
+
+    if (df <= 0L) {
+      fit_results[1, i] <- NA
+      fit_results[2, i] <- NA
+      next
+    }
+
+    nonzero <- expected_counts > 0
+    if (any(observed[!nonzero] > 0)) {
+      stat <- Inf
+    } else {
+      stat <- sum(
+        (observed[nonzero] - expected_counts[nonzero])^2 / expected_counts[nonzero]
+      )
+    }
+
+    fit_results[1, i] <- round(stat, 3)
+    fit_results[2, i] <- round(stats::pchisq(stat, df = df, lower.tail = FALSE), 3)
   }
   
   fit_results

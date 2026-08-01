@@ -530,19 +530,21 @@ When "Don't Know" responses are available, the model extends to a 9-cell transit
 | gg | guess | guess | Stable ignorance |
 | gk | guess | know | **Learned** |
 | gd | guess | DK | Became aware of ignorance |
-| kg | know | guess | Forgot (became uncertain) |
 | kk | know | know | Stable knowledge |
-| kd | know | DK | Lost confidence |
+| dg | DK | guess | Stopped confessing, started guessing |
+| dk | DK | know | **Learned** |
 | dd | DK | DK | Persistent uncertainty |
 
-The learning estimate in the DK model is $gk + kd$ (true learning plus those who learned but lost confidence).
+Two of the nine conceivable transitions are absent. The model is identified by the assumption that people do not lose knowledge over a short informative process, which sets know→guess and know→DK to zero. Without that restriction there would be 9 parameters against 8 free cell probabilities, and no dataset of any size could separate them.
+
+The learning estimate in the DK model is $gk + dk$: those who learned the item from guessing, plus those who learned it from confessed ignorance.
 
 ```{r dk_model_demo}
 sim_dk <- simulate_lca_dk(
   n = 500, n_items = 1,
   gg = 0.25, gk = 0.15, gd = 0.10,
-  kg = 0.10, kk = 0.15, kd = 0.10,
-  dd = 0.15, gamma = 0.25,
+  kk = 0.20, dg = 0.10, dk = 0.10,
+  dd = 0.10, gamma = 0.25,
   seed = 456
 )
 

@@ -190,7 +190,7 @@ fit <- fit_nodk(pre_test, post_test, res$params["gamma", ], res$params[c("gg", "
 
 print(fit[, 1:4])
 
-fit <- fit_dk(pre_test_dk, post_test_dk, res_dk$params["gamma", ], res_dk$params[c("gg", "gk", "gd", "kg", "kk", "kd", "dd"), ], force9 = TRUE)
+fit <- fit_dk(pre_test_dk, post_test_dk, res_dk$params["gamma", ], res_dk$params[c("gg", "gk", "gd", "kk", "dg", "dk", "dd"), ], force9 = TRUE)
 
 print(fit[, 1:4])
 ```
@@ -324,8 +324,8 @@ sim_dk <- simulate_lca_dk(
   n = 500,
   n_items = 1,
   gg = 0.25, gk = 0.15, gd = 0.10,
-  kg = 0.10, kk = 0.15, kd = 0.10,
-  dd = 0.15, gamma = 0.25,
+  kk = 0.20, dg = 0.10, dk = 0.10,
+  dd = 0.10, gamma = 0.25,
   seed = 456
 )
 

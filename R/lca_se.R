@@ -8,6 +8,11 @@
 #' @param seed    random seed, default is 31415
 #' @param force9 Optional. Force 9-column format even if no DK responses.
 #'   Default is FALSE.
+#' @param na_as Classification of NA responses: `"dk"` (the default) treats
+#'   them as observed don't know responses; `"missing"` treats them as
+#'   structural missingness.
+#' @param missing_action How to handle structural missingness: `"omit"`
+#'   excludes incomplete pairs and `"error"` rejects them.
 #'
 #' @return  list with:
 #'   \item{se_params}{standard errors of parameters by item}
@@ -22,14 +27,20 @@
 #'   pst_item1 = pre_test[, 1] + c(0, 1, 1, 0, 0),
 #'   pst_item2 = pre_test[, 2] + c(0, 1, 0, 0, 1)
 #' )
-#' \dontrun{lca_se(pre_test, pst_test, n_resamples = 10, seed = 31415)}
-
+#' \dontrun{
+#' lca_se(pre_test, pst_test, n_resamples = 10, seed = 31415)
+#' }
 lca_se <- function(pre_test = NULL, pst_test = NULL, n_resamples = 100,
-                   seed = 31415, force9 = FALSE) {
-
+                   seed = 31415, force9 = FALSE,
+                   na_as = c("dk", "missing"),
+                   missing_action = c("omit", "error")) {
   df <- data.frame(cbind(pre_test, pst_test))
   n_items <- ncol(df) / 2
-  transmatrix <- multi_transmat(pre_test, pst_test, force9 = force9)
+  transmatrix <- multi_transmat(
+    pre_test, pst_test,
+    force9 = force9,
+    na_as = na_as, missing_action = missing_action
+  )
   n_params <- ifelse(ncol(transmatrix) == 4, 4, 8)
 
   resamp_results <- list()
@@ -51,7 +62,8 @@ lca_se <- function(pre_test = NULL, pst_test = NULL, n_resamples = 100,
     transmatrix_i <- multi_transmat(
       resamples[[i]][, seq_len(n_items)],
       resamples[[i]][, (n_items + 1):(2 * n_items)],
-      force9 = force9, agg = TRUE
+      force9 = force9, agg = TRUE,
+      na_as = na_as, missing_action = missing_action
     )
     resamp_results[[i]] <- lca_cor(transmatrix_i)
     resamp_effects[i, ] <- resamp_results[[i]]$learning

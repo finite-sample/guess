@@ -2,20 +2,33 @@
 % Please edit documentation in R/nona.R
 \name{nona}
 \alias{nona}
-\title{No NAs}
+\title{Normalize NA Responses}
 \usage{
-nona(vec = NULL)
+nona(
+  vec = NULL,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error")
+)
 }
 \arguments{
-\item{vec}{Required. Character or Numeric vector.}
+\item{vec}{Required. Character or numeric vector.}
+
+\item{na_as}{Classification of NA responses: `"dk"` (the default) or
+`"missing"`.}
+
+\item{missing_action}{How to handle structural missingness: `"omit"` or
+`"error"`.}
 }
 \value{
 Character vector.
 }
 \description{
-Converts NAs to 0s
+Classifies NAs as observed don't know responses by default. If NAs represent
+structural missingness, they can instead be omitted or rejected.
 }
 \examples{
-x <- c(NA, 1, 0); nona(x)
-x <- c(NA, "dk", 0); nona(x)
+x <- c(NA, 1, 0)
+nona(x)
+x <- c(NA, "dk", 0)
+nona(x)
 }

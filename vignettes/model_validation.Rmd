@@ -41,21 +41,24 @@ compare_learning_recovery <- function(n, n_items, gg = 0.35, gk = 0.30,
     )
     true_learned <- as.numeric(sim_data$learned)
 
-    tryCatch({
-      fit <- lca_fit(sim_data$pre, sim_data$post)
-      p_learned_lca <- posterior_learned(fit, sim_data$pre, sim_data$post)
-      p_learned_cs <- cross_sectional_irt(sim_data$pre, sim_data$post)
+    tryCatch(
+      {
+        fit <- person_item_lca_fit(sim_data$pre, sim_data$post)
+        p_learned_lca <- posterior_learned(fit)
+        p_learned_cs <- cross_sectional_learning_score(sim_data$pre, sim_data$post)
 
-      results$sim[s] <- s
-      results$cor_lca[s] <- cor(p_learned_lca, true_learned, use = "complete.obs")
-      results$cor_cs[s] <- cor(p_learned_cs, true_learned, use = "complete.obs")
-      results$lca_advantage[s] <- results$cor_lca[s] - results$cor_cs[s]
-    }, error = function(e) {
-      results$sim[s] <- s
-      results$cor_lca[s] <- NA_real_
-      results$cor_cs[s] <- NA_real_
-      results$lca_advantage[s] <- NA_real_
-    })
+        results$sim[s] <- s
+        results$cor_lca[s] <- cor(p_learned_lca, true_learned, use = "complete.obs")
+        results$cor_cs[s] <- cor(p_learned_cs, true_learned, use = "complete.obs")
+        results$lca_advantage[s] <- results$cor_lca[s] - results$cor_cs[s]
+      },
+      error = function(e) {
+        results$sim[s] <- s
+        results$cor_lca[s] <- NA_real_
+        results$cor_cs[s] <- NA_real_
+        results$lca_advantage[s] <- NA_real_
+      }
+    )
   }
   results
 }
@@ -123,10 +126,10 @@ cat(sprintf("\nMean naive learning: %.3f\n", mean(naive_learning)))
 
 ### Step 3: Fit the LCA Model
 
-Use `lca_fit()` to estimate the latent class proportions:
+Use `item_lca_fit()` to estimate the latent class proportions:
 
 ```{r workflow_fit}
-fit <- lca_fit(pre_test, post_test)
+fit <- item_lca_fit(pre_test, post_test)
 print(fit)
 ```
 
@@ -162,9 +165,11 @@ se_results <- lca_se(pre_test, post_test, n_boot = 100)
 Check how well the model fits each item:
 
 ```{r workflow_diagnostics}
-fit_stats <- fit_model(pre_test, post_test,
-                       fit$params["gamma", ],
-                       fit$params[c("gg", "gk", "kk"), ])
+fit_stats <- fit_model(
+  pre_test, post_test,
+  fit$params["gamma", ],
+  fit$params[c("gg", "gk", "kk"), ]
+)
 print(fit_stats)
 ```
 
@@ -182,8 +187,8 @@ post_treat <- post_test[group == "treatment", ]
 pre_ctrl <- pre_test[group == "control", ]
 post_ctrl <- post_test[group == "control", ]
 
-fit_treat <- lca_fit(pre_treat, post_treat)
-fit_ctrl <- lca_fit(pre_ctrl, post_ctrl)
+fit_treat <- item_lca_fit(pre_treat, post_treat)
+fit_ctrl <- item_lca_fit(pre_ctrl, post_ctrl)
 
 cat("Treatment group learning:", round(mean(fit_treat$learning), 3), "\n")
 cat("Control group learning:", round(mean(fit_ctrl$learning), 3), "\n")
@@ -304,10 +309,10 @@ The `guess` package implements the likelihood function in `guess_lik()`. Let's v
 ```{r verify_implementation}
 guess_lik_manual <- function(gg, gk, kk, gamma, data) {
   vec <- numeric(4)
-  vec[1] <- (1 - gamma) * (1 - gamma) * gg        # P(0→0)
-  vec[2] <- (1 - gamma) * gamma * gg + (1 - gamma) * gk  # P(0→1)
-  vec[3] <- (1 - gamma) * gamma * gg              # P(1→0)
-  vec[4] <- gamma * gamma * gg + gamma * gk + kk  # P(1→1)
+  vec[1] <- (1 - gamma) * (1 - gamma) * gg # P(0→0)
+  vec[2] <- (1 - gamma) * gamma * gg + (1 - gamma) * gk # P(0→1)
+  vec[3] <- (1 - gamma) * gamma * gg # P(1→0)
+  vec[4] <- gamma * gamma * gg + gamma * gk + kk # P(1→1)
 
   -sum(data * log(vec))
 }
@@ -336,7 +341,7 @@ sim <- simulate_lca(
   seed = 123
 )
 
-fit <- lca_fit(sim$pre, sim$post)
+fit <- item_lca_fit(sim$pre, sim$post)
 
 estimated <- c(
   gg = mean(fit$params["gg", ]),
@@ -351,8 +356,10 @@ comparison <- rbind(
   difference = estimated - true_params
 )
 
-knitr::kable(comparison, digits = 3,
-             caption = "Parameter Recovery: True vs. Estimated")
+knitr::kable(comparison,
+  digits = 3,
+  caption = "Parameter Recovery: True vs. Estimated"
+)
 ```
 
 The estimated parameters should be close to the true values. Small differences are expected due to sampling variability.
@@ -378,15 +385,18 @@ for (sim in seq_len(n_sims)) {
     kk = true_params["kk"], gamma = true_params["gamma"]
   )
 
-  tryCatch({
-    fit <- lca_fit(sim_data$pre, sim_data$post)
-    estimates[sim, ] <- c(
-      mean(fit$params["gg", ]),
-      mean(fit$params["gk", ]),
-      mean(fit$params["kk", ]),
-      mean(fit$params["gamma", ])
-    )
-  }, error = function(e) NULL)
+  tryCatch(
+    {
+      fit <- item_lca_fit(sim_data$pre, sim_data$post)
+      estimates[sim, ] <- c(
+        mean(fit$params["gg", ]),
+        mean(fit$params["gk", ]),
+        mean(fit$params["kk", ]),
+        mean(fit$params["gamma", ])
+      )
+    },
+    error = function(e) NULL
+  )
 }
 ```
 
@@ -407,8 +417,10 @@ bias_table <- data.frame(
   Relative_Bias_Pct = rel_bias
 )
 
-knitr::kable(bias_table, digits = 4, row.names = FALSE,
-             caption = "Bias Assessment from Monte Carlo Simulation")
+knitr::kable(bias_table,
+  digits = 4, row.names = FALSE,
+  caption = "Bias Assessment from Monte Carlo Simulation"
+)
 ```
 
 The bias should be close to zero for all parameters.
@@ -419,9 +431,13 @@ The standard deviation of estimates across simulations approximates the true sta
 
 ```{r se_assessment}
 se_estimates <- apply(estimates, 2, sd, na.rm = TRUE)
-rmse <- sqrt(colMeans((estimates - matrix(true_params, nrow = n_sims,
-                                           ncol = 4, byrow = TRUE))^2,
-                       na.rm = TRUE))
+rmse <- sqrt(colMeans(
+  (estimates - matrix(true_params,
+    nrow = n_sims,
+    ncol = 4, byrow = TRUE
+  ))^2,
+  na.rm = TRUE
+))
 
 se_table <- data.frame(
   Parameter = names(true_params),
@@ -429,8 +445,10 @@ se_table <- data.frame(
   RMSE = rmse
 )
 
-knitr::kable(se_table, digits = 4, row.names = FALSE,
-             caption = "Standard Errors from Monte Carlo Simulation")
+knitr::kable(se_table,
+  digits = 4, row.names = FALSE,
+  caption = "Standard Errors from Monte Carlo Simulation"
+)
 ```
 
 ### Coverage Assessment
@@ -443,7 +461,7 @@ for (j in 1:4) {
   ci_lower <- estimates[, j] - 1.96 * se_estimates[j]
   ci_upper <- estimates[, j] + 1.96 * se_estimates[j]
   coverage[j] <- mean(true_params[j] >= ci_lower &
-                        true_params[j] <= ci_upper, na.rm = TRUE)
+    true_params[j] <= ci_upper, na.rm = TRUE)
 }
 
 coverage_table <- data.frame(
@@ -451,8 +469,10 @@ coverage_table <- data.frame(
   Coverage_95 = coverage
 )
 
-knitr::kable(coverage_table, digits = 3, row.names = FALSE,
-             caption = "95% CI Coverage from Monte Carlo Simulation")
+knitr::kable(coverage_table,
+  digits = 3, row.names = FALSE,
+  caption = "95% CI Coverage from Monte Carlo Simulation"
+)
 ```
 
 Coverage should be approximately 0.95 for all parameters.
@@ -460,9 +480,11 @@ Coverage should be approximately 0.95 for all parameters.
 ### Visualization
 
 ```{r visualization, fig.cap = "Distribution of gk (learning) estimates across simulations"}
-hist(estimates[, "gk"], breaks = 20,
-     main = "Distribution of Learning (gk) Estimates",
-     xlab = "Estimated gk", col = "lightblue", border = "white")
+hist(estimates[, "gk"],
+  breaks = 20,
+  main = "Distribution of Learning (gk) Estimates",
+  xlab = "Estimated gk", col = "lightblue", border = "white"
+)
 abline(v = true_params["gk"], col = "red", lwd = 2, lty = 2)
 legend("topright", legend = c("True value"), col = "red", lty = 2, lwd = 2)
 ```
@@ -491,22 +513,28 @@ for (s in seq_along(sample_sizes)) {
       kk = true_params["kk"], gamma = true_params["gamma"]
     )
 
-    tryCatch({
-      fit <- lca_fit(sim_data$pre, sim_data$post)
-      estimates_n[sim, ] <- c(
-        mean(fit$params["gg", ]),
-        mean(fit$params["gk", ]),
-        mean(fit$params["kk", ]),
-        mean(fit$params["gamma", ])
-      )
-    }, error = function(e) NULL)
+    tryCatch(
+      {
+        fit <- item_lca_fit(sim_data$pre, sim_data$post)
+        estimates_n[sim, ] <- c(
+          mean(fit$params["gg", ]),
+          mean(fit$params["gk", ]),
+          mean(fit$params["kk", ]),
+          mean(fit$params["gamma", ])
+        )
+      },
+      error = function(e) NULL
+    )
   }
 
-  rmse_by_n[s, ] <- sqrt(colMeans((estimates_n - matrix(true_params,
-                                                         nrow = n_sims_quick,
-                                                         ncol = 4,
-                                                         byrow = TRUE))^2,
-                                   na.rm = TRUE))
+  rmse_by_n[s, ] <- sqrt(colMeans(
+    (estimates_n - matrix(true_params,
+      nrow = n_sims_quick,
+      ncol = 4,
+      byrow = TRUE
+    ))^2,
+    na.rm = TRUE
+  ))
 }
 
 sample_size_table <- data.frame(
@@ -515,8 +543,10 @@ sample_size_table <- data.frame(
   RMSE_ratio = c(NA, rmse_by_n[-nrow(rmse_by_n), "gk"] / rmse_by_n[-1, "gk"])
 )
 
-knitr::kable(sample_size_table, digits = 3, row.names = FALSE,
-             caption = "RMSE of gk by Sample Size (ratio should be ~sqrt(2) for doubling n)")
+knitr::kable(sample_size_table,
+  digits = 3, row.names = FALSE,
+  caption = "RMSE of gk by Sample Size (ratio should be ~sqrt(2) for doubling n)"
+)
 ```
 
 The RMSE ratio between adjacent sample sizes should be approximately $\sqrt{2} \approx 1.41$ when sample size doubles, confirming the $1/\sqrt{n}$ efficiency pattern.
@@ -548,7 +578,7 @@ sim_dk <- simulate_lca_dk(
   seed = 456
 )
 
-fit_dk <- lca_fit(sim_dk$pre, sim_dk$post)
+fit_dk <- item_lca_fit(sim_dk$pre, sim_dk$post)
 
 cat("True learning (gk): 0.15\n")
 cat(sprintf("Estimated gk: %.3f\n", fit_dk$params["gk", 1]))
@@ -598,27 +628,27 @@ sim <- simulate_lca(
   seed = 123, return_classes = TRUE
 )
 
-fit <- lca_fit(sim$pre, sim$post)
+fit <- person_item_lca_fit(sim$pre, sim$post)
 
-posteriors <- posterior_class_probs(fit, sim$pre, sim$post)
+posteriors <- posterior_class_probs(fit)
 head(posteriors)
 ```
 
 The key estimand is P(gk | data) = P(learned | data):
 
 ```{r posterior_learned_demo}
-p_learned_lca <- posterior_learned(fit, sim$pre, sim$post)
+p_learned_lca <- posterior_learned(fit)
 
 cor_with_truth <- cor(p_learned_lca, as.numeric(sim$learned))
 cat(sprintf("LCA correlation with true learning: %.3f\n", cor_with_truth))
 ```
 
-### Comparison with Cross-Sectional IRT
+### Comparison with a Cross-Sectional Score
 
-Cross-sectional IRT estimates ability at each timepoint independently, then computes learning as the difference:
+The cross-sectional baseline transforms proportion correct at each timepoint and then computes a bounded difference score. It is not a fitted IRT model:
 
 ```{r cross_sectional_demo}
-p_learned_cs <- cross_sectional_irt(sim$pre, sim$post)
+p_learned_cs <- cross_sectional_learning_score(sim$pre, sim$post)
 
 cor_cs <- cor(p_learned_cs, as.numeric(sim$learned))
 cat(sprintf("Cross-sectional correlation: %.3f\n", cor_cs))
@@ -637,13 +667,15 @@ comparison <- compare_learning_recovery(
 )
 
 summary_stats <- summarize_learning_comparison(comparison)
-knitr::kable(summary_stats, digits = 3,
-             caption = "LCA vs. Cross-Sectional Learning Recovery")
+knitr::kable(summary_stats,
+  digits = 3,
+  caption = "LCA vs. Cross-Sectional Learning Recovery"
+)
 ```
 
 ### Effect of Gamma (Guessing Rate)
 
-The LCA advantage should be largest when gamma is high (more guessing to filter out):
+As gamma rises, response patterns contain less information about the latent class. The simulation compares how the two recovery measures degrade:
 
 ```{r gamma_effect, fig.cap = "LCA advantage by gamma level"}
 set.seed(789)
@@ -660,16 +692,20 @@ for (g in gammas) {
   results_by_gamma <- rbind(results_by_gamma, res)
 }
 
-agg <- aggregate(lca_advantage ~ gamma, data = results_by_gamma,
-                 FUN = function(x) c(mean = mean(x), se = sd(x)/sqrt(length(x))))
+agg <- aggregate(lca_advantage ~ gamma,
+  data = results_by_gamma,
+  FUN = function(x) c(mean = mean(x), se = sd(x) / sqrt(length(x)))
+)
 agg <- do.call(data.frame, agg)
 names(agg) <- c("gamma", "mean", "se")
 
-barplot(agg$mean, names.arg = agg$gamma,
-        main = "LCA Advantage by Guessing Rate",
-        xlab = "Gamma (guessing probability)",
-        ylab = "Correlation advantage (LCA - CS)",
-        col = "steelblue")
+barplot(agg$mean,
+  names.arg = agg$gamma,
+  main = "LCA Advantage by Guessing Rate",
+  xlab = "Gamma (guessing probability)",
+  ylab = "Correlation advantage (LCA - CS)",
+  col = "steelblue"
+)
 ```
 
 ### Interpreting Posterior Probabilities
@@ -681,8 +717,8 @@ sim <- simulate_lca(
   n = 500, n_items = 5, gk = 0.30, gamma = 0.25,
   seed = 101, return_classes = TRUE
 )
-fit <- lca_fit(sim$pre, sim$post)
-posteriors <- posterior_class_probs(fit, sim$pre, sim$post)
+fit <- person_item_lca_fit(sim$pre, sim$post)
+posteriors <- posterior_class_probs(fit)
 
 posteriors$true_class <- sim$true_class
 
@@ -691,12 +727,18 @@ gk_subset <- posteriors[posteriors$true_class == "gk", ]
 gg_subset <- posteriors[posteriors$true_class == "gg", ]
 
 cat("Mean posteriors by true class:\n")
-cat(sprintf("  kk class: P_kk=%.3f, P_gk=%.3f, P_gg=%.3f\n",
-            mean(kk_subset$P_kk), mean(kk_subset$P_gk), mean(kk_subset$P_gg)))
-cat(sprintf("  gk class: P_kk=%.3f, P_gk=%.3f, P_gg=%.3f\n",
-            mean(gk_subset$P_kk), mean(gk_subset$P_gk), mean(gk_subset$P_gg)))
-cat(sprintf("  gg class: P_kk=%.3f, P_gk=%.3f, P_gg=%.3f\n",
-            mean(gg_subset$P_kk), mean(gg_subset$P_gk), mean(gg_subset$P_gg)))
+cat(sprintf(
+  "  kk class: P_kk=%.3f, P_gk=%.3f, P_gg=%.3f\n",
+  mean(kk_subset$P_kk), mean(kk_subset$P_gk), mean(kk_subset$P_gg)
+))
+cat(sprintf(
+  "  gk class: P_kk=%.3f, P_gk=%.3f, P_gg=%.3f\n",
+  mean(gk_subset$P_kk), mean(gk_subset$P_gk), mean(gk_subset$P_gg)
+))
+cat(sprintf(
+  "  gg class: P_kk=%.3f, P_gk=%.3f, P_gg=%.3f\n",
+  mean(gg_subset$P_kk), mean(gg_subset$P_gk), mean(gg_subset$P_gg)
+))
 ```
 
 ## Conclusion

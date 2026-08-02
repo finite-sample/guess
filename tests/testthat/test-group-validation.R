@@ -1,5 +1,3 @@
-context("Group Adjustment Validation")
-
 test_that("group_adj returns expected structure", {
   sim <- simulate_lca(n = 100, n_items = 3, seed = 123)
   gamma <- rep(0.25, 3)
@@ -35,8 +33,10 @@ test_that("group_adj with true gamma improves estimates", {
   naive_errors <- numeric(n_sims)
 
   for (i in seq_len(n_sims)) {
-    sim <- simulate_lca(n = 300, gg = 0.35, gk = true_learning,
-                        kk = 0.35, gamma = true_gamma)
+    sim <- simulate_lca(
+      n = 300, gg = 0.35, gk = true_learning,
+      kk = 0.35, gamma = true_gamma
+    )
 
     result <- group_adj(sim$pre, sim$post, gamma = true_gamma)
     adj_errors[i] <- abs(result$learn[1] - true_learning)
@@ -62,10 +62,14 @@ test_that("group_adj handles varying gamma across items", {
 })
 
 test_that("lca_adj returns expected structure", {
-  pre_test <- data.frame(item1 = c(1, 0, 0, 1, "d", "d", 0, 1, 0),
-                         stringsAsFactors = FALSE)
-  post_test <- data.frame(item1 = c(1, 0, 1, "d", 1, 0, 1, 1, "d"),
-                          stringsAsFactors = FALSE)
+  pre_test <- data.frame(
+    item1 = c(1, 0, 0, 1, "d", "d", 0, 1, 0),
+    stringsAsFactors = FALSE
+  )
+  post_test <- data.frame(
+    item1 = c(1, 0, 1, "d", 1, 0, 1, 1, "d"),
+    stringsAsFactors = FALSE
+  )
 
   result <- suppressWarnings(lca_adj(pre_test, post_test))
 
@@ -119,6 +123,6 @@ test_that("lca_adj does not crash with missing values", {
   pre_test <- data.frame(item1 = c(1, 0, NA, 1, 0))
   post_test <- data.frame(item1 = c(1, NA, 1, 1, 0))
 
-  expect_warning(result <- lca_adj(pre_test, post_test))
+  expect_no_error(result <- lca_adj(pre_test, post_test))
   expect_true(is.list(result))
 })

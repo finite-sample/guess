@@ -51,8 +51,12 @@ test_that("response_to_cell maps correctly for nodk", {
   expect_equal(response_to_cell(0, 1, FALSE), 2)
   expect_equal(response_to_cell(1, 0, FALSE), 3)
   expect_equal(response_to_cell(1, 1, FALSE), 4)
-  expect_equal(response_to_cell(NA, 0, FALSE), 1)
-  expect_equal(response_to_cell("d", 1, FALSE), 2)
+  expect_true(is.na(response_to_cell(
+    NA, 0, FALSE,
+    na_as = "missing"
+  )))
+  expect_error(response_to_cell(NA, 0, FALSE), "require a DK model")
+  expect_error(response_to_cell("d", 1, FALSE), "require a DK model")
 })
 
 test_that("response_to_cell maps correctly for dk", {
@@ -68,9 +72,13 @@ test_that("response_to_cell maps correctly for dk", {
 })
 
 test_that("perplexity_items returns positive value for fitted model", {
-  transmat <- matrix(c(10, 5, 2, 8,
-                       12, 3, 4, 6),
-                     nrow = 2, byrow = TRUE)
+  transmat <- matrix(
+    c(
+      10, 5, 2, 8,
+      12, 3, 4, 6
+    ),
+    nrow = 2, byrow = TRUE
+  )
   colnames(transmat) <- c("x00", "x01", "x10", "x11")
   rownames(transmat) <- c("item1", "item2")
 
@@ -83,9 +91,13 @@ test_that("perplexity_items returns positive value for fitted model", {
 })
 
 test_that("perplexity_items works with item-specific calculation", {
-  transmat <- matrix(c(10, 5, 2, 8,
-                       12, 3, 4, 6),
-                     nrow = 2, byrow = TRUE)
+  transmat <- matrix(
+    c(
+      10, 5, 2, 8,
+      12, 3, 4, 6
+    ),
+    nrow = 2, byrow = TRUE
+  )
   colnames(transmat) <- c("x00", "x01", "x10", "x11")
   rownames(transmat) <- c("item1", "item2")
 
@@ -114,11 +126,13 @@ test_that("perplexity_items accepts raw parameter vector", {
 test_that("cv_items runs and returns expected structure", {
   set.seed(42)
   transmat <- matrix(
-    c(15, 8, 4, 13,
+    c(
+      15, 8, 4, 13,
       12, 6, 3, 9,
       18, 5, 2, 15,
       10, 7, 5, 8,
-      14, 4, 3, 19),
+      14, 4, 3, 19
+    ),
     nrow = 5, byrow = TRUE
   )
   colnames(transmat) <- c("x00", "x01", "x10", "x11")
@@ -147,15 +161,19 @@ test_that("cv_items errors when k > n_items", {
 test_that("cv_items works with dk model", {
   set.seed(42)
   transmat <- matrix(
-    c(5, 3, 1, 2, 6, 1, 2, 1, 2,
+    c(
+      5, 3, 1, 2, 6, 1, 2, 1, 2,
       4, 2, 2, 3, 5, 0, 1, 2, 1,
       6, 1, 1, 1, 7, 2, 1, 1, 3,
       3, 4, 0, 2, 4, 1, 2, 2, 2,
-      5, 2, 1, 3, 6, 1, 1, 1, 2),
+      5, 2, 1, 3, 6, 1, 1, 1, 2
+    ),
     nrow = 5, byrow = TRUE
   )
-  colnames(transmat) <- c("x00", "x01", "x0d", "x10", "x11", "x1d",
-                          "xd0", "xd1", "xdd")
+  colnames(transmat) <- c(
+    "x00", "x01", "x0d", "x10", "x11", "x1d",
+    "xd0", "xd1", "xdd"
+  )
   rownames(transmat) <- paste0("item", 1:5)
 
   cv_result <- cv_items(transmat, k = 5, seed = 456)
@@ -196,11 +214,13 @@ test_that("lower perplexity for true model vs misspecified", {
 
 test_that("cv_items is reproducible with seed", {
   transmat <- matrix(
-    c(15, 8, 4, 13,
+    c(
+      15, 8, 4, 13,
       12, 6, 3, 9,
       18, 5, 2, 15,
       10, 7, 5, 8,
-      14, 4, 3, 19),
+      14, 4, 3, 19
+    ),
     nrow = 5, byrow = TRUE
   )
   colnames(transmat) <- c("x00", "x01", "x10", "x11")
@@ -215,7 +235,7 @@ test_that("cv_items is reproducible with seed", {
 
 # Individual-level tests
 
-test_that("lca_fit is equivalent to multi_transmat + lca_cor", {
+test_that("item_lca_fit is equivalent to multi_transmat + lca_cor", {
   pre_test <- data.frame(
     item1 = c(1, 0, 0, 1, 0, 1, 0, 1),
     item2 = c(1, 0, 1, 1, 0, 0, 1, 0)
@@ -225,7 +245,7 @@ test_that("lca_fit is equivalent to multi_transmat + lca_cor", {
     item2 = c(1, 1, 1, 1, 0, 1, 1, 1)
   )
 
-  fit1 <- lca_fit(pre_test, pst_test)
+  fit1 <- item_lca_fit(pre_test, pst_test)
   transmat <- multi_transmat(pre_test, pst_test)
   fit2 <- lca_cor(transmat)
 
@@ -243,7 +263,7 @@ test_that("perplexity_individuals returns positive value", {
     item2 = c(1, 1, 1, 1, 0, 1, 1, 1, 1, 0)
   )
 
-  fit <- lca_fit(pre_test, pst_test)
+  fit <- item_lca_fit(pre_test, pst_test)
   ppl <- perplexity_individuals(fit, pre_test, pst_test)
 
   expect_true(is.numeric(ppl))
@@ -261,7 +281,7 @@ test_that("perplexity_individuals per_individual returns vector", {
     item2 = c(1, 1, 1, 1, 0)
   )
 
-  fit <- lca_fit(pre_test, pst_test)
+  fit <- item_lca_fit(pre_test, pst_test)
   ppl_vec <- perplexity_individuals(fit, pre_test, pst_test, per_individual = TRUE)
 
   expect_length(ppl_vec, 5)

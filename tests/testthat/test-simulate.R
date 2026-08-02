@@ -53,7 +53,7 @@ test_that("simulate_lca_dk produces valid DK output", {
 })
 
 test_that("simulate_lca_dk includes DK responses", {
-  sim <- simulate_lca_dk(n = 1000, gd = 0.2, dd = 0.2, seed = 789)
+  sim <- simulate_lca_dk(n = 1000, gg = 0.1, gd = 0.2, dd = 0.2, seed = 789)
 
   has_dk_pre <- any(sim$pre$item1 == "d")
   has_dk_post <- any(sim$post$item1 == "d")
@@ -61,17 +61,17 @@ test_that("simulate_lca_dk includes DK responses", {
   expect_true(has_dk_pre || has_dk_post)
 })
 
-test_that("simulated data can be fitted by lca_fit", {
+test_that("simulated data can be fitted by item_lca_fit", {
   sim <- simulate_lca(n = 200, gg = 0.4, gk = 0.3, kk = 0.3, gamma = 0.25, seed = 111)
-  fit <- lca_fit(sim$pre, sim$post)
+  fit <- item_lca_fit(sim$pre, sim$post)
 
   expect_true(inherits(fit, "guess_fit"))
   expect_true(all(fit$params >= 0 & fit$params <= 1))
 })
 
-test_that("simulated DK data can be fitted by lca_fit", {
+test_that("simulated DK data can be fitted by item_lca_fit", {
   sim <- simulate_lca_dk(n = 300, seed = 222)
-  fit <- lca_fit(sim$pre, sim$post)
+  fit <- item_lca_fit(sim$pre, sim$post)
 
   expect_true(inherits(fit, "guess_fit"))
   expect_equal(nrow(fit$params), 8)
@@ -85,15 +85,36 @@ test_that("validate_recovery returns expected structure", {
 
   expect_true(is.data.frame(results))
   expect_equal(nrow(results), 4)
-  expect_true(all(c("parameter", "true_value", "mean_estimate", "bias",
-                    "rmse", "se", "coverage_95") %in% names(results)))
+  expect_true(all(c(
+    "parameter", "true_value", "mean_estimate", "bias",
+    "rmse", "se"
+  ) %in% names(results)))
+  expect_false("coverage_95" %in% names(results))
   expect_equal(results$parameter, c("gg", "gk", "kk", "gamma"))
+})
+
+test_that("validate_recovery uses every simulated item", {
+  result_one <- validate_recovery(
+    c(gg = 0.35, gk = 0.30, kk = 0.35, gamma = 0.25),
+    n = 150, n_items = 1, n_sims = 8, seed = 812
+  )
+  result_many <- validate_recovery(
+    c(gg = 0.35, gk = 0.30, kk = 0.35, gamma = 0.25),
+    n = 150, n_items = 4, n_sims = 8, seed = 812
+  )
+
+  expect_false(isTRUE(all.equal(
+    result_one$mean_estimate,
+    result_many$mean_estimate
+  )))
 })
 
 test_that("validate_recovery works with DK model", {
   results <- validate_recovery(
-    c(gg = 0.25, gk = 0.15, gd = 0.10, kk = 0.20,
-      dg = 0.10, dk = 0.10, dd = 0.10, gamma = 0.25),
+    c(
+      gg = 0.25, gk = 0.15, gd = 0.10, kk = 0.20,
+      dg = 0.10, dk = 0.10, dd = 0.10, gamma = 0.25
+    ),
     n = 100, n_sims = 3, seed = 444
   )
 
@@ -188,7 +209,7 @@ test_that("simulate_lca_dk rejects wrong-length difficulty", {
 
 test_that("simulated data with vector gamma can be fitted", {
   sim <- simulate_lca(n = 300, n_items = 3, gamma = c(0.2, 0.25, 0.3), seed = 111)
-  fit <- lca_fit(sim$pre, sim$post)
+  fit <- item_lca_fit(sim$pre, sim$post)
 
   expect_true(inherits(fit, "guess_fit"))
   expect_true(all(fit$params >= 0 & fit$params <= 1))
@@ -196,7 +217,7 @@ test_that("simulated data with vector gamma can be fitted", {
 
 test_that("simulated data with difficulty can be fitted", {
   sim <- simulate_lca(n = 300, n_items = 3, difficulty = c(1, 0, -1), seed = 222)
-  fit <- lca_fit(sim$pre, sim$post)
+  fit <- item_lca_fit(sim$pre, sim$post)
 
   expect_true(inherits(fit, "guess_fit"))
 })

@@ -58,7 +58,7 @@ To get the current development version from GitHub:
 ```{r, eval = FALSE, install}
 # install.packages("devtools")
 library(devtools)
-#devtools::install_github("soodoku/guess")
+# devtools::install_github("soodoku/guess")
 ```
 
 ### Usage
@@ -77,7 +77,7 @@ To adjust estimates of learning for standard correction of guessing, use `stnd_c
 library(guess)
 
 # Generate some data without DK
-pre_test <- data.frame(item1 = c(1, 0, 0, 1, 0), item2 = c(1, NA, 0, 1, 0)) 
+pre_test <- data.frame(item1 = c(1, 0, 0, 1, 0), item2 = c(1, NA, 0, 1, 0))
 pst_test <- pre_test + cbind(c(0, 1, 1, 0, 0), c(0, 1, 0, 0, 1))
 lucky <- rep(.25, 2)
 
@@ -96,7 +96,7 @@ stnd_cor(pre_test, pst_test, lucky)
 
 ```{r eval = FALSE, transmat}
 # Without Don't Know
-pre_test_var <- c(1, 0, 0, 1, 0, 1, 0) 
+pre_test_var <- c(1, 0, 0, 1, 0, 1, 0)
 pst_test_var <- c(1, 0, 1, 1, 0, 1, 1)
 print(transmat(pre_test_var, pst_test_var))
 
@@ -111,30 +111,30 @@ print(transmat(pre_test_var, pst_test_var))
 ```{r eval = FALSE, guesstimate}
 # Create example data for demonstration
 set.seed(123)
-nitems <- 10  # Number of knowledge questions
-npeople <- 100  # Number of respondents
+nitems <- 10 # Number of knowledge questions
+npeople <- 100 # Number of respondents
 
 # Generate simulated pre-test and post-test responses (0=incorrect, 1=correct)
-pre_test <- replicate(nitems, rbinom(npeople, 1, 0.4))  # 40% correct pre-test
-post_test <- replicate(nitems, rbinom(npeople, 1, 0.6))  # 60% correct post-test
+pre_test <- replicate(nitems, rbinom(npeople, 1, 0.4)) # 40% correct pre-test
+post_test <- replicate(nitems, rbinom(npeople, 1, 0.6)) # 60% correct post-test
 
 transmatrix <- multi_transmat(pre_test, post_test)
 
 res <- lca_cor(transmatrix)
 
-round(res$params[,1:4], 3)
+round(res$params[, 1:4], 3)
 
 round(res$learning[1:4], 3)
 
 # LCA Correction with Don't Know responses
 # Generate data with Don't Know responses (coded as 2)
-pre_test_dk <- replicate(nitems, sample(c(0,1,2), npeople, replace=TRUE, prob=c(0.5, 0.35, 0.15)))
-post_test_dk <- replicate(nitems, sample(c(0,1,2), npeople, replace=TRUE, prob=c(0.4, 0.45, 0.15)))
+pre_test_dk <- replicate(nitems, sample(c(0, 1, 2), npeople, replace = TRUE, prob = c(0.5, 0.35, 0.15)))
+post_test_dk <- replicate(nitems, sample(c(0, 1, 2), npeople, replace = TRUE, prob = c(0.4, 0.45, 0.15)))
 
 transmatrix <- multi_transmat(pre_test_dk, post_test_dk, force9 = TRUE)
 res_dk <- lca_cor(transmatrix)
 
-round(res_dk$params[,1:4], 3)
+round(res_dk$params[, 1:4], 3)
 
 round(res_dk$learning[1:4], 3)
 ```
@@ -144,9 +144,9 @@ round(res_dk$learning[1:4], 3)
 Account for propensity to guess and item level attribute that a guess would be lucky. 
 
 ```{r eval = FALSE, grp_adjust}
-pre_test_var <- data.frame(pre=c(1, 0, 1, 1, 0, "d", "d", 0, 1, NA, 0, 1, 1, 1, 1, 0, 0, 'd', 0, 0))
-pst_test_var <- data.frame(pst=c(1, 0, NA, 1, "d", 1, 0, 1, 1, "d", 1, 1, 1, 0, 1, 1, 0, 1, 1, 0))
-grp = c(rep(1, 10), rep(0, 10))
+pre_test_var <- data.frame(pre = c(1, 0, 1, 1, 0, "d", "d", 0, 1, NA, 0, 1, 1, 1, 1, 0, 0, "d", 0, 0))
+pst_test_var <- data.frame(pst = c(1, 0, NA, 1, "d", 1, 0, 1, 1, "d", 1, 1, 1, 0, 1, 1, 0, 1, 1, 0))
+grp <- c(rep(1, 10), rep(0, 10))
 
 group_adj(pre_test_var, pst_test_var, gamma = 0, dk = 0)$learn
 group_adj(pre_test_var, pst_test_var, gamma = .25, dk = 0)$learn
@@ -165,13 +165,12 @@ grp0_adj - grp1_adj
 #### Standard Errors
 
 ```{r eval = FALSE, lca_err}
-
-# Raw 
+# Raw
 # Generate some data without DK
-pre_test <- data.frame(item1 = c(1, 0, 0, 1, 0), item2 = c(1, NA, 0, 1, 0)) 
+pre_test <- data.frame(item1 = c(1, 0, 0, 1, 0), item2 = c(1, NA, 0, 1, 0))
 pst_test <- pre_test + cbind(c(0, 1, 1, 0, 0), c(0, 1, 0, 0, 1))
 diff <- pst_test - pre_test
-stnd_err <-  sapply(diff, function(x) sqrt(var(x, na.rm = T)/length(x)))
+stnd_err <- sapply(diff, function(x) sqrt(var(x, na.rm = T) / length(x)))
 
 # Bootstrapped s.e.
 
@@ -215,11 +214,11 @@ npeople <- 200
 
 pre_test <- as.data.frame(replicate(nitems, rbinom(npeople, 1, 0.4)))
 post_test <- as.data.frame(replicate(nitems, pmin(1, pre_test +
-              replicate(nitems, rbinom(npeople, 1, 0.25)))))
+  replicate(nitems, rbinom(npeople, 1, 0.25)))))
 names(pre_test) <- names(post_test) <- paste0("item", 1:nitems)
 
 # Fit model using convenience wrapper
-fit <- lca_fit(pre_test, post_test)
+fit <- item_lca_fit(pre_test, post_test)
 
 # Or equivalently:
 # transmatrix <- multi_transmat(pre_test, post_test)
@@ -257,9 +256,9 @@ Useful when you have many items and want to assess generalization to new items.
 transmatrix <- multi_transmat(pre_test, post_test)
 cv_result <- cv_items(transmatrix, k = 5, seed = 123)
 
-cv_result$perplexity    # Held-out perplexity
-cv_result$se            # Standard error across folds
-cv_result$fold_results  # Per-fold details
+cv_result$perplexity # Held-out perplexity
+cv_result$se # Standard error across folds
+cv_result$fold_results # Per-fold details
 ```
 
 ##### Cross-validation over individuals
@@ -269,9 +268,9 @@ Useful when you want to assess generalization to new respondents.
 ```{r eval = FALSE, cv_individuals}
 cv_result <- cv_individuals(pre_test, post_test, k = 5, seed = 123)
 
-cv_result$perplexity    # Held-out perplexity
-cv_result$se            # Standard error across folds
-cv_result$fold_results  # Per-fold details
+cv_result$perplexity # Held-out perplexity
+cv_result$se # Standard error across folds
+cv_result$fold_results # Per-fold details
 ```
 
 ##### Model comparison
@@ -290,7 +289,7 @@ transmatrix <- multi_transmat(pre_test, post_test)
 # Compare: lower perplexity = better fit
 perplexity_items(true_params, transmatrix)
 perplexity_items(bad_params, transmatrix)
-perplexity_items(fit, transmatrix)  # Fitted model should be close to true
+perplexity_items(fit, transmatrix) # Fitted model should be close to true
 ```
 
 #### Simulation and Parameter Recovery Validation
@@ -302,18 +301,18 @@ The package provides functions to simulate data from known parameters, useful fo
 ```{r eval = FALSE, simulate_lca}
 # Simulate data with known learning rate of 30%
 sim <- simulate_lca(
-  n = 500,           # 500 individuals
-  n_items = 2,       # 2 test items
-  gg = 0.35,         # 35% in guess->guess (stable ignorance)
-  gk = 0.30,         # 30% in guess->know (LEARNED)
-  kk = 0.35,         # 35% in know->know (stable knowledge)
-  gamma = 0.25,      # 25% chance of guessing correctly
+  n = 500, # 500 individuals
+  n_items = 2, # 2 test items
+  gg = 0.35, # 35% in guess->guess (stable ignorance)
+  gk = 0.30, # 30% in guess->know (LEARNED)
+  kk = 0.35, # 35% in know->know (stable knowledge)
+  gamma = 0.25, # 25% chance of guessing correctly
   seed = 123
 )
 
 # Fit model and check recovery
-fit <- lca_fit(sim$pre, sim$post)
-fit$params["gk", ]  # Should be close to 0.30 (true learning rate)
+fit <- item_lca_fit(sim$pre, sim$post)
+fit$params["gk", ] # Should be close to 0.30 (true learning rate)
 ```
 
 ##### Simulation with Don't Know responses
@@ -330,8 +329,8 @@ sim_dk <- simulate_lca_dk(
 )
 
 # Fit DK model
-fit_dk <- lca_fit(sim_dk$pre, sim_dk$post)
-fit_dk$params["gk", ]  # Should be close to 0.15
+fit_dk <- item_lca_fit(sim_dk$pre, sim_dk$post)
+fit_dk$params["gk", ] # Should be close to 0.15
 ```
 
 ##### Comprehensive parameter recovery validation
@@ -342,9 +341,9 @@ Use `validate_recovery()` for Monte Carlo studies of parameter recovery:
 # Run 100 simulations to assess parameter recovery
 results <- validate_recovery(
   true_params = c(gg = 0.35, gk = 0.30, kk = 0.35, gamma = 0.25),
-  n = 500,        # Sample size per simulation
-  n_items = 2,    # Number of items
-  n_sims = 100,   # Number of simulations
+  n = 500, # Sample size per simulation
+  n_items = 2, # Number of items
+  n_sims = 100, # Number of simulations
   seed = 789
 )
 

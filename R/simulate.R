@@ -17,7 +17,7 @@
 #' @param kk Numeric. Proportion in know->know state (stable knowledge). Default 0.35.
 #' @param gamma Numeric. Probability of guessing correctly. Can be scalar (same for
 #'   all items) or vector of length n_items. Default 0.25.
-#' @param difficulty Numeric vector. Optional IRT difficulty parameters. If provided,
+#' @param difficulty Numeric vector. Optional difficulty-link scores. If provided,
 #'   gamma is computed as base_rate + (1 - base_rate) * plogis(-difficulty).
 #'   Higher difficulty = harder item (lower gamma). Ignored if NULL.
 #' @param base_rate Numeric. Minimum guessing probability (random chance). Used when
@@ -40,7 +40,7 @@
 #'
 #' Parameters must satisfy: gg + gk + kk = 1 (constraint enforced automatically).
 #'
-#' When difficulty is specified, gamma values are derived using an IRT-like
+#' When difficulty is specified, gamma values are derived using a logistic
 #' transformation: gamma_i = base_rate + (1 - base_rate) * plogis(-difficulty_i).
 #' This means:
 #' - difficulty = 0: gamma = base_rate + 0.5 * (1 - base_rate) (middle)
@@ -51,8 +51,8 @@
 #' @examples
 #' # Simulate data with 30% learning
 #' sim <- simulate_lca(n = 500, gg = 0.35, gk = 0.30, kk = 0.35, gamma = 0.25, seed = 123)
-#' fit <- lca_fit(sim$pre, sim$post)
-#' fit$params["gk", ]  # Should be close to 0.30
+#' fit <- item_lca_fit(sim$pre, sim$post)
+#' fit$params["gk", ] # Should be close to 0.30
 #'
 #' # Multi-item simulation
 #' sim_multi <- simulate_lca(n = 500, n_items = 3, seed = 456)
@@ -60,17 +60,16 @@
 #' # Item-specific gamma (vector)
 #' sim_vec <- simulate_lca(n = 500, n_items = 3, gamma = c(0.2, 0.25, 0.3), seed = 789)
 #'
-#' # IRT-style difficulty parameters
+#' # Difficulty-link scores
 #' sim_irt <- simulate_lca(n = 500, n_items = 3, difficulty = c(1, 0, -1), seed = 101)
 #'
 #' # Return true class assignments for validation
 #' sim_classes <- simulate_lca(n = 500, gk = 0.30, seed = 123, return_classes = TRUE)
 #' table(sim_classes$true_class)
-#' mean(sim_classes$learned)  # Should be close to 0.30
+#' mean(sim_classes$learned) # Should be close to 0.30
 simulate_lca <- function(n, n_items = 1, gg = 0.35, gk = 0.30, kk = 0.35,
                          gamma = 0.25, difficulty = NULL, base_rate = 0.25,
                          seed = NULL, return_classes = FALSE) {
-
   assert_int(n, lower = 1L)
   assert_int(n_items, lower = 1L)
   assert_numeric(gg, lower = 0, upper = 1, len = 1L)
@@ -166,7 +165,7 @@ simulate_lca <- function(n, n_items = 1, gg = 0.35, gk = 0.30, kk = 0.35,
 #' @param dd Numeric. Proportion: dk->dk. Default 0.15.
 #' @param gamma Numeric. Probability of guessing correctly. Can be scalar (same for
 #'   all items) or vector of length n_items. Default 0.25.
-#' @param difficulty Numeric vector. Optional IRT difficulty parameters. If provided,
+#' @param difficulty Numeric vector. Optional difficulty-link scores. If provided,
 #'   gamma is computed as base_rate + (1 - base_rate) * plogis(-difficulty).
 #'   Higher difficulty = harder item (lower gamma). Ignored if NULL.
 #' @param base_rate Numeric. Minimum guessing probability (random chance). Used when
@@ -194,27 +193,26 @@ simulate_lca <- function(n, n_items = 1, gg = 0.35, gk = 0.30, kk = 0.35,
 #'
 #' Parameters must sum to 1 (constraint enforced automatically).
 #'
-#' When difficulty is specified, gamma values are derived using an IRT-like
+#' When difficulty is specified, gamma values are derived using a logistic
 #' transformation: gamma_i = base_rate + (1 - base_rate) * plogis(-difficulty_i).
 #'
 #' @export
 #' @examples
 #' # Simulate DK data
 #' sim <- simulate_lca_dk(n = 5000, gk = 0.15, seed = 123)
-#' fit <- lca_fit(sim$pre, sim$post)
-#' fit$params["gk", ]  # Should be close to 0.15
+#' fit <- item_lca_fit(sim$pre, sim$post)
+#' fit$params["gk", ] # Should be close to 0.15
 #'
 #' # Item-specific gamma (vector)
 #' sim_vec <- simulate_lca_dk(n = 500, n_items = 3, gamma = c(0.2, 0.25, 0.3), seed = 456)
 #'
-#' # IRT-style difficulty parameters
+#' # Difficulty-link scores
 #' sim_irt <- simulate_lca_dk(n = 500, n_items = 3, difficulty = c(1, 0, -1), seed = 789)
 simulate_lca_dk <- function(n, n_items = 1,
                             gg = 0.25, gk = 0.15, gd = 0.10,
                             kk = 0.15, dg = 0.10, dk = 0.10,
                             dd = 0.15, gamma = 0.25, difficulty = NULL,
                             base_rate = 0.25, seed = NULL) {
-
   assert_int(n, lower = 1L)
   assert_int(n_items, lower = 1L)
   assert_numeric(gg, lower = 0, upper = 1, len = 1L)

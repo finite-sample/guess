@@ -4,16 +4,27 @@
 \alias{perplexity_individuals}
 \title{Calculate perplexity from individual-level data}
 \usage{
-perplexity_individuals(lca_result, pre_test, pst_test, per_individual = FALSE)
+perplexity_individuals(
+  lca_result,
+  pre_test,
+  pst_test,
+  per_individual = FALSE,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error")
+)
 }
 \arguments{
-\item{lca_result}{output from lca_cor() or lca_fit()}
+\item{lca_result}{output from lca_cor() or item_lca_fit()}
 
 \item{pre_test}{data.frame of pre-test responses}
 
 \item{pst_test}{data.frame of post-test responses}
 
 \item{per_individual}{logical; return per-individual perplexity?}
+
+\item{na_as}{classification of NA responses}
+
+\item{missing_action}{structural missingness handling}
 }
 \value{
 numeric scalar or vector

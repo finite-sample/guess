@@ -6,11 +6,34 @@
 \alias{fit_nodk}
 \title{Goodness of fit statistics for transition matrix data}
 \usage{
-fit_model(pre_test, pst_test, g, est_param, force9 = FALSE)
+fit_model(
+  pre_test,
+  pst_test,
+  g,
+  est_param,
+  force9 = FALSE,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error")
+)
 
-fit_dk(pre_test, pst_test, g, est_param, force9 = FALSE)
+fit_dk(
+  pre_test,
+  pst_test,
+  g,
+  est_param,
+  force9 = FALSE,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error")
+)
 
-fit_nodk(pre_test, pst_test, g, est_param)
+fit_nodk(
+  pre_test,
+  pst_test,
+  g,
+  est_param,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error")
+)
 }
 \arguments{
 \item{pre_test}{data.frame carrying pre_test items}
@@ -22,6 +45,13 @@ fit_nodk(pre_test, pst_test, g, est_param)
 \item{est_param}{estimated parameters produced from \code{\link{lca_cor}}}
 
 \item{force9}{Optional. Force 9-column format even if no DK responses. Default is FALSE.}
+
+\item{na_as}{Classification of NA responses: `"dk"` (the default) treats
+them as observed don't know responses; `"missing"` treats them as
+structural missingness.}
+
+\item{missing_action}{How to handle structural missingness: `"omit"`
+excludes incomplete pairs and `"error"` rejects them.}
 }
 \value{
 matrix with two rows: top row carrying chi-square value, bottom row p-values
@@ -47,7 +77,9 @@ transmatrix <- multi_transmat(pre_test, pst_test)
 res <- lca_cor(transmatrix)
 
 # Calculate goodness of fit
-fit_stats <- fit_model(pre_test, pst_test, res$params[nrow(res$params), ],
-                       res$params[-nrow(res$params), ])
+fit_stats <- fit_model(
+  pre_test, pst_test, res$params[nrow(res$params), ],
+  res$params[-nrow(res$params), ]
+)
 }
 }

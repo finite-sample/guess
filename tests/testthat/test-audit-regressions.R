@@ -30,7 +30,10 @@ test_that("stnd_cor divides by responses, not rows, when data are missing", {
   pre <- data.frame(item1 = c(1, 0, 0, 1, 0), item2 = c(1, NA, 0, 1, 0))
   pst <- data.frame(item1 = c(1, 1, 1, 1, 0), item2 = c(1, NA, 1, 1, 0))
 
-  res <- stnd_cor(pre, pst, lucky = rep(0.25, 2))
+  res <- stnd_cor(
+    pre, pst,
+    lucky = rep(0.25, 2), na_as = "missing"
+  )
 
   # item2 pre: 2 correct, 2 wrong among the 4 who answered.
   expect_equal(res$pre[[2]], (2 - 2 / 3) / 4)
@@ -48,7 +51,8 @@ test_that("stnd_cor learning estimates do not shrink with the missing rate", {
   pst_full <- pmin(pre_full + rbinom(n, 1, 0.40), 1)
 
   complete <- stnd_cor(
-    data.frame(i = pre_full), data.frame(i = pst_full), lucky = 0.25
+    data.frame(i = pre_full), data.frame(i = pst_full),
+    lucky = 0.25
   )$learn[[1]]
 
   for (rate in c(0.10, 0.25, 0.40)) {
@@ -57,7 +61,11 @@ test_that("stnd_cor learning estimates do not shrink with the missing rate", {
     drop <- sample(n, floor(rate * n))
     a[drop] <- NA
     b[drop] <- NA
-    got <- stnd_cor(data.frame(i = a), data.frame(i = b), lucky = 0.25)$learn[[1]]
+    got <- stnd_cor(
+      data.frame(i = a), data.frame(i = b),
+      lucky = 0.25,
+      na_as = "missing"
+    )$learn[[1]]
 
     # Generous tolerance: this asserts the absence of systematic shrinkage, not
     # the absence of sampling noise from which rows were dropped.
@@ -66,15 +74,60 @@ test_that("stnd_cor learning estimates do not shrink with the missing rate", {
 })
 
 test_that("stnd_cor handles pre and post missing on different rows", {
-  # The old code assumed the two waves shared a denominator. They need not.
+  # Marginal wave scores use everyone observed at that wave. Learning uses only
+  # complete pairs in both its corrected totals and denominator.
   pre <- data.frame(item1 = c(1, 0, NA, 1, 0))
   pst <- data.frame(item1 = c(1, 1, 1, NA, 0))
 
-  res <- stnd_cor(pre, pst, lucky = 0.25)
+  res <- stnd_cor(pre, pst, lucky = 0.25, na_as = "missing")
 
-  expect_equal(res$pre[[1]], (2 - 2 / 3) / 4)   # 4 answered the pre-test
-  expect_equal(res$pst[[1]], (3 - 1 / 3) / 4)   # 4 answered the post-test
-  expect_true(is.finite(res$learn[[1]]))        # 3 answered both
+  expect_equal(res$pre[[1]], (2 - 2 / 3) / 4) # 4 answered the pre-test
+  expect_equal(res$pst[[1]], (3 - 1 / 3) / 4) # 4 answered the post-test
+  expect_equal(res$learn[[1]], ((2 - 1 / 3) - (1 - 2 / 3)) / 3)
+})
+
+test_that("stnd_cor does not mix unmatched corrected totals", {
+  pre <- data.frame(item1 = c(1, 0))
+  pst <- data.frame(item1 = c(NA, 1))
+
+  res <- stnd_cor(pre, pst, lucky = 0.25, na_as = "missing")
+
+  expect_equal(res$pre[[1]], (1 - 1 / 3) / 2)
+  expect_equal(res$pst[[1]], 1)
+  expect_equal(res$learn[[1]], 1 - (-1 / 3))
+})
+
+test_that("stnd_cor paired learning matches a simulation oracle", {
+  set.seed(991)
+  n <- 5000
+  pre <- rbinom(n, 1, 0.35)
+  pst <- pmax(pre, rbinom(n, 1, 0.30))
+  pre[sample.int(n, 700)] <- NA
+  pst[sample.int(n, 1100)] <- NA
+  complete <- !is.na(pre) & !is.na(pst)
+
+  res <- stnd_cor(
+    data.frame(item1 = pre), data.frame(item1 = pst),
+    lucky = 0.25,
+    na_as = "missing"
+  )
+  corrected_mean <- function(x) {
+    (sum(x == 1) - sum(x == 0) / 3) / length(x)
+  }
+  oracle <- corrected_mean(pst[complete]) - corrected_mean(pre[complete])
+
+  expect_equal(res$learn[[1]], oracle)
+})
+
+test_that("stnd_cor returns NA without an observed denominator", {
+  res <- stnd_cor(
+    data.frame(item1 = c(1, NA)),
+    data.frame(item1 = c(NA, 1)),
+    lucky = 0.25,
+    na_as = "missing"
+  )
+
+  expect_true(is.na(res$learn[[1]]))
 })
 
 # ---------------------------------------------------------------------------

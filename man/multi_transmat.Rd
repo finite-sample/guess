@@ -9,7 +9,9 @@ multi_transmat(
   pst_test = NULL,
   subgroup = NULL,
   force9 = FALSE,
-  agg = FALSE
+  agg = FALSE,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error")
 )
 }
 \arguments{
@@ -24,6 +26,13 @@ But we need the entire matrix. By default it is FALSE.}
 
 \item{agg}{Optional. Boolean. Whether or not to add a row of aggregate
 transitions at the end of the matrix. Default is FALSE.}
+
+\item{na_as}{Classification of NA responses: `"dk"` (the default) treats
+them as observed don't know responses; `"missing"` treats them as
+structural missingness.}
+
+\item{missing_action}{How to handle structural missingness: `"omit"`
+excludes incomplete pairs and `"error"` rejects them.}
 }
 \value{
 matrix with rows = total number of items + 1 (last row contains
@@ -32,16 +41,19 @@ number of columns = 4 when no don't know, and 9 when there is a don't know optio
 }
 \description{
 Needs an 'interleaved' dataframe (see interleave function).
-Pre-test item should be followed by corresponding post-item item etc. 
-Don't knows must be coded as NA. Function handles items without don't know responses.
+Pre-test item should be followed by corresponding post-item item etc.
+Don't knows may be coded as d/DK or, by default, NA. Function handles
+items without don't know responses.
 The function is used internally. It calls transmat.
 }
 \details{
 multi_transmat: transition matrix of all the items
 }
 \examples{
-pre_test <- data.frame(pre_item1 = c(1,0,0,1,0), pre_item2 = c(1,NA,0,1,0)) 
-pst_test <- data.frame(pst_item1 = pre_test[,1] + c(0,1,1,0,0), 
-             pst_item2 = pre_test[,2] + c(0,1,0,0,1))
+pre_test <- data.frame(pre_item1 = c(1, 0, 0, 1, 0), pre_item2 = c(1, NA, 0, 1, 0))
+pst_test <- data.frame(
+  pst_item1 = pre_test[, 1] + c(0, 1, 1, 0, 0),
+  pst_item2 = pre_test[, 2] + c(0, 1, 0, 0, 1)
+)
 multi_transmat(pre_test, pst_test)
 }

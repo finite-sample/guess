@@ -22,8 +22,8 @@ For DK model: c(gg=, gk=, gd=, kk=, dg=, dk=, dd=, gamma=)}
 \value{
 Data frame with one row per parameter containing columns:
   parameter (name), true_value, mean_estimate, bias (mean estimate minus true),
-  rmse (root mean squared error), se (standard deviation of estimates),
-  and coverage_95 (proportion of times 95% CI contains true value).
+  rmse (root mean squared error), and se (Monte Carlo standard deviation of
+  estimates).
 }
 \description{
 Performs Monte Carlo simulations to assess parameter recovery of the
@@ -40,8 +40,10 @@ print(results)
 
 # Validate DK model recovery
 results_dk <- validate_recovery(
-  c(gg = 0.25, gk = 0.15, gd = 0.10, kk = 0.20,
-    dg = 0.10, dk = 0.10, dd = 0.10, gamma = 0.25),
+  c(
+    gg = 0.25, gk = 0.15, gd = 0.10, kk = 0.20,
+    dg = 0.10, dk = 0.10, dd = 0.10, gamma = 0.25
+  ),
   n = 500, n_sims = 50
 )
 }

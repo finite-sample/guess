@@ -34,3 +34,5 @@ tests/_covrpage.Rmd
 /doc/
 /Meta/
 vignettes/.build.timestamp
+vignettes/model_validation.R
+vignettes/model_validation_files/

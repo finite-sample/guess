@@ -14,19 +14,22 @@ compare_learning_recovery_test <- function(n, n_items, n_sims, seed = NULL, ...)
     sim_data <- simulate_lca(n = n, n_items = n_items, ..., return_classes = TRUE)
     true_learned <- as.numeric(sim_data$learned)
 
-    tryCatch({
-      fit <- lca_fit(sim_data$pre, sim_data$post)
-      p_learned_lca <- posterior_learned(fit, sim_data$pre, sim_data$post)
-      p_learned_cs <- cross_sectional_irt(sim_data$pre, sim_data$post)
+    tryCatch(
+      {
+        fit <- person_item_lca_fit(sim_data$pre, sim_data$post)
+        p_learned_lca <- posterior_learned(fit)
+        p_learned_cs <- cross_sectional_learning_score(sim_data$pre, sim_data$post)
 
-      results$cor_lca[s] <- cor(p_learned_lca, true_learned, use = "complete.obs")
-      results$cor_cs[s] <- cor(p_learned_cs, true_learned, use = "complete.obs")
-      results$lca_advantage[s] <- results$cor_lca[s] - results$cor_cs[s]
-    }, error = function(e) {
-      results$cor_lca[s] <- NA_real_
-      results$cor_cs[s] <- NA_real_
-      results$lca_advantage[s] <- NA_real_
-    })
+        results$cor_lca[s] <- cor(p_learned_lca, true_learned, use = "complete.obs")
+        results$cor_cs[s] <- cor(p_learned_cs, true_learned, use = "complete.obs")
+        results$lca_advantage[s] <- results$cor_lca[s] - results$cor_cs[s]
+      },
+      error = function(e) {
+        results$cor_lca[s] <- NA_real_
+        results$cor_cs[s] <- NA_real_
+        results$lca_advantage[s] <- NA_real_
+      }
+    )
   }
   results
 }
@@ -71,9 +74,9 @@ test_that("simulate_lca without return_classes has no class info", {
 
 test_that("posterior_class_probs returns valid probabilities", {
   sim <- simulate_lca(n = 50, n_items = 3, gk = 0.30, seed = 123, return_classes = TRUE)
-  fit <- lca_fit(sim$pre, sim$post)
+  fit <- person_item_lca_fit(sim$pre, sim$post)
 
-  posteriors <- posterior_class_probs(fit, sim$pre, sim$post)
+  posteriors <- posterior_class_probs(fit)
 
   expect_equal(nrow(posteriors), 50)
   expect_equal(ncol(posteriors), 3)
@@ -88,9 +91,9 @@ test_that("posterior_class_probs returns valid probabilities", {
 
 test_that("posterior_learned returns vector of correct length", {
   sim <- simulate_lca(n = 50, n_items = 3, gk = 0.30, seed = 123)
-  fit <- lca_fit(sim$pre, sim$post)
+  fit <- person_item_lca_fit(sim$pre, sim$post)
 
-  p_learned <- posterior_learned(fit, sim$pre, sim$post)
+  p_learned <- posterior_learned(fit)
 
   expect_length(p_learned, 50)
   expect_true(all(p_learned >= 0))
@@ -102,54 +105,45 @@ test_that("posterior_learned correlates with true learning status", {
     n = 500, n_items = 5, gk = 0.30, gamma = 0.25,
     seed = 123, return_classes = TRUE
   )
-  fit <- lca_fit(sim$pre, sim$post)
+  fit <- person_item_lca_fit(sim$pre, sim$post)
 
-  p_learned <- posterior_learned(fit, sim$pre, sim$post)
+  p_learned <- posterior_learned(fit)
   cor_with_truth <- cor(p_learned, as.numeric(sim$learned))
 
   expect_true(cor_with_truth > 0.3)
 })
 
-test_that("estimate_ability returns valid estimates", {
+test_that("estimate_logit_score returns valid scores", {
   sim <- simulate_lca(n = 100, n_items = 5, seed = 123)
 
-  theta_pre <- estimate_ability(sim$pre, method = "logit")
-  theta_post <- estimate_ability(sim$post, method = "logit")
+  score_pre <- estimate_logit_score(sim$pre)
+  score_post <- estimate_logit_score(sim$post)
 
-  expect_length(theta_pre, 100)
-  expect_length(theta_post, 100)
-  expect_true(all(is.finite(theta_pre)))
-  expect_true(all(is.finite(theta_post)))
+  expect_length(score_pre, 100)
+  expect_length(score_post, 100)
+  expect_true(all(is.finite(score_pre)))
+  expect_true(all(is.finite(score_post)))
 })
 
-test_that("estimate_ability rasch method works", {
-  sim <- simulate_lca(n = 100, n_items = 5, seed = 456)
-
-  theta_rasch <- estimate_ability(sim$pre, method = "rasch")
-
-  expect_length(theta_rasch, 100)
-  expect_true(all(is.finite(theta_rasch)))
-})
-
-test_that("cross_sectional_learning returns difference in abilities", {
+test_that("cross_sectional_learning returns difference in logit scores", {
   sim <- simulate_lca(n = 100, n_items = 3, seed = 123)
 
   learning_cs <- cross_sectional_learning(sim$pre, sim$post)
 
-  theta_pre <- estimate_ability(sim$pre)
-  theta_post <- estimate_ability(sim$post)
+  score_pre <- estimate_logit_score(sim$pre)
+  score_post <- estimate_logit_score(sim$post)
 
-  expect_equal(learning_cs, theta_post - theta_pre)
+  expect_equal(learning_cs, score_post - score_pre)
 })
 
-test_that("cross_sectional_irt returns values in [0,1]", {
+test_that("cross_sectional_learning_score returns values in [0,1]", {
   sim <- simulate_lca(n = 100, n_items = 3, seed = 123)
 
-  p_learned_cs <- cross_sectional_irt(sim$pre, sim$post)
+  learning_score <- cross_sectional_learning_score(sim$pre, sim$post)
 
-  expect_length(p_learned_cs, 100)
-  expect_true(all(p_learned_cs >= 0))
-  expect_true(all(p_learned_cs <= 1))
+  expect_length(learning_score, 100)
+  expect_true(all(learning_score >= 0))
+  expect_true(all(learning_score <= 1))
 })
 
 test_that("LCA outperforms cross-sectional for learning recovery", {
@@ -162,10 +156,10 @@ test_that("LCA outperforms cross-sectional for learning recovery", {
     n = 1000, n_items = 5, gk = 0.30, gamma = 0.25,
     seed = 123, return_classes = TRUE
   )
-  fit <- lca_fit(sim$pre, sim$post)
+  fit <- person_item_lca_fit(sim$pre, sim$post)
 
-  p_learned_lca <- posterior_learned(fit, sim$pre, sim$post)
-  p_learned_cs <- cross_sectional_irt(sim$pre, sim$post)
+  p_learned_lca <- posterior_learned(fit)
+  p_learned_cs <- cross_sectional_learning_score(sim$pre, sim$post)
   true_learned <- as.numeric(sim$learned)
 
   cor_lca <- cor(p_learned_lca, true_learned)
@@ -203,9 +197,9 @@ test_that("kk class individuals get high P_kk posterior", {
     n = 500, gg = 0.33, gk = 0.34, kk = 0.33, n_items = 5,
     seed = 123, return_classes = TRUE
   )
-  fit <- lca_fit(sim$pre, sim$post)
+  fit <- person_item_lca_fit(sim$pre, sim$post)
 
-  posteriors <- posterior_class_probs(fit, sim$pre, sim$post)
+  posteriors <- posterior_class_probs(fit)
 
   kk_indices <- which(sim$true_class == "kk")
 
@@ -220,9 +214,9 @@ test_that("gk class individuals get moderate P_gk posterior", {
     n = 500, gg = 0.33, gk = 0.34, kk = 0.33, n_items = 5,
     seed = 456, return_classes = TRUE
   )
-  fit <- lca_fit(sim$pre, sim$post)
+  fit <- person_item_lca_fit(sim$pre, sim$post)
 
-  p_learned <- posterior_learned(fit, sim$pre, sim$post)
+  p_learned <- posterior_learned(fit)
 
   gk_indices <- which(sim$true_class == "gk")
   other_indices <- which(sim$true_class != "gk")
@@ -254,7 +248,7 @@ test_that("Monte Carlo: LCA consistently outperforms cross-sectional", {
   expect_true(prop_lca_wins > 0.7)
 })
 
-test_that("Monte Carlo: LCA advantage increases with gamma", {
+test_that("Monte Carlo: person-level LCA wins across guessing rates", {
   skip_if(
     Sys.getenv("GUESS_FULL_TESTS") != "true",
     "Extended Monte Carlo tests require GUESS_FULL_TESTS=true"
@@ -275,6 +269,28 @@ test_that("Monte Carlo: LCA advantage increases with gamma", {
 
   mean_adv_low <- mean(results_low_gamma$lca_advantage[valid_low])
   mean_adv_high <- mean(results_high_gamma$lca_advantage[valid_high])
+  mean_lca_low <- mean(results_low_gamma$cor_lca[valid_low])
+  mean_lca_high <- mean(results_high_gamma$cor_lca[valid_high])
 
-  expect_true(mean_adv_high > mean_adv_low)
+  expect_true(mean_adv_low > 0)
+  expect_true(mean_adv_high > 0)
+  expect_true(mean_lca_low > mean_lca_high)
+})
+
+test_that("person-level posterior estimates shared class proportions", {
+  sim <- simulate_lca(
+    n = 3000, n_items = 5,
+    gg = 0.40, gk = 0.30, kk = 0.30,
+    gamma = 0.25, seed = 731
+  )
+  fit <- person_item_lca_fit(sim$pre, sim$post)
+  posterior <- posterior_class_probs(fit)
+
+  expect_equal(posterior, fit$posterior)
+  expect_equal(
+    fit$class_priors,
+    c(gg = 0.40, gk = 0.30, kk = 0.30),
+    tolerance = 0.04
+  )
+  expect_lte(fit$iterations, 1000L)
 })

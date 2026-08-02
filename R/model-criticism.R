@@ -39,18 +39,24 @@ cell_probs <- function(params) {
 #' @param pre character vector of pre-test responses ("0", "1", or "d")
 #' @param post character vector of post-test responses ("0", "1", or "d")
 #' @param has_dk logical; whether model includes don't know
+#' @param na_as classification of NA responses
+#' @param missing_action structural missingness handling
 #' @return integer vector of cell indices
 #' @keywords internal
-response_to_cell <- function(pre, post, has_dk = FALSE) {
-  pre <- as.character(pre)
-  post <- as.character(post)
-
-  pre[is.na(pre) | pre == "NA"] <- "0"
-  post[is.na(post) | post == "NA"] <- "0"
+response_to_cell <- function(
+  pre,
+  post,
+  has_dk = FALSE,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error")
+) {
+  pre <- normalize_responses(pre, na_as, missing_action)
+  post <- normalize_responses(post, na_as, missing_action)
 
   if (!has_dk) {
-    pre[pre == "d"] <- "0"
-    post[post == "d"] <- "0"
+    if (any(pre == "d" | post == "d", na.rm = TRUE)) {
+      stop("Don't know responses require a DK model.")
+    }
     cells <- c("00", "01", "10", "11")
   } else {
     cells <- c("00", "01", "0d", "10", "11", "1d", "d0", "d1", "dd")
@@ -61,7 +67,7 @@ response_to_cell <- function(pre, post, has_dk = FALSE) {
 
 #' Extract parameter matrix from lca_result
 #'
-#' @param lca_result output from lca_cor/lca_fit or numeric vector
+#' @param lca_result output from lca_cor/item_lca_fit or numeric vector
 #' @return matrix of parameters (rows = params, cols = items)
 #' @keywords internal
 extract_params <- function(lca_result) {
@@ -70,7 +76,7 @@ extract_params <- function(lca_result) {
   } else if (is.numeric(lca_result)) {
     matrix(lca_result, ncol = 1L)
   } else {
-    stop("lca_result must be output from lca_cor()/lca_fit() or a numeric vector")
+    stop("lca_result must be output from lca_cor()/item_lca_fit() or a numeric vector")
   }
 }
 
@@ -95,15 +101,18 @@ log_likelihood <- function(params, data) {
   probs <- cell_probs(params)
 
   if (length(probs) != length(data)) {
-    stop("params length (", length(params), ") incompatible with data length (",
-         length(data), ")")
+    stop(
+      "params length (", length(params), ") incompatible with data length (",
+      length(data), ")"
+    )
   }
 
-  if (any(probs <= 0)) {
+  observed <- data > 0
+  if (any(probs[observed] <= 0)) {
     return(-Inf)
   }
 
-  sum(data * log(probs))
+  sum(data[observed] * log(probs[observed]))
 }
 
 # =============================================================================
@@ -146,17 +155,14 @@ perplexity_items <- function(lca_result, transmatrix, item = NULL) {
         param_matrix[, ncol(param_matrix)]
       }
       ll_i <- log_likelihood(params_i, transmatrix[i, ])
-
-      if (is.finite(ll_i)) {
-        total_ll <- total_ll + ll_i
-        total_n <- total_n + sum(transmatrix[i, ])
-      }
+      total_ll <- total_ll + ll_i
+      total_n <- total_n + sum(transmatrix[i, ])
     }
     ll <- total_ll
     n <- total_n
   }
 
-  if (n == 0L || !is.finite(ll)) NA_real_ else exp(-ll / n)
+  if (n == 0L || is.na(ll)) NA_real_ else exp(-ll / n)
 }
 
 #' K-fold cross-validation over items
@@ -206,9 +212,11 @@ cv_items <- function(transmatrix, k = 5L, priors = NULL, seed = NULL) {
     train_data <- colSums(transmatrix[train_idx, , drop = FALSE])
 
     fit <- tryCatch(
-      Rsolnp::solnp(priors, lik_fn, eqfun = eq_fn, eqB = 1,
-                    LB = rep(0, n_params), UB = rep(1, n_params),
-                    data = train_data, control = list(trace = 0)),
+      Rsolnp::solnp(priors, lik_fn,
+        eqfun = eq_fn, eqB = 1,
+        LB = rep(0, n_params), UB = rep(1, n_params),
+        data = train_data, control = list(trace = 0)
+      ),
       error = function(e) NULL
     )
 
@@ -228,10 +236,8 @@ cv_items <- function(transmatrix, k = 5L, priors = NULL, seed = NULL) {
     test_n <- 0L
     for (i in test_idx) {
       ll_i <- log_likelihood(params, transmatrix[i, ])
-      if (is.finite(ll_i)) {
-        test_ll <- test_ll + ll_i
-        test_n <- test_n + sum(transmatrix[i, ])
-      }
+      test_ll <- test_ll + ll_i
+      test_n <- test_n + sum(transmatrix[i, ])
     }
 
     results[[fold]] <- list(
@@ -248,8 +254,10 @@ cv_items <- function(transmatrix, k = 5L, priors = NULL, seed = NULL) {
   total_n <- sum(fold_results$test_n[valid])
   mean_ll <- if (total_n > 0L) total_ll / total_n else NA_real_
   perplexity <- if (!is.na(mean_ll)) exp(-mean_ll) else NA_real_
-  se <- if (sum(valid) > 1L) {
-    stats::sd(fold_results$test_ll_per_obs[valid]) / sqrt(sum(valid))
+  finite_rates <- is.finite(fold_results$test_ll_per_obs)
+  se <- if (sum(finite_rates) > 1L) {
+    stats::sd(fold_results$test_ll_per_obs[finite_rates]) /
+      sqrt(sum(finite_rates))
   } else {
     NA_real_
   }
@@ -270,74 +278,143 @@ cv_items <- function(transmatrix, k = 5L, priors = NULL, seed = NULL) {
 # Individual-level functions
 # =============================================================================
 
-#' Fit LCA model from individual-level data
+#' Fit Independent Item-Wise LCA Models
 #'
-#' Convenience wrapper: creates transition matrix and fits model.
+#' Creates one transition matrix per item and fits independent class
+#' proportions and guessing probabilities for every item.
 #'
 #' @param pre_test data.frame of pre-test responses
 #' @param pst_test data.frame of post-test responses
+#' @param na_as classification of NA responses
+#' @param missing_action structural missingness handling
 #' @param ... passed to lca_cor()
 #' @return output from lca_cor()
 #' @export
-lca_fit <- function(pre_test, pst_test, ...) {
+item_lca_fit <- function(
+  pre_test,
+  pst_test,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error"),
+  ...
+) {
   assert_data_frame(pre_test, min.rows = 1L, min.cols = 1L)
   assert_data_frame(pst_test, nrows = nrow(pre_test), ncols = ncol(pre_test))
 
-  lca_cor(multi_transmat(pre_test, pst_test), ...)
+  lca_cor(
+    multi_transmat(
+      pre_test, pst_test,
+      na_as = na_as, missing_action = missing_action
+    ),
+    ...
+  )
 }
 
 #' Calculate per-individual log-likelihood
 #'
-#' @param lca_result output from lca_cor() or lca_fit()
+#' @param lca_result output from lca_cor() or item_lca_fit()
 #' @param pre_test data.frame of pre-test responses
 #' @param pst_test data.frame of post-test responses
+#' @param na_as classification of NA responses
+#' @param missing_action structural missingness handling
 #' @return numeric vector of log-likelihoods (length = n individuals)
 #' @keywords internal
-individual_log_likelihood <- function(lca_result, pre_test, pst_test) {
+individual_likelihood_details <- function(
+  lca_result,
+  pre_test,
+  pst_test,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error")
+) {
   assert_data_frame(pre_test, min.rows = 1L, min.cols = 1L)
   assert_data_frame(pst_test, nrows = nrow(pre_test), ncols = ncol(pre_test))
+  response_data <- prepare_response_data(
+    pre_test, pst_test, na_as, missing_action
+  )
+  pre_test <- response_data$pre
+  pst_test <- response_data$post
 
   param_matrix <- extract_params(lca_result)
   has_dk <- nrow(param_matrix) == 8L
+  if (!has_dk && any(pre_test == "d" | pst_test == "d", na.rm = TRUE)) {
+    stop("Don't know responses require a DK model.")
+  }
 
   n_ind <- nrow(pre_test)
   n_items <- ncol(pre_test)
+  n_obs <- integer(n_ind)
+  log_likelihoods <- numeric(n_ind)
 
-  vapply(seq_len(n_ind), function(i) {
+  for (i in seq_len(n_ind)) {
     ll <- 0
     for (j in seq_len(n_items)) {
       params <- param_matrix[, min(j, ncol(param_matrix))]
       probs <- cell_probs(params)
-      cell <- response_to_cell(pre_test[i, j], pst_test[i, j], has_dk)
+      cell <- response_to_cell(
+        pre_test[i, j], pst_test[i, j], has_dk,
+        na_as = "missing", missing_action = "omit"
+      )
 
-      if (is.na(cell) || probs[cell] <= 0) return(-Inf)
+      if (is.na(cell)) next
+      n_obs[i] <- n_obs[i] + 1L
+      if (probs[cell] <= 0) {
+        ll <- -Inf
+        break
+      }
       ll <- ll + log(probs[cell])
     }
-    ll
-  }, numeric(1L))
+    log_likelihoods[i] <- ll
+  }
+
+  list(log_likelihood = log_likelihoods, n_obs = n_obs)
+}
+
+#' @rdname individual_likelihood_details
+#' @keywords internal
+individual_log_likelihood <- function(
+  lca_result,
+  pre_test,
+  pst_test,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error")
+) {
+  individual_likelihood_details(
+    lca_result, pre_test, pst_test, na_as, missing_action
+  )$log_likelihood
 }
 
 #' Calculate perplexity from individual-level data
 #'
-#' @param lca_result output from lca_cor() or lca_fit()
+#' @param lca_result output from lca_cor() or item_lca_fit()
 #' @param pre_test data.frame of pre-test responses
 #' @param pst_test data.frame of post-test responses
 #' @param per_individual logical; return per-individual perplexity?
+#' @param na_as classification of NA responses
+#' @param missing_action structural missingness handling
 #' @return numeric scalar or vector
 #' @export
 perplexity_individuals <- function(lca_result, pre_test, pst_test,
-                                   per_individual = FALSE) {
+                                   per_individual = FALSE,
+                                   na_as = c("dk", "missing"),
+                                   missing_action = c("omit", "error")) {
   assert_flag(per_individual)
 
-  ind_ll <- individual_log_likelihood(lca_result, pre_test, pst_test)
-  n_items <- ncol(pre_test)
+  details <- individual_likelihood_details(
+    lca_result, pre_test, pst_test, na_as, missing_action
+  )
+  ind_ll <- details$log_likelihood
+  n_obs <- details$n_obs
 
   if (per_individual) {
-    exp(-ind_ll / n_items)
+    result <- rep(NA_real_, length(ind_ll))
+    observed <- n_obs > 0L
+    result[observed] <- exp(-ind_ll[observed] / n_obs[observed])
+    result
   } else {
-    valid <- is.finite(ind_ll)
-    if (!any(valid)) return(NA_real_)
-    exp(-sum(ind_ll[valid]) / (sum(valid) * n_items))
+    total_obs <- sum(n_obs)
+    if (total_obs == 0L) {
+      return(NA_real_)
+    }
+    exp(-sum(ind_ll) / total_obs)
   }
 }
 
@@ -350,17 +427,19 @@ perplexity_individuals <- function(lca_result, pre_test, pst_test,
 #' @param k integer number of folds
 #' @param priors optional numeric vector of starting parameters
 #' @param seed optional integer random seed
+#' @param na_as classification of NA responses
+#' @param missing_action structural missingness handling
 #' @return list with fold_results, mean_ll, total_ll, perplexity, se
 #' @export
 cv_individuals <- function(pre_test, pst_test, k = 5L, priors = NULL,
-                           seed = NULL) {
+                           seed = NULL, na_as = c("dk", "missing"),
+                           missing_action = c("omit", "error")) {
   assert_data_frame(pre_test, min.rows = 1L, min.cols = 1L)
   assert_data_frame(pst_test, nrows = nrow(pre_test), ncols = ncol(pre_test))
   assert_int(k, lower = 2L)
   if (!is.null(seed)) assert_int(seed)
 
   n_ind <- nrow(pre_test)
-  n_items <- ncol(pre_test)
 
   if (n_ind < k) {
     stop("n_individuals (", n_ind, ") must be >= k (", k, ")")
@@ -369,8 +448,10 @@ cv_individuals <- function(pre_test, pst_test, k = 5L, priors = NULL,
   if (!is.null(seed)) set.seed(seed)
   fold_ids <- sample(rep(seq_len(k), length.out = n_ind))
 
-  test_tm <- multi_transmat(pre_test[1L, , drop = FALSE],
-                            pst_test[1L, , drop = FALSE])
+  test_tm <- multi_transmat(
+    pre_test, pst_test,
+    na_as = na_as, missing_action = missing_action
+  )
   is_dk <- ncol(test_tm) == 9L
 
   if (is.null(priors)) {
@@ -387,36 +468,50 @@ cv_individuals <- function(pre_test, pst_test, k = 5L, priors = NULL,
     test_idx <- which(fold_ids == fold)
     train_idx <- which(fold_ids != fold)
 
-    fit <- tryCatch({
-      tm <- multi_transmat(pre_test[train_idx, , drop = FALSE],
-                           pst_test[train_idx, , drop = FALSE])
-      lca_cor(tm, nodk_priors = priors[seq_len(min(4L, length(priors)))],
-              dk_priors = priors)
-    }, error = function(e) NULL)
+    fit <- tryCatch(
+      {
+        tm <- multi_transmat(pre_test[train_idx, , drop = FALSE],
+          pst_test[train_idx, , drop = FALSE],
+          na_as = na_as, missing_action = missing_action
+        )
+        lca_cor(tm,
+          nodk_priors = priors[seq_len(min(4L, length(priors)))],
+          dk_priors = priors
+        )
+      },
+      error = function(e) NULL
+    )
 
     if (is.null(fit)) {
       results[[fold]] <- list(
         fold = fold, train_n = length(train_idx), test_n = length(test_idx),
-        train_ll = NA_real_, test_ll = NA_real_, test_ll_per_obs = NA_real_
+        train_ll = NA_real_, test_ll = NA_real_, test_obs = NA_integer_,
+        test_ll_per_obs = NA_real_
       )
       next
     }
 
-    train_ll <- sum(individual_log_likelihood(
-      fit, pre_test[train_idx, , drop = FALSE], pst_test[train_idx, , drop = FALSE]
-    ))
-
-    test_ll_vec <- individual_log_likelihood(
-      fit, pre_test[test_idx, , drop = FALSE], pst_test[test_idx, , drop = FALSE]
+    train_details <- individual_likelihood_details(
+      fit,
+      pre_test[train_idx, , drop = FALSE],
+      pst_test[train_idx, , drop = FALSE],
+      na_as, missing_action
     )
-    valid_test <- is.finite(test_ll_vec)
-    test_ll <- sum(test_ll_vec[valid_test])
-    n_valid <- sum(valid_test)
+    train_ll <- sum(train_details$log_likelihood)
+
+    test_details <- individual_likelihood_details(
+      fit,
+      pre_test[test_idx, , drop = FALSE],
+      pst_test[test_idx, , drop = FALSE],
+      na_as, missing_action
+    )
+    test_ll <- sum(test_details$log_likelihood)
+    test_obs <- sum(test_details$n_obs)
 
     results[[fold]] <- list(
       fold = fold, train_n = length(train_idx), test_n = length(test_idx),
-      train_ll = train_ll, test_ll = test_ll,
-      test_ll_per_obs = if (n_valid > 0L) test_ll / (n_valid * n_items) else NA_real_
+      train_ll = train_ll, test_ll = test_ll, test_obs = test_obs,
+      test_ll_per_obs = if (test_obs > 0L) test_ll / test_obs else NA_real_
     )
   }
 
@@ -424,11 +519,13 @@ cv_individuals <- function(pre_test, pst_test, k = 5L, priors = NULL,
   valid <- !is.na(fold_results$test_ll)
 
   total_ll <- sum(fold_results$test_ll[valid])
-  total_obs <- sum(fold_results$test_n[valid]) * n_items
+  total_obs <- sum(fold_results$test_obs[valid])
   mean_ll <- if (total_obs > 0L) total_ll / total_obs else NA_real_
   perplexity <- if (!is.na(mean_ll)) exp(-mean_ll) else NA_real_
-  se <- if (sum(valid) > 1L) {
-    stats::sd(fold_results$test_ll_per_obs[valid]) / sqrt(sum(valid))
+  finite_rates <- is.finite(fold_results$test_ll_per_obs)
+  se <- if (sum(finite_rates) > 1L) {
+    stats::sd(fold_results$test_ll_per_obs[finite_rates]) /
+      sqrt(sum(finite_rates))
   } else {
     NA_real_
   }
@@ -459,78 +556,28 @@ cv_individuals <- function(pre_test, pst_test, k = 5L, priors = NULL,
 #' @return named numeric vector of length 3 (P for gg, gk, kk)
 #' @keywords internal
 class_conditional_item <- function(pre, post, gamma) {
-  g <- gamma
-  g2 <- g * g
-  g1g <- g * (1 - g)
-  og2 <- (1 - g)^2
-
-  if (pre == 0 && post == 0) {
-    c(gg = og2, gk = 0, kk = 0)
-  } else if (pre == 0 && post == 1) {
-    c(gg = g1g, gk = 1 - g, kk = 0)
-  } else if (pre == 1 && post == 0) {
-    c(gg = g1g, gk = 0, kk = 0)
-  } else {
-    c(gg = g2, gk = g, kk = 1)
-  }
+  pair <- paste0("x", pre, post)
+  person_item_response_probs(gamma)[pair, ]
 }
 
 #' Compute posterior class probabilities
 #'
-#' Uses Bayes' rule to compute P(class | data) for each individual.
-#' The LCA model uses the joint transition structure across all items
-#' to separate true learning from lucky guessing.
+#' Extracts P(class | response vector) for each individual from an explicitly
+#' fitted person/item model.
 #'
-#' @param lca_result output from lca_cor() or lca_fit()
-#' @param pre_test data.frame of pre-test responses
-#' @param pst_test data.frame of post-test responses
+#' @param object output from person_item_lca_fit()
 #' @return data.frame with columns P_gg, P_gk, P_kk (rows = individuals)
 #' @export
 #' @examples
 #' sim <- simulate_lca(n = 100, gk = 0.30, seed = 123, return_classes = TRUE)
-#' fit <- lca_fit(sim$pre, sim$post)
-#' posteriors <- posterior_class_probs(fit, sim$pre, sim$post)
+#' fit <- person_item_lca_fit(sim$pre, sim$post)
+#' posteriors <- posterior_class_probs(fit)
 #' head(posteriors)
-posterior_class_probs <- function(lca_result, pre_test, pst_test) {
-  assert_data_frame(pre_test, min.rows = 1L, min.cols = 1L)
-  assert_data_frame(pst_test, nrows = nrow(pre_test), ncols = ncol(pre_test))
-
-  param_matrix <- extract_params(lca_result)
-  if (nrow(param_matrix) != 4L) {
-    stop("posterior_class_probs() only supports no-DK model (4 parameters)")
+posterior_class_probs <- function(object) {
+  if (!inherits(object, "guess_person_fit")) {
+    stop("object must be a person_item_lca_fit() result.")
   }
-
-  n_ind <- nrow(pre_test)
-  n_items <- ncol(pre_test)
-
-  priors <- c(
-    gg = mean(param_matrix["gg", ]),
-    gk = mean(param_matrix["gk", ]),
-    kk = mean(param_matrix["kk", ])
-  )
-
-  posteriors <- matrix(NA_real_, nrow = n_ind, ncol = 3L)
-  colnames(posteriors) <- c("P_gg", "P_gk", "P_kk")
-
-  for (i in seq_len(n_ind)) {
-    log_lik <- log(priors)
-
-    for (j in seq_len(n_items)) {
-      gamma_j <- param_matrix["gamma", min(j, ncol(param_matrix))]
-      pre_ij <- as.numeric(pre_test[i, j])
-      post_ij <- as.numeric(pst_test[i, j])
-
-      ccl <- class_conditional_item(pre_ij, post_ij, gamma_j)
-      ccl[ccl <= 0] <- 1e-100
-      log_lik <- log_lik + log(ccl)
-    }
-
-    max_ll <- max(log_lik)
-    lik <- exp(log_lik - max_ll)
-    posteriors[i, ] <- lik / sum(lik)
-  }
-
-  as.data.frame(posteriors)
+  object$posterior
 }
 
 #' Compute posterior probability of learning
@@ -538,125 +585,143 @@ posterior_class_probs <- function(lca_result, pre_test, pst_test) {
 #' Returns P(gk | data) for each individual, representing the probability
 #' that the individual truly learned (vs. guessing or already knowing).
 #'
-#' @param lca_result output from lca_cor() or lca_fit()
-#' @param pre_test data.frame of pre-test responses
-#' @param pst_test data.frame of post-test responses
+#' @param object output from person_item_lca_fit()
 #' @return numeric vector of P(learned | data) for each individual
 #' @export
 #' @examples
 #' sim <- simulate_lca(n = 100, gk = 0.30, seed = 123, return_classes = TRUE)
-#' fit <- lca_fit(sim$pre, sim$post)
-#' p_learned <- posterior_learned(fit, sim$pre, sim$post)
+#' fit <- person_item_lca_fit(sim$pre, sim$post)
+#' p_learned <- posterior_learned(fit)
 #' cor(p_learned, sim$learned)
-posterior_learned <- function(lca_result, pre_test, pst_test) {
-  posteriors <- posterior_class_probs(lca_result, pre_test, pst_test)
-  posteriors$P_gk
+posterior_learned <- function(object) {
+  posterior_class_probs(object)$P_gk
 }
 
 # =============================================================================
 # Cross-sectional baseline functions
 # =============================================================================
 
-#' Estimate ability from single timepoint (cross-sectional)
+#' Estimate a Cross-Sectional Logit Score
 #'
-#' Estimates person ability using simple proportion correct (logit-transformed)
-#' or Rasch-style IRT. Ignores the transition structure between time points.
+#' Computes the logit of each person's proportion correct. This is a descriptive
+#' score, not a fitted item-response model.
 #'
 #' @param responses data.frame of binary responses (0/1)
-#' @param method character: "logit" (default) or "rasch"
-#' @param difficulty numeric vector of item difficulties (for rasch method)
-#' @return numeric vector of ability estimates (length = n individuals)
+#' @param na_as classification of NA responses
+#' @param missing_action structural missingness handling
+#' @return numeric vector of logit scores (length = n individuals)
 #' @export
 #' @examples
 #' sim <- simulate_lca(n = 100, seed = 123)
-#' theta_pre <- estimate_ability(sim$pre)
-#' theta_post <- estimate_ability(sim$post)
-estimate_ability <- function(responses, method = "logit", difficulty = NULL) {
+#' score_pre <- estimate_logit_score(sim$pre)
+#' score_post <- estimate_logit_score(sim$post)
+#' @details Observed d/DK responses are scored as incorrect in this binary
+#'   correctness baseline. They remain a distinct response category in the LCA
+#'   functions.
+estimate_logit_score <- function(
+  responses,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error")
+) {
   assert_data_frame(responses, min.rows = 1L, min.cols = 1L)
-  assert_choice(method, c("logit", "rasch"))
 
-  responses <- as.matrix(responses)
-  n_ind <- nrow(responses)
-  n_items <- ncol(responses)
-
-  if (method == "logit") {
-    p_correct <- rowMeans(responses, na.rm = TRUE)
-    p_correct <- pmax(pmin(p_correct, 0.9999), 0.0001)
-    qlogis(p_correct)
-  } else {
-    if (is.null(difficulty)) {
-      p_item <- colMeans(responses, na.rm = TRUE)
-      p_item <- pmax(pmin(p_item, 0.9999), 0.0001)
-      difficulty <- -qlogis(p_item)
-    }
-    assert_numeric(difficulty, len = n_items)
-
-    theta <- numeric(n_ind)
-    for (i in seq_len(n_ind)) {
-      resp_i <- responses[i, ]
-      valid <- !is.na(resp_i)
-      if (sum(valid) == 0) {
-        theta[i] <- NA_real_
-        next
-      }
-
-      n_correct <- sum(resp_i[valid])
-      total <- sum(valid)
-
-      if (n_correct == 0) {
-        theta[i] <- -mean(difficulty[valid]) - 2
-      } else if (n_correct == total) {
-        theta[i] <- -mean(difficulty[valid]) + 2
-      } else {
-        theta[i] <- qlogis(n_correct / total) - mean(difficulty[valid])
-      }
-    }
-    theta
-  }
+  responses <- as.data.frame(
+    lapply(
+      responses,
+      normalize_responses,
+      na_as = na_as,
+      missing_action = missing_action
+    ),
+    stringsAsFactors = FALSE
+  )
+  responses[responses == "d"] <- "0"
+  responses <- matrix(
+    as.numeric(as.matrix(responses)),
+    nrow = nrow(responses),
+    dimnames = dimnames(responses)
+  )
+  p_correct <- rowMeans(responses, na.rm = TRUE)
+  p_correct <- pmax(pmin(p_correct, 0.9999), 0.0001)
+  qlogis(p_correct)
 }
 
 #' Cross-sectional learning estimate
 #'
-#' Estimates learning as the difference in ability between post and pre test.
+#' Estimates learning as the difference in logit scores between post and pre.
 #' This ignores the transition structure that the LCA model uses.
 #'
 #' @param pre_test data.frame of pre-test responses
 #' @param pst_test data.frame of post-test responses
-#' @param method character: "logit" (default) or "rasch"
-#' @return numeric vector of learning estimates (theta_post - theta_pre)
+#' @param na_as classification of NA responses
+#' @param missing_action structural missingness handling
+#' @return numeric vector of learning scores (post - pre)
 #' @export
 #' @examples
 #' sim <- simulate_lca(n = 100, gk = 0.30, seed = 123, return_classes = TRUE)
 #' learning_cs <- cross_sectional_learning(sim$pre, sim$post)
 #' cor(learning_cs, sim$learned)
-cross_sectional_learning <- function(pre_test, pst_test, method = "logit") {
+cross_sectional_learning <- function(
+  pre_test,
+  pst_test,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error")
+) {
   assert_data_frame(pre_test, min.rows = 1L, min.cols = 1L)
   assert_data_frame(pst_test, nrows = nrow(pre_test), ncols = ncol(pre_test))
+  response_data <- prepare_response_data(
+    pre_test, pst_test, na_as, missing_action
+  )
+  pre_test <- response_data$pre
+  pst_test <- response_data$post
 
-  theta_pre <- estimate_ability(pre_test, method = method)
-  theta_post <- estimate_ability(pst_test, method = method)
+  if (response_data$na_as == "missing") {
+    for (j in seq_len(ncol(pre_test))) {
+      complete <- !is.na(pre_test[[j]]) & !is.na(pst_test[[j]])
+      pre_test[[j]][!complete] <- NA_character_
+      pst_test[[j]][!complete] <- NA_character_
+    }
+  }
 
-  theta_post - theta_pre
+  score_pre <- estimate_logit_score(
+    pre_test,
+    na_as = "missing", missing_action = "omit"
+  )
+  score_post <- estimate_logit_score(
+    pst_test,
+    na_as = "missing", missing_action = "omit"
+  )
+
+  score_post - score_pre
 }
 
-#' Cross-sectional IRT learning probability
+#' Cross-Sectional Learning Score
 #'
-#' Converts the difference in ability estimates to a probability scale
-#' using the logistic function. Provides a comparable metric to
-#' posterior_learned() but without using the transition structure.
+#' Applies the logistic function to the difference in cross-sectional logit
+#' scores. The result is bounded in [0, 1], but is not a calibrated probability
+#' of learning and is not an IRT estimate.
 #'
 #' @param pre_test data.frame of pre-test responses
 #' @param pst_test data.frame of post-test responses
-#' @param method character: "logit" (default) or "rasch"
-#' @param scale numeric scaling factor for ability difference (default 1)
-#' @return numeric vector of learning probabilities in [0, 1]
+#' @param scale numeric scaling factor for the score difference (default 1)
+#' @param na_as classification of NA responses
+#' @param missing_action structural missingness handling
+#' @return numeric vector of learning scores in [0, 1]
 #' @export
 #' @examples
 #' sim <- simulate_lca(n = 100, gk = 0.30, seed = 123, return_classes = TRUE)
-#' p_learned_cs <- cross_sectional_irt(sim$pre, sim$post)
-#' cor(p_learned_cs, sim$learned)
-cross_sectional_irt <- function(pre_test, pst_test, method = "logit", scale = 1) {
-  learning <- cross_sectional_learning(pre_test, pst_test, method = method)
+#' learning_score <- cross_sectional_learning_score(sim$pre, sim$post)
+#' cor(learning_score, sim$learned)
+cross_sectional_learning_score <- function(
+  pre_test,
+  pst_test,
+  scale = 1,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error")
+) {
+  learning <- cross_sectional_learning(
+    pre_test, pst_test,
+    na_as = na_as, missing_action = missing_action
+  )
   plogis(learning * scale)
 }
 
@@ -680,8 +745,8 @@ cross_sectional_irt <- function(pre_test, pst_test, method = "logit", scale = 1)
 #'
 #' @return Data frame with one row per parameter containing columns:
 #'   parameter (name), true_value, mean_estimate, bias (mean estimate minus true),
-#'   rmse (root mean squared error), se (standard deviation of estimates),
-#'   and coverage_95 (proportion of times 95% CI contains true value).
+#'   rmse (root mean squared error), and se (Monte Carlo standard deviation of
+#'   estimates).
 #'
 #' @export
 #' @examples
@@ -695,14 +760,15 @@ cross_sectional_irt <- function(pre_test, pst_test, method = "logit", scale = 1)
 #'
 #' # Validate DK model recovery
 #' results_dk <- validate_recovery(
-#'   c(gg = 0.25, gk = 0.15, gd = 0.10, kk = 0.20,
-#'     dg = 0.10, dk = 0.10, dd = 0.10, gamma = 0.25),
+#'   c(
+#'     gg = 0.25, gk = 0.15, gd = 0.10, kk = 0.20,
+#'     dg = 0.10, dk = 0.10, dd = 0.10, gamma = 0.25
+#'   ),
 #'   n = 500, n_sims = 50
 #' )
 #' }
 validate_recovery <- function(true_params, n = 500, n_items = 2,
                               n_sims = 100, seed = NULL) {
-
   assert_numeric(true_params, min.len = 4L, max.len = 8L, any.missing = FALSE)
   assert_int(n, lower = 10L)
   assert_int(n_items, lower = 1L)
@@ -742,12 +808,15 @@ validate_recovery <- function(true_params, n = 500, n_items = 2,
       )
     }
 
-    tryCatch({
-      fit <- lca_fit(sim_data$pre, sim_data$post)
-      estimates[sim, ] <- fit$params[, 1]
-    }, error = function(e) {
-      estimates[sim, ] <- rep(NA, n_params)
-    })
+    tryCatch(
+      {
+        fit <- item_lca_fit(sim_data$pre, sim_data$post)
+        estimates[sim, ] <- rowMeans(fit$params)
+      },
+      error = function(e) {
+        estimates[sim, ] <- rep(NA, n_params)
+      }
+    )
   }
 
   results <- data.frame(
@@ -758,20 +827,16 @@ validate_recovery <- function(true_params, n = 500, n_items = 2,
 
   results$mean_estimate <- colMeans(estimates, na.rm = TRUE)
   results$bias <- results$mean_estimate - results$true_value
-  results$rmse <- sqrt(colMeans((estimates - matrix(results$true_value,
-                                                    nrow = n_sims, ncol = n_params,
-                                                    byrow = TRUE))^2, na.rm = TRUE))
+  true_matrix <- matrix(
+    results$true_value,
+    nrow = n_sims,
+    ncol = n_params,
+    byrow = TRUE
+  )
+  results$rmse <- sqrt(
+    colMeans((estimates - true_matrix)^2, na.rm = TRUE)
+  )
   results$se <- apply(estimates, 2, sd, na.rm = TRUE)
-
-  se_est <- results$se
-  coverage <- numeric(n_params)
-  for (j in seq_len(n_params)) {
-    ci_lower <- estimates[, j] - 1.96 * se_est[j]
-    ci_upper <- estimates[, j] + 1.96 * se_est[j]
-    coverage[j] <- mean(results$true_value[j] >= ci_lower &
-                          results$true_value[j] <= ci_upper, na.rm = TRUE)
-  }
-  results$coverage_95 <- coverage
 
   results
 }

@@ -143,15 +143,18 @@ test_that("the estimator recovers the truth from exact model-implied counts", {
     truth[1], truth[2], truth[3], truth[4],
     truth[5], truth[6], truth[7], gamma
   )
-  tm <- matrix(probs * 1e7, nrow = 1,
-               dimnames = list("item1", TRANSMAT_COLS_DK))
+  tm <- matrix(probs * 1e7,
+    nrow = 1,
+    dimnames = list("item1", TRANSMAT_COLS_DK)
+  )
 
   fit <- lca_cor(tm)
   est <- fit$params[, 1]
 
   expect_equal(unname(est), unname(c(truth, gamma)), tolerance = 1e-3)
   expect_equal(unname(fit$learning[1]), truth[["gk"]] + truth[["dk"]],
-               tolerance = 1e-3)
+    tolerance = 1e-3
+  )
 })
 
 # ---------------------------------------------------------------------------
@@ -182,8 +185,10 @@ test_that("simulate_lca_dk never shows a knower answering wrongly later", {
 })
 
 test_that("estimates converge on the truth as the simulated sample grows", {
-  truth <- c(gg = 0.25, gk = 0.15, gd = 0.10, kk = 0.20,
-             dg = 0.08, dk = 0.12, dd = 0.10)
+  truth <- c(
+    gg = 0.25, gk = 0.15, gd = 0.10, kk = 0.20,
+    dg = 0.08, dk = 0.12, dd = 0.10
+  )
   gamma <- 0.30
 
   errs <- vapply(c(2000, 50000), function(n) {
@@ -212,7 +217,9 @@ test_that("the goodness of fit test uses the surviving degrees of freedom", {
   fit <- lca_cor(tm)
 
   gof <- fit_model(sim$pre, sim$post, fit$params["gamma", ],
-                   fit$params[1:7, ], force9 = TRUE)
+    fit$params[1:7, ],
+    force9 = TRUE
+  )
 
   stat <- gof["chi-square", 1]
   p <- gof["p-value", 1]

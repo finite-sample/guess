@@ -6,7 +6,7 @@ NULL
 #' @description Constraints that some params sum to 1. Used Internally. For data without DK.
 #' Functions for constraining lambdas to sum to 1 and to bound params between 0 and 1
 #' @keywords internal
-#' 
+#'
 #' @param x    gg, gk, kk
 #' @param g1   guess
 #' @param data transition matrix
@@ -105,7 +105,10 @@ dk_cell_probs <- function(gg, gk, gd, kk, dg, dk, dd, g1) {
 #' @param data transition matrix
 
 guess_lik <- function(x, g1 = x[4], data) {
-  -sum(data * log(nodk_cell_probs(x[1], x[2], x[3], g1)))
+  multinomial_nll(
+    data,
+    nodk_cell_probs(x[1], x[2], x[3], g1)
+  )
 }
 
 #' guessdk_lik
@@ -117,36 +120,49 @@ guess_lik <- function(x, g1 = x[4], data) {
 #' @param data  transition matrix
 
 guessdk_lik <- function(x, g1 = x[8], data) {
-  -sum(data * log(
+  multinomial_nll(
+    data,
     dk_cell_probs(x[1], x[2], x[3], x[4], x[5], x[6], x[7], g1)
-  ))
+  )
+}
+
+#' Multinomial negative log-likelihood
+#' @param data observed cell counts
+#' @param probs model-implied cell probabilities
+#' @return scalar negative log-likelihood
+#' @keywords internal
+multinomial_nll <- function(data, probs) {
+  observed <- data > 0
+  if (any(probs[observed] <= 0)) {
+    return(Inf)
+  }
+  -sum(data[observed] * log(probs[observed]))
 }
 
 #' Interleave vectors
 #' @description Interleaves two vectors. Used internally.
 #' @keywords internal
-#' 
+#'
 #' @param a first vector
 #' @param b second vector
 
 interleave <- function(a, b) {
-  
   shorter <- min(length(a), length(b))
   result <- vector(mode = typeof(a), length = length(a) + length(b))
-  
+
   # Fill interleaved portion
   for (i in seq_len(shorter)) {
     result[2 * i - 1] <- a[i]
     result[2 * i] <- b[i]
   }
-  
+
   # Add remaining elements
   if (length(a) > shorter) {
     result[(2 * shorter + 1):length(result)] <- a[(shorter + 1):length(a)]
   } else if (length(b) > shorter) {
     result[(2 * shorter + 1):length(result)] <- b[(shorter + 1):length(b)]
   }
-  
+
   result
 }
 
@@ -161,40 +177,46 @@ zero1 <- function(x) {
   pmax(0, pmin(1, x))
 }
 
-#' Create IRT-parameterized likelihood function (no DK)
+#' Create difficulty-parameterized likelihood function (no DK)
 #' @description Factory function that creates a likelihood function parameterized with
-#'   IRT difficulty instead of gamma. Used internally by lca_irt().
+#'   an unbounded difficulty score instead of gamma. Used internally by
+#'   lca_difficulty().
 #' @keywords internal
 #'
 #' @param base_rate minimum guessing probability (1/K for K-choice items)
 #' @return A function that takes x (parameters) and data (transition matrix)
 
-make_guess_lik_irt <- function(base_rate = 0.25) {
+make_guess_lik_difficulty <- function(base_rate = 0.25) {
   function(x, g1 = NA, data) {
     g1 <- base_rate + (1 - base_rate) * plogis(-x[4])
-    -sum(data * log(nodk_cell_probs(x[1], x[2], x[3], g1)))
+    multinomial_nll(
+      data,
+      nodk_cell_probs(x[1], x[2], x[3], g1)
+    )
   }
 }
 
-#' Create IRT-parameterized likelihood function (DK)
+#' Create difficulty-parameterized likelihood function (DK)
 #' @description Factory function that creates a likelihood function parameterized with
-#'   IRT difficulty instead of gamma. Used internally by lca_irt().
+#'   an unbounded difficulty score instead of gamma. Used internally by
+#'   lca_difficulty().
 #' @keywords internal
 #'
 #' @param base_rate minimum guessing probability (1/K for K-choice items)
 #' @return A function that takes x (parameters) and data (transition matrix)
 
-make_guessdk_lik_irt <- function(base_rate = 0.25) {
+make_guessdk_lik_difficulty <- function(base_rate = 0.25) {
   function(x, g1 = NA, data) {
     g1 <- base_rate + (1 - base_rate) * plogis(-x[8])
-    -sum(data * log(
+    multinomial_nll(
+      data,
       dk_cell_probs(x[1], x[2], x[3], x[4], x[5], x[6], x[7], g1)
-    ))
+    )
   }
 }
 
 #' Transform difficulty to gamma
-#' @description Convert IRT difficulty parameter to guessing probability.
+#' @description Convert a difficulty score to a guessing probability.
 #' @keywords internal
 #'
 #' @param difficulty numeric vector of difficulty parameters
@@ -206,7 +228,7 @@ difficulty_to_gamma <- function(difficulty, base_rate = 0.25) {
 }
 
 #' Transform gamma to difficulty
-#' @description Convert guessing probability to IRT difficulty parameter.
+#' @description Convert guessing probability to a difficulty score.
 #' @keywords internal
 #'
 #' @param gamma numeric vector of guessing probabilities

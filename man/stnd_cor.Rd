@@ -4,7 +4,14 @@
 \alias{stnd_cor}
 \title{Standard Guessing Correction for Learning}
 \usage{
-stnd_cor(pre_test = NULL, pst_test = NULL, lucky = NULL, item_names = NULL)
+stnd_cor(
+  pre_test = NULL,
+  pst_test = NULL,
+  lucky = NULL,
+  item_names = NULL,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error")
+)
 }
 \arguments{
 \item{pre_test}{Required. data.frame carrying responses to pre-test questions.}
@@ -14,6 +21,13 @@ stnd_cor(pre_test = NULL, pst_test = NULL, lucky = NULL, item_names = NULL)
 \item{lucky}{Required. A vector. Each entry is 1/(number of options)}
 
 \item{item_names}{Optional. A vector carrying item names.}
+
+\item{na_as}{Classification of NA responses: `"dk"` (the default) treats
+them as observed don't know responses; `"missing"` treats them as
+structural missingness.}
+
+\item{missing_action}{How to handle structural missingness: `"omit"`
+excludes it and `"error"` rejects it.}
 }
 \value{
 a list of three vectors, carrying pre-treatment corrected scores,
@@ -35,11 +49,13 @@ separately via \code{item_names}.
 }
 \examples{
 # Without DK
-pre_test <- data.frame(item1 = c(1,0,0,1,0), item2 = c(1,NA,0,1,0)) 
-pst_test <- pre_test + cbind(c(0,1,1,0,0), c(0,1,0,0,1))
-lucky <- rep(.25, 2); stnd_cor(pre_test, pst_test, lucky)
+pre_test <- data.frame(item1 = c(1, 0, 0, 1, 0), item2 = c(1, NA, 0, 1, 0))
+pst_test <- pre_test + cbind(c(0, 1, 1, 0, 0), c(0, 1, 0, 0, 1))
+lucky <- rep(.25, 2)
+stnd_cor(pre_test, pst_test, lucky)
 # With DK
-pre_test <- data.frame(item1 = c(1,0,0,1,0,'d',0), item2 = c(1,NA,0,1,0,'d','d')) 
-pst_test <- data.frame(item1 = c(1,0,0,1,0,'d',1), item2 = c(1,NA,0,1,0,1,'d')) 
-lucky <- rep(.25, 2); stnd_cor(pre_test, pst_test, lucky)
+pre_test <- data.frame(item1 = c(1, 0, 0, 1, 0, "d", 0), item2 = c(1, NA, 0, 1, 0, "d", "d"))
+pst_test <- data.frame(item1 = c(1, 0, 0, 1, 0, "d", 1), item2 = c(1, NA, 0, 1, 0, 1, "d"))
+lucky <- rep(.25, 2)
+stnd_cor(pre_test, pst_test, lucky)
 }

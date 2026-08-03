@@ -7,7 +7,7 @@ VALID_RESPONSE_VALUES <- c(NA_character_, "1", "0", "d")
 
 # Response value meanings
 RESPONSE_CORRECT <- "1"
-RESPONSE_INCORRECT <- "0" 
+RESPONSE_INCORRECT <- "0"
 RESPONSE_DK <- "d"
 RESPONSE_MISSING <- NA_character_
 
@@ -18,6 +18,7 @@ TRANSMAT_COLS_DK <- c("x00", "x01", "x0d", "x10", "x11", "x1d", "xd0", "xd1", "x
 # Parameter names for LCA models
 LCA_PARAM_NAMES_NODK <- c("gg", "gk", "kk", "gamma")
 LCA_PARAM_NAMES_DK <- c("gg", "gk", "gd", "kk", "dg", "dk", "dd", "gamma")
+PERSON_CLASS_NAMES <- c("gg", "gk", "kk")
 
 # Default prior values
 DEFAULT_NODK_PRIORS <- c(0.3, 0.1, 0.1, 0.25)

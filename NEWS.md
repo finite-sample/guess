@@ -1,6 +1,39 @@
-# version 0.6.0 2026-07-31
+# version 0.7.0 2026-08-02
+
+This release incorporates 0.6.0, which was tagged but never submitted to
+CRAN, together with the further breaking changes below. The version on CRAN
+is 0.3.0, so 0.4.0, 0.5.x and 0.6.0 are all superseded here.
 
 ## Breaking Changes
+
+* **Model entry points now state their level and estimand.** `lca_fit()` is
+  replaced by `item_lca_fit()` for independent item-wise fits.
+  `person_item_lca_fit()` jointly estimates one shared latent trajectory per
+  person, common class proportions, and item-specific guessing rates.
+  `posterior_class_probs()` and `posterior_learned()` now extract results from
+  that explicit person/item fit instead of silently fitting a different model
+  from an item-wise result.
+
+* **Functions that were not IRT models no longer claim to be.** `lca_irt()` is
+  replaced by `lca_difficulty()` because it only reparameterizes the LCA
+  guessing rate. `estimate_ability()` is replaced by `estimate_logit_score()`,
+  its unsupported hand-built `"rasch"` branch is removed, and
+  `cross_sectional_irt()` is replaced by `cross_sectional_learning_score()`.
+  The latter is a descriptive bounded score, not a calibrated probability of
+  learning.
+
+* **Missing-response semantics are now explicit and consistent.** Every function
+  accepting raw responses uses `na_as = c("dk", "missing")`. The default treats
+  `NA` as an observed don't-know response and selects the nine-cell model; explicit
+  `"d"`/`"DK"` always does the same. When `NA` is structural missingness,
+  `missing_action = "omit"` excludes incomplete pairs and `"error"` rejects them.
+  Structural missingness is not added to the latent-class model.
+
+* **`validate_recovery()` no longer reports invalid confidence-interval coverage.**
+  The function had used one Monte Carlo standard deviation as every replication's
+  standard error, which is not replicate-specific interval coverage. It now reports
+  bias, RMSE, and Monte Carlo SD, and averages estimates across every simulated item
+  instead of silently keeping only the first.
 
 * **The don't-know model now matches the model in the paper.** The likelihood
   implemented a different model from the one in Cor and Sood, equation (2). It kept the
@@ -56,6 +89,26 @@ The paper's model is identified in closed form -- `gamma/(1-gamma)` is `x10/x00`
 every lambda follows -- and over-identified by exactly one degree of freedom, the
 restriction `x1d/x0d = x10/x00`.
 
+## Bug Fixes
+
+* **`stnd_cor()` now estimates paired learning from the same respondents in both
+  corrected totals.** With wave-specific missingness, the previous implementation
+  subtracted marginal pre- and post-test totals calculated from different respondent
+  sets, then divided that unmatched difference by the number of complete pairs.
+  Marginal pre- and post-test scores still use everyone observed at each wave; learning
+  now uses complete pairs throughout and returns `NA` when no pair is observed.
+
+* Zero-probability likelihood cells now contribute zero when their observed count is
+  zero and infinite loss only when they are observed. Perplexity and cross-validation
+  no longer discard impossible held-out observations or divide by unobserved pairs.
+
+* Items with and without observed don't-know responses can now be combined safely:
+  four-cell item transitions are promoted to the shared nine-cell schema with zero DK
+  counts instead of being recycled into a malformed matrix.
+
+* Tibble inputs now use vector-safe column extraction and produce the same transitions,
+  fits, corrections, and missing-response behavior as data frames.
+
 ## Internal
 
 * The nine DK and four no-DK cell probabilities had been written out in four separate
@@ -64,6 +117,11 @@ restriction `x1d/x0d = x10/x00`.
   goodness-of-fit routine calls.
 
 ## Testing
+
+* End-to-end model-criticism tests verify that raw individual and aggregated item
+  log-likelihoods and perplexities agree for binary, NA-coded DK, and structurally
+  missing data. Additional tests cover cross-validation denominators, tibble pipelines,
+  response-code validation, and simulation recovery.
 
 * New `tests/testthat/test-dk-model-spec.R`: the cells sum to 1, the structural zeros
   hold, the closed-form inversion recovers every parameter, the over-identifying
@@ -110,7 +168,7 @@ restriction `x1d/x0d = x10/x00`.
 
 ## Documentation
 
-* Replaced the Unicode arrows and infinity signs in the `lca_irt()` and `simulate_lca()`
+* Replaced the Unicode arrows and infinity signs in the `lca_difficulty()` and `simulate_lca()`
   documentation with ASCII. They produced LaTeX errors when building the PDF manual, so
   `R CMD check --as-cran` reported an ERROR and two WARNINGs on any machine with a
   working TeX installation.

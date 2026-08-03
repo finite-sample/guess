@@ -3,9 +3,6 @@ url: https://finite-sample.github.io/guess/
 template:
   params:
     bootswatch: cosmo
-    docsearch:
-      api_key: d9b2198580fb6e978e06524d7bc58092
-      index_name: guess
 
 authors:
   Gaurav Sood:

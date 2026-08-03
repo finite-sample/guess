@@ -4,12 +4,24 @@
 \alias{lca_adj}
 \title{Person Level Adjustment}
 \usage{
-lca_adj(pre = NULL, pst = NULL)
+lca_adj(
+  pre = NULL,
+  pst = NULL,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error")
+)
 }
 \arguments{
 \item{pre}{pre data frame}
 
 \item{pst}{pst data frame}
+
+\item{na_as}{Classification of NA responses: `"dk"` (the default) treats
+them as observed don't know responses; `"missing"` treats them as
+structural missingness.}
+
+\item{missing_action}{How to handle structural missingness: `"omit"`
+excludes it and `"error"` rejects it.}
 }
 \value{
 list of pre and post adjusted responses
@@ -18,7 +30,7 @@ list of pre and post adjusted responses
 Adjusts observed 1s based on item level parameters of the LCA
   model. Currently only takes data with Don't Know. And treats don't know
   responses as true confessions on ignorance.
-If NAs are observed in the data, they are treating as acknowledgments of ignorance.
+By default, NAs are treated as acknowledgments of ignorance.
 }
 \examples{
 pre_test_var <- data.frame(pre = c(1, 0, 0, 1, "d", "d", 0, 1, NA))

@@ -7,7 +7,7 @@
 extract_params(lca_result)
 }
 \arguments{
-\item{lca_result}{output from lca_cor/lca_fit or numeric vector}
+\item{lca_result}{output from lca_cor/item_lca_fit or numeric vector}
 }
 \value{
 matrix of parameters (rows = params, cols = items)

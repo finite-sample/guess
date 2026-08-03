@@ -42,7 +42,7 @@ simulate_lca_dk(
 \item{gamma}{Numeric. Probability of guessing correctly. Can be scalar (same for
 all items) or vector of length n_items. Default 0.25.}
 
-\item{difficulty}{Numeric vector. Optional IRT difficulty parameters. If provided,
+\item{difficulty}{Numeric vector. Optional difficulty-link scores. If provided,
 gamma is computed as base_rate + (1 - base_rate) * plogis(-difficulty).
 Higher difficulty = harder item (lower gamma). Ignored if NULL.}
 
@@ -77,18 +77,18 @@ informative process, which sets both to zero. Learning is gk + dk.
 
 Parameters must sum to 1 (constraint enforced automatically).
 
-When difficulty is specified, gamma values are derived using an IRT-like
+When difficulty is specified, gamma values are derived using a logistic
 transformation: gamma_i = base_rate + (1 - base_rate) * plogis(-difficulty_i).
 }
 \examples{
 # Simulate DK data
 sim <- simulate_lca_dk(n = 5000, gk = 0.15, seed = 123)
-fit <- lca_fit(sim$pre, sim$post)
-fit$params["gk", ]  # Should be close to 0.15
+fit <- item_lca_fit(sim$pre, sim$post)
+fit$params["gk", ] # Should be close to 0.15
 
 # Item-specific gamma (vector)
 sim_vec <- simulate_lca_dk(n = 500, n_items = 3, gamma = c(0.2, 0.25, 0.3), seed = 456)
 
-# IRT-style difficulty parameters
+# Difficulty-link scores
 sim_irt <- simulate_lca_dk(n = 500, n_items = 3, difficulty = c(1, 0, -1), seed = 789)
 }

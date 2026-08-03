@@ -4,20 +4,27 @@
 \alias{cross_sectional_learning}
 \title{Cross-sectional learning estimate}
 \usage{
-cross_sectional_learning(pre_test, pst_test, method = "logit")
+cross_sectional_learning(
+  pre_test,
+  pst_test,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error")
+)
 }
 \arguments{
 \item{pre_test}{data.frame of pre-test responses}
 
 \item{pst_test}{data.frame of post-test responses}
 
-\item{method}{character: "logit" (default) or "rasch"}
+\item{na_as}{classification of NA responses}
+
+\item{missing_action}{structural missingness handling}
 }
 \value{
-numeric vector of learning estimates (theta_post - theta_pre)
+numeric vector of learning scores (post - pre)
 }
 \description{
-Estimates learning as the difference in ability between post and pre test.
+Estimates learning as the difference in logit scores between post and pre.
 This ignores the transition structure that the LCA model uses.
 }
 \examples{

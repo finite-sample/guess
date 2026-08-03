@@ -4,7 +4,14 @@
 \alias{group_adj}
 \title{Group Level Adjustment That Accounts for Propensity to Guess}
 \usage{
-group_adj(pre = NULL, pst = NULL, gamma = NULL, dk = 0.03)
+group_adj(
+  pre = NULL,
+  pst = NULL,
+  gamma = NULL,
+  dk = 0.03,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error")
+)
 }
 \arguments{
 \item{pre}{pre data frame. Required. Each vector within the data frame
@@ -17,6 +24,13 @@ should only take values 0, 1, and 'd'.}
 
 \item{dk}{Numeric. Between 0 and 1. Hidden knowledge behind don't know
 responses. Default is .03.}
+
+\item{na_as}{Classification of NA responses: `"dk"` (the default) treats
+them as observed don't know responses; `"missing"` treats them as
+structural missingness.}
+
+\item{missing_action}{How to handle structural missingness: `"omit"`
+excludes it and `"error"` rejects it.}
 }
 \value{
 nested list of pre and post adjusted responses, and adjusted learning estimates
@@ -27,8 +41,8 @@ Adjusts observed 1s based on propensity to guess (based on
 You can also put in your best estimate of hidden knowledge behind don't know responses.
 }
 \examples{
-pre_test_var <- data.frame(pre = c(1,0,0,1,"d","d",0,1,NA))
-pst_test_var <- data.frame(pst = c(1,NA,1,"d",1,0,1,1,"d"))
+pre_test_var <- data.frame(pre = c(1, 0, 0, 1, "d", "d", 0, 1, NA))
+pst_test_var <- data.frame(pst = c(1, NA, 1, "d", 1, 0, 1, 1, "d"))
 gamma <- c(.25)
 group_adj(pre_test_var, pst_test_var, gamma)
 }

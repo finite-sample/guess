@@ -31,7 +31,7 @@ simulate_lca(
 \item{gamma}{Numeric. Probability of guessing correctly. Can be scalar (same for
 all items) or vector of length n_items. Default 0.25.}
 
-\item{difficulty}{Numeric vector. Optional IRT difficulty parameters. If provided,
+\item{difficulty}{Numeric vector. Optional difficulty-link scores. If provided,
 gamma is computed as base_rate + (1 - base_rate) * plogis(-difficulty).
 Higher difficulty = harder item (lower gamma). Ignored if NULL.}
 
@@ -67,7 +67,7 @@ The model simulates three latent classes:
 
 Parameters must satisfy: gg + gk + kk = 1 (constraint enforced automatically).
 
-When difficulty is specified, gamma values are derived using an IRT-like
+When difficulty is specified, gamma values are derived using a logistic
 transformation: gamma_i = base_rate + (1 - base_rate) * plogis(-difficulty_i).
 This means:
 - difficulty = 0: gamma = base_rate + 0.5 * (1 - base_rate) (middle)
@@ -77,8 +77,8 @@ This means:
 \examples{
 # Simulate data with 30\% learning
 sim <- simulate_lca(n = 500, gg = 0.35, gk = 0.30, kk = 0.35, gamma = 0.25, seed = 123)
-fit <- lca_fit(sim$pre, sim$post)
-fit$params["gk", ]  # Should be close to 0.30
+fit <- item_lca_fit(sim$pre, sim$post)
+fit$params["gk", ] # Should be close to 0.30
 
 # Multi-item simulation
 sim_multi <- simulate_lca(n = 500, n_items = 3, seed = 456)
@@ -86,11 +86,11 @@ sim_multi <- simulate_lca(n = 500, n_items = 3, seed = 456)
 # Item-specific gamma (vector)
 sim_vec <- simulate_lca(n = 500, n_items = 3, gamma = c(0.2, 0.25, 0.3), seed = 789)
 
-# IRT-style difficulty parameters
+# Difficulty-link scores
 sim_irt <- simulate_lca(n = 500, n_items = 3, difficulty = c(1, 0, -1), seed = 101)
 
 # Return true class assignments for validation
 sim_classes <- simulate_lca(n = 500, gk = 0.30, seed = 123, return_classes = TRUE)
 table(sim_classes$true_class)
-mean(sim_classes$learned)  # Should be close to 0.30
+mean(sim_classes$learned) # Should be close to 0.30
 }

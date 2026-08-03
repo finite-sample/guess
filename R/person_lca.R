@@ -177,6 +177,7 @@ person_item_lca_fit <- function(
     stop("No complete pre/post response pairs are available.")
   }
 
+  item_fit_supplied <- !is.null(item_fit)
   if (is.null(item_fit)) {
     item_fit <- item_lca_fit(
       pre_test, pst_test,
@@ -199,6 +200,17 @@ person_item_lca_fit <- function(
   gamma <- as.numeric(gamma_matrix)
   names(gamma) <- colnames(gamma_matrix)
   item_names <- names(pre_test)
+  if (!item_fit_supplied) {
+    # multi_transmat() labels items positionally as item1..itemN and discards
+    # the source column names, so the initializer built just above never
+    # matches the data's own names -- which made this function reject its own
+    # default for any data frame not already named itemN. It is built from
+    # these columns in this order, so aligning positionally is exact.
+    if (length(gamma) != length(item_names)) {
+      stop("Internal initializer returned the wrong number of items.")
+    }
+    names(gamma) <- item_names
+  }
   if (is.null(names(gamma)) || !setequal(names(gamma), item_names)) {
     stop("item_fit item names must match the response data.")
   }

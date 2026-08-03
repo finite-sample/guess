@@ -470,8 +470,15 @@ cv_individuals <- function(pre_test, pst_test, k = 5L, priors = NULL,
 
     fit <- tryCatch(
       {
+        # force9 = is_dk keeps every fold on the schema the full data implies.
+        # Without it, a training fold that happens to contain no DK response --
+        # which is ordinary when DK is rare, or concentrated in the respondents
+        # being held out -- yields a four-cell matrix and a no-DK fit. Scoring
+        # that fold then meets a held-out "d" and raises "Don't know responses
+        # require a DK model." outside this tryCatch, aborting the whole run.
         tm <- multi_transmat(pre_test[train_idx, , drop = FALSE],
           pst_test[train_idx, , drop = FALSE],
+          force9 = is_dk,
           na_as = na_as, missing_action = missing_action
         )
         lca_cor(tm,

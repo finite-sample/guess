@@ -1,7 +1,8 @@
-## Submission (v0.6.0)
+## Submission (v0.7.0)
 
 This release corrects two estimation bugs, both of which biased results in the
-direction the package exists to remove. It supersedes 0.4.0 and 0.5.x, which
+direction the package exists to remove, and renames the model entry points so
+each states its level and estimand. It supersedes 0.4.0, 0.5.x and 0.6.0, which
 were developed but never submitted; the version on CRAN is 0.3.0, so this
 submission spans several NEWS entries.
 
@@ -24,6 +25,21 @@ Full detail is in NEWS.md and in
 https://github.com/finite-sample/guess/issues/1.
 
 ## Breaking changes
+
+The model entry points are renamed so each states what it fits. `lca_fit()`
+becomes `item_lca_fit()` for independent item-wise fits, and
+`person_item_lca_fit()` jointly estimates one shared latent trajectory per
+person; `posterior_class_probs()` and `posterior_learned()` now read from that
+explicit fit rather than silently fitting a different model from an item-wise
+result. `lca_irt()` becomes `lca_difficulty()`, `estimate_ability()` becomes
+`estimate_logit_score()` (its unsupported hand-built "rasch" branch is removed),
+and `cross_sectional_irt()` becomes `cross_sectional_learning_score()` -- none
+of the three was an IRT model, and the last is a descriptive bounded score
+rather than a calibrated probability.
+
+Missing-response handling is now explicit: every function taking raw responses
+accepts `na_as = c("dk", "missing")`, and `missing_action` selects whether
+structural missingness is omitted or rejected.
 
 Users of the don't-know model must update parameter names. `kg` (know to guess)
 and `kd` (know to don't know) are removed, since the model's identifying
@@ -60,7 +76,7 @@ All five GitHub Actions configurations pass.
 
 ## Testing
 
-3849 tests pass, including a new `tests/testthat/test-dk-model-spec.R` that pins
+3981 tests pass, including `tests/testthat/test-dk-model-spec.R` that pins
 the corrected model: the cell probabilities sum to 1, the structural zeros hold,
 the closed-form inversion recovers every parameter, the over-identifying
 restriction holds, and the estimator recovers the truth from exact counts.

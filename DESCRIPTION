@@ -1,17 +1,17 @@
 Package: guess
 Title: Adjust Estimates of Learning for Guessing
-Version: 0.6.0
+Version: 0.7.0
 Authors@R: c(
     person("Gaurav", "Sood", email = "gsood07@gmail.com", role = c("aut", "cre")),
     person("Ken", "Cor", email = "mcor@ualberta.ca", role = c("aut"))
     )
-Description: Provides tools to adjust estimates of learning for guessing-related 
-    bias in educational and survey research. Implements standard guessing 
-    correction methods and a sophisticated latent class model that leverages 
-    informative pre-post test transitions to account for guessing behavior. 
-    The package helps researchers obtain more accurate estimates of actual 
-    learning when respondents may guess on closed-ended knowledge items. 
-    For theoretical background and empirical validation, see Cor and Sood (2018) 
+Description: Provides tools to adjust estimates of learning for guessing-related
+    bias in educational and survey research. Implements standard guessing
+    correction methods and latent class models that leverage informative
+    pre-post test transitions to account for guessing behavior.
+    The package helps researchers obtain more accurate estimates of actual
+    learning when respondents may guess on closed-ended knowledge items.
+    For theoretical background and empirical validation, see Cor and Sood (2016)
     <https://gsood.com/research/papers/guess.pdf>.
 URL: https://github.com/finite-sample/guess, https://finite-sample.github.io/guess/
 BugReports: https://github.com/finite-sample/guess/issues
@@ -28,7 +28,9 @@ Suggests:
     rmarkdown,
     testthat (>= 3.0.0),
     lintr,
-    covr
+    covr,
+    dplyr,
+    tibble
 Encoding: UTF-8
 Language: en-US
 Config/testthat/edition: 3

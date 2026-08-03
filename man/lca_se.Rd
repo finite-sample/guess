@@ -9,7 +9,9 @@ lca_se(
   pst_test = NULL,
   n_resamples = 100,
   seed = 31415,
-  force9 = FALSE
+  force9 = FALSE,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error")
 )
 }
 \arguments{
@@ -23,6 +25,13 @@ lca_se(
 
 \item{force9}{Optional. Force 9-column format even if no DK responses.
 Default is FALSE.}
+
+\item{na_as}{Classification of NA responses: `"dk"` (the default) treats
+them as observed don't know responses; `"missing"` treats them as
+structural missingness.}
+
+\item{missing_action}{How to handle structural missingness: `"omit"`
+excludes incomplete pairs and `"error"` rejects them.}
 }
 \value{
 list with:
@@ -39,5 +48,7 @@ pst_test <- data.frame(
   pst_item1 = pre_test[, 1] + c(0, 1, 1, 0, 0),
   pst_item2 = pre_test[, 2] + c(0, 1, 0, 0, 1)
 )
-\dontrun{lca_se(pre_test, pst_test, n_resamples = 10, seed = 31415)}
+\dontrun{
+lca_se(pre_test, pst_test, n_resamples = 10, seed = 31415)
+}
 }

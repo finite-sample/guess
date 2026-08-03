@@ -4,7 +4,15 @@
 \alias{cv_individuals}
 \title{K-fold cross-validation over individuals}
 \usage{
-cv_individuals(pre_test, pst_test, k = 5L, priors = NULL, seed = NULL)
+cv_individuals(
+  pre_test,
+  pst_test,
+  k = 5L,
+  priors = NULL,
+  seed = NULL,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error")
+)
 }
 \arguments{
 \item{pre_test}{data.frame of pre-test responses}
@@ -16,6 +24,10 @@ cv_individuals(pre_test, pst_test, k = 5L, priors = NULL, seed = NULL)
 \item{priors}{optional numeric vector of starting parameters}
 
 \item{seed}{optional integer random seed}
+
+\item{na_as}{classification of NA responses}
+
+\item{missing_action}{structural missingness handling}
 }
 \value{
 list with fold_results, mean_ll, total_ll, perplexity, se

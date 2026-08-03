@@ -1,232 +1,252 @@
-# guess: Adjust Estimates of Learning for Guessing
+# guess
 
-[![R-CMD-check](https://github.com/finite-sample/guess/workflows/R-CMD-check/badge.svg)](https://github.com/finite-sample/guess/actions)
-[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/guess)](https://CRAN.R-project.org/package=guess)
-![](http://cranlogs.r-pkg.org/badges/grand-total/guess)
+Estimate learning from paired pre-test and post-test knowledge responses while
+accounting for lucky guesses and explicit "don't know" responses.
 
-## The Problem
+[![R-CMD-check](https://github.com/finite-sample/guess/actions/workflows/R-CMD-check.yml/badge.svg)](https://github.com/finite-sample/guess/actions/workflows/R-CMD-check.yml)
+[![CRAN status](https://www.r-pkg.org/badges/version/guess)](https://CRAN.R-project.org/package=guess)
+[![CRAN downloads](https://cranlogs.r-pkg.org/badges/grand-total/guess)](https://cran.r-project.org/package=guess)
 
-When measuring learning from pre/post tests, the naive estimate (post score minus pre score) **underestimates** actual learning.
+## Choose A Model
 
-**Why?** People who don't know an answer may guess correctly. Since there's more to learn before an intervention than after, there's more guessing on pre-tests. This inflates pre-test scores more than post-test scores, making learning gains appear smaller than they actually are.
+The package exposes separate models for separate estimands. Choose the model
+before interpreting its output.
 
-## The Solution
+| Function | Estimand | Main assumption |
+|---|---|---|
+| `item_lca_fit()` | Proportion who learned each item | Each item has its own latent transition distribution |
+| `person_item_lca_fit()` | Shared person-level trajectory and posterior probability of learning | A person has one `gg`, `gk`, or `kk` trajectory across all items |
+| `lca_difficulty()` | Item-wise LCA with guessing expressed through a difficulty link | This is a reparameterized LCA, not an IRT model |
+| `stnd_cor()` | Corrected pre, post, and gain scores | The guessing probability is supplied by the user |
+| `group_adj()` | Guessing-adjusted group estimates | Guessing probabilities are supplied by group and item |
 
-This package provides methods to correct for guessing bias in learning estimates:
-
-| Method | Function | Best For |
-|--------|----------|----------|
-| **Latent Class Model** | `lca_cor()` | Most accurate; uses transition patterns |
-| **Standard Correction** | `stnd_cor()` | Quick estimate when you know the guess rate |
-| **Group Adjustment** | `group_adj()` | When guessing varies by group/item |
+`estimate_logit_score()`, `cross_sectional_learning()`, and
+`cross_sectional_learning_score()` are descriptive score baselines. They do
+not fit Rasch or IRT models, and the bounded score is not a calibrated
+probability of learning.
 
 ## Installation
 
 ```r
-# From CRAN
 install.packages("guess")
 
 # Development version
-# install.packages("devtools")
 devtools::install_github("finite-sample/guess")
 ```
 
-## Quick Start
+## Data Contract
+
+Pass matching data frames with one row per person and one column per item.
+Pre-test and post-test columns must have the same unique names. Valid response
+codes are:
+
+| Code | Meaning |
+|---|---|
+| `0` or `"0"` | Incorrect answer |
+| `1` or `"1"` | Correct answer |
+| `"d"` or `"DK"` | Observed "don't know" response |
+| `NA` | Observed "don't know" by default |
+
+Use `na_as = "missing"` when `NA` records a structural failure, such as an
+item that was not shown or a response lost to a technical error. Incomplete
+pre/post pairs are then omitted by default. Set `missing_action = "error"` to
+reject them instead.
+
+```r
+fit <- item_lca_fit(pre_test, post_test, na_as = "missing")
+
+fit <- item_lca_fit(
+  pre_test,
+  post_test,
+  na_as = "missing",
+  missing_action = "error"
+)
+```
+
+Explicit `"d"` and `"DK"` values remain observed responses under either
+setting. Structural missingness is not treated as a latent response class.
+
+## Item-Level Learning
+
+`item_lca_fit()` is the direct entry point for the model in Cor and Sood
+(2016). It fits every item separately from its paired response transitions.
 
 ```r
 library(guess)
 
-# Your pre and post test data (0 = wrong, 1 = correct)
-pre_test <- data.frame(
-  item1 = c(1, 0, 0, 1, 0, 1, 0, 0),
-  item2 = c(0, 0, 1, 1, 0, 0, 1, 0)
+item_sim <- simulate_lca(
+  n = 1500,
+  n_items = 4,
+  gg = 0.40,
+  gk = 0.30,
+  kk = 0.30,
+  gamma = c(0.15, 0.25, 0.35, 0.45),
+  seed = 123
 )
-post_test <- data.frame(
-  item1 = c(1, 1, 0, 1, 1, 1, 0, 1),
-  item2 = c(1, 0, 1, 1, 1, 0, 1, 1)
+
+item_fit <- item_lca_fit(item_sim$pre, item_sim$post)
+item_fit$learning
+item_fit$params
+```
+
+For binary responses, the parameter rows are:
+
+| Parameter | Meaning |
+|---|---|
+| `gg` | Guess at both waves |
+| `gk` | Guess before, know after; the item-level learning estimand |
+| `kk` | Know at both waves |
+| `gamma` | Probability of a correct response while guessing |
+
+`multi_transmat()` and `lca_cor()` expose the same workflow in two steps when
+you already work with transition counts.
+
+```r
+transitions <- multi_transmat(item_sim$pre, item_sim$post)
+count_fit <- lca_cor(transitions)
+```
+
+## Person-Level Learning
+
+`person_item_lca_fit()` jointly uses all repeated items. It estimates shared
+class proportions, item-specific guessing rates, and one posterior trajectory
+for each person.
+
+```r
+person_sim <- simulate_lca(
+  n = 1500,
+  n_items = 5,
+  gg = 0.35,
+  gk = 0.35,
+  kk = 0.30,
+  gamma = 0.25,
+  seed = 456,
+  return_classes = TRUE
 )
 
-# Method 1: Latent Class Correction (recommended)
-result <- lca_fit(pre_test, post_test)
-result$learning  # Corrected learning estimates per item
+person_fit <- person_item_lca_fit(person_sim$pre, person_sim$post)
+person_fit$class_priors
+person_fit$gamma
 
-# Method 2: Standard Correction
-# For 4-option multiple choice, guess rate = 0.25
-stnd_cor(pre_test, post_test, lucky = c(0.25, 0.25))$learn
+posterior <- posterior_class_probs(person_fit)
+p_learned <- posterior_learned(person_fit)
 ```
 
-## Main Functions
+This model is useful only when one common trajectory across items is
+substantively defensible. It does not allow the same person to know one item,
+learn another, and remain ignorant on a third. Use `item_lca_fit()` when the
+item-specific learning proportions are the target.
 
-### `lca_fit()` / `lca_cor()` - Latent Class Model
+The person model currently supports binary responses but not the explicit DK
+model.
 
-The most sophisticated correction. Uses the pattern of transitions (wrong→right, right→right, etc.) to estimate:
-- **Learning**: Proportion who truly learned
-- **Guessing rate** (gamma): Probability of guessing correctly
+## Don't-Know Responses
+
+Observed DK responses select the nine-cell model. Its latent transition
+parameters are `gg`, `gk`, `gd`, `kk`, `dg`, `dk`, and `dd`, plus `gamma`.
+Learning is `gk + dk`: learning from a guessing state plus learning from an
+observed don't-know state.
 
 ```r
-# Direct approach
-result <- lca_fit(pre_test, post_test)
+dk_sim <- simulate_lca_dk(
+  n = 1800,
+  n_items = 3,
+  gg = 0.25,
+  gk = 0.15,
+  gd = 0.10,
+  kk = 0.15,
+  dg = 0.10,
+  dk = 0.10,
+  dd = 0.15,
+  gamma = 0.25,
+  seed = 789
+)
 
-# Or step by step
-trans_matrix <- multi_transmat(pre_test, post_test)
-result <- lca_cor(trans_matrix)
-
-# Access results
-result$learning                    # Learning estimates
-result$params["gamma", ]           # Guessing rates by item
-result$params["gk", ]              # "Learned" parameter (guess→know)
+dk_fit <- item_lca_fit(dk_sim$pre, dk_sim$post)
+dk_fit$learning
+dk_fit$params
 ```
 
-### `stnd_cor()` - Standard Correction
+## Assumptions
 
-Quick correction when you know the guessing probability (e.g., 1/4 for 4-option MC):
+The latent class correction relies on assumptions that should be reported with
+the estimate:
+
+1. People do not lose item knowledge over the interval. Know-to-guess and
+   know-to-DK transitions are fixed to zero.
+2. A person who knows an item answers it correctly. The current model has no
+   slip parameter.
+3. An item's guessing probability is stable across waves.
+4. Structural missingness is ignorable when incomplete pairs are omitted.
+5. The item-wise model treats items independently. The person model instead
+   imposes one shared trajectory across items.
+
+A correct-to-incorrect response is therefore attributed to guessing rather
+than knowledge loss. That restriction identifies the learning parameters and
+should be tested through sensitivity analysis when the interval is long or the
+content can be forgotten.
+
+## Diagnostics
+
+The binary item model is saturated, so it has no residual degrees of freedom
+for a goodness-of-fit test. The DK model has one over-identifying restriction,
+and `fit_model()` reports its Pearson test.
 
 ```r
-stnd_cor(pre_test, post_test, lucky = c(0.25, 0.25))
-# Returns: $pre (adjusted pre), $pst (adjusted post), $learn (learning)
+fit_stats <- fit_model(
+  dk_sim$pre,
+  dk_sim$post,
+  g = dk_fit$params["gamma", ],
+  est_param = dk_fit$params[-nrow(dk_fit$params), ],
+  force9 = TRUE
+)
 ```
 
-### `fit_model()` - Goodness of Fit
-
-Test whether the LCA model fits your data. This requires don't-know responses:
-the model without them has 3 free parameters against 3 free cell probabilities,
-so it is saturated and cannot be tested. `fit_model()` returns `NA` in that case
-rather than a p-value that counts none of the parameters it estimated.
+Use held-out likelihood and perplexity to compare predictive performance.
 
 ```r
-result <- lca_fit(pre_dk, post_dk)
-gof <- fit_model(pre_dk, post_dk,
-                 result$params["gamma", ],
-                 result$params[c("gg", "gk", "gd", "kk", "dg", "dk", "dd"), ],
-                 force9 = TRUE)
-# High p-values indicate good fit. The test has 1 degree of freedom -- the
-# restriction that x1d/x0d equals x10/x00.
+transitions <- multi_transmat(item_sim$pre, item_sim$post)
+perplexity_items(item_fit, transitions)
+perplexity_individuals(item_fit, item_sim$pre, item_sim$post)
+cv_items(transitions, k = 4, seed = 321)
+cv_individuals(item_sim$pre, item_sim$post, k = 5, seed = 321)
 ```
 
-## Handling "Don't Know" Responses
-
-If your test includes a "Don't Know" option, code it as `"d"`:
-
-```r
-pre_dk <- data.frame(item1 = c("1", "0", "d", "1", "d"))
-post_dk <- data.frame(item1 = c("1", "1", "1", "d", "0"))
-
-# Force 9-column transition matrix for DK model
-trans <- multi_transmat(pre_dk, post_dk, force9 = TRUE)
-result <- lca_cor(trans)
-
-# DK model has 8 parameters: gg, gk, gd, kk, dg, dk, dd, gamma
-```
-
-## Understanding the Parameters
-
-Parameter names follow the pattern `{pre_state}{post_state}` where:
-- `g` = guessing (don't know)
-- `k` = know
-- `d` = don't know response
-
-### No-DK Model (4 parameters)
-| Parameter | Meaning |
-|-----------|---------|
-| `gg` | Proportion: guess→guess (stable ignorance) |
-| `gk` | Proportion: guess→know (**LEARNED**) |
-| `kk` | Proportion: know→know (stable knowledge) |
-| `gamma` | Probability of guessing correctly |
-
-### DK Model (8 parameters)
-| Parameter | Meaning |
-|-----------|---------|
-| `gg` | guess→guess |
-| `gk` | guess→know (**LEARNED**) |
-| `gd` | guess→dk |
-| `kk` | know→know |
-| `dg` | dk→guess |
-| `dk` | dk→know (**LEARNED**) |
-| `dd` | dk→dk |
-| `gamma` | Guessing probability |
-
-Learning is `gk + dk`. There is no know→guess or know→dk class: the model is
-identified by the assumption that people do not lose knowledge over a short
-informative process, which sets both to zero.
-
-## Simulation and Validation
-
-Before trusting results on real data, validate that the model recovers parameters under conditions similar to yours:
+Validate recovery under sample sizes, item counts, class proportions, and
+guessing rates that resemble the intended application.
 
 ```r
-# 1. Define your assumptions:
-#    - Expected learning rate (~30%)
-#    - Guessing probability (0.25 for 4-option MC)
-#    - Your sample size
-
-# 2. Run validation
-results <- validate_recovery(
+recovery <- validate_recovery(
   c(gg = 0.40, gk = 0.30, kk = 0.30, gamma = 0.25),
-  n = 500,        # your expected sample size
-  n_sims = 100    # number of simulations
+  n = 500,
+  n_items = 4,
+  n_sims = 100,
+  seed = 654
 )
-
-# 3. Check results
-print(results)
-#   parameter  true_value  mean_estimate  bias    rmse    coverage_95
-#   gk         0.30        0.301          0.001   0.042   0.94
-
-# Bias < 0.05 and coverage ~95%? Proceed with confidence.
+recovery
 ```
 
-This is useful when:
-- Sample size is small (can the model handle n=100?)
-- Parameters are extreme (what if 70% already know?)
-- Planning a study (what n gives acceptable precision?)
+## Longitudinal IRT
 
-For single simulations:
-```r
-sim <- simulate_lca(n = 500, gg = 0.35, gk = 0.30, kk = 0.35, gamma = 0.25)
-fit <- lca_fit(sim$pre, sim$post)
-fit$params["gk", ]  # Should be close to 0.30
-```
+The package does not yet fit a longitudinal IRT model. The planned model will
+estimate a population ability gain directly, constrain latent mastery to be
+nondecreasing over the study interval, and retain item-specific guessing. It
+will be exported separately only after simulation establishes identification,
+parameter recovery, interval coverage, and agreement with standard
+longitudinal IRT fits in compatible limiting cases.
 
-## Individual-Level Learning Recovery
-
-Beyond aggregate learning rates, you can estimate which specific individuals learned using `posterior_learned()`. This computes P(learned | data) for each person using the LCA model's joint transition structure.
+## Documentation
 
 ```r
-sim <- simulate_lca(n = 500, n_items = 5, gk = 0.30, seed = 123, return_classes = TRUE)
-fit <- lca_fit(sim$pre, sim$post)
-
-# LCA posterior: P(learned | data) per individual
-p_learned_lca <- posterior_learned(fit, sim$pre, sim$post)
-
-# Cross-sectional IRT: ability difference (ignores transition structure)
-p_learned_cs <- cross_sectional_irt(sim$pre, sim$post)
-
-# Compare recovery of true learning status
-cor(p_learned_lca, sim$learned)  # ~0.99
-cor(p_learned_cs, sim$learned)   # ~0.75
-```
-
-| Method | Correlation with Truth | Why? |
-|--------|----------------------|------|
-| LCA (`posterior_learned`) | ~0.99 | Uses joint pre→post transitions |
-| Cross-sectional IRT | ~0.75 | Ignores transition structure |
-
-The LCA model wins because it uses the full transition matrix (wrong→right, right→right, etc.) to separate true learners from lucky guessers. Cross-sectional methods only see ability at each timepoint separately.
-
-For systematic Monte Carlo validation of these results, see:
-```r
+vignette("using_guess", package = "guess")
 vignette("model_validation", package = "guess")
 ```
 
-## More Examples
+## Reference
 
-See the vignette for detailed examples:
-```r
-vignette("using_guess", package = "guess")
-```
-
-## References
-
-Cor, K., & Sood, G. (2018). [Adjusting Estimates of Learning for Guessing](https://gsood.com/research/papers/guess.pdf).
+Cor, K., and G. Sood. 2016. ["Guessing and Forgetting: A Latent Class Model for
+Measuring Learning."](https://gsood.com/research/papers/guess.pdf) *Political
+Analysis* 24(2): 226-242.
 
 ## License
 

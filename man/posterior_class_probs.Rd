@@ -4,26 +4,21 @@
 \alias{posterior_class_probs}
 \title{Compute posterior class probabilities}
 \usage{
-posterior_class_probs(lca_result, pre_test, pst_test)
+posterior_class_probs(object)
 }
 \arguments{
-\item{lca_result}{output from lca_cor() or lca_fit()}
-
-\item{pre_test}{data.frame of pre-test responses}
-
-\item{pst_test}{data.frame of post-test responses}
+\item{object}{output from person_item_lca_fit()}
 }
 \value{
 data.frame with columns P_gg, P_gk, P_kk (rows = individuals)
 }
 \description{
-Uses Bayes' rule to compute P(class | data) for each individual.
-The LCA model uses the joint transition structure across all items
-to separate true learning from lucky guessing.
+Extracts P(class | response vector) for each individual from an explicitly
+fitted person/item model.
 }
 \examples{
 sim <- simulate_lca(n = 100, gk = 0.30, seed = 123, return_classes = TRUE)
-fit <- lca_fit(sim$pre, sim$post)
-posteriors <- posterior_class_probs(fit, sim$pre, sim$post)
+fit <- person_item_lca_fit(sim$pre, sim$post)
+posteriors <- posterior_class_probs(fit)
 head(posteriors)
 }

@@ -15,6 +15,6 @@ difficulty_to_gamma(difficulty, base_rate = 0.25)
 numeric vector of gamma values
 }
 \description{
-Convert IRT difficulty parameter to guessing probability.
+Convert a difficulty score to a guessing probability.
 }
 \keyword{internal}

@@ -4,7 +4,13 @@
 \alias{response_to_cell}
 \title{Map pre/post response pairs to cell indices}
 \usage{
-response_to_cell(pre, post, has_dk = FALSE)
+response_to_cell(
+  pre,
+  post,
+  has_dk = FALSE,
+  na_as = c("dk", "missing"),
+  missing_action = c("omit", "error")
+)
 }
 \arguments{
 \item{pre}{character vector of pre-test responses ("0", "1", or "d")}
@@ -12,6 +18,10 @@ response_to_cell(pre, post, has_dk = FALSE)
 \item{post}{character vector of post-test responses ("0", "1", or "d")}
 
 \item{has_dk}{logical; whether model includes don't know}
+
+\item{na_as}{classification of NA responses}
+
+\item{missing_action}{structural missingness handling}
 }
 \value{
 integer vector of cell indices

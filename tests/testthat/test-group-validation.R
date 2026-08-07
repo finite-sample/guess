@@ -42,10 +42,26 @@ test_that("group_adj with true gamma improves estimates", {
     naive_errors[i] <- abs(naive - true_learning)
   }
 
-  mean_adj_error <- mean(adj_errors)
-  mean_naive_error <- mean(naive_errors)
+  # The old gate was `mean_adj_error < mean_naive_error * 1.5`, which passes when
+  # the adjustment is 50% *worse* than doing nothing -- it could not fail in the
+  # direction the test exists to check.
+  #
+  # The comparison is paired: both estimators see the same simulated dataset on
+  # each replicate, so differencing within replicate removes the draw and leaves
+  # only the estimator. The mean difference is judged against its own Monte Carlo
+  # standard error, so "improves" means an improvement the study can actually
+  # resolve, not one that could be noise.
+  improvement <- naive_errors - adj_errors
+  mc_se <- stats::sd(improvement) / sqrt(n_sims)
 
-  expect_lt(mean_adj_error, mean_naive_error * 1.5)
+  expect_gt(
+    mean(improvement) / mc_se, GATE_SIGMAS,
+    label = sprintf(
+      "adjusted error %.4f vs naive %.4f; improvement %+.4f is %.2f MC SEs",
+      mean(adj_errors), mean(naive_errors), mean(improvement),
+      mean(improvement) / mc_se
+    )
+  )
 })
 
 test_that("group_adj handles varying gamma across items", {

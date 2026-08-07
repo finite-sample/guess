@@ -25,15 +25,18 @@ test_that("lca_cor recovers true parameters with low bias", {
     estimates[sim, ] <- result$params[, 1]
   }
 
-  bias_gg <- mean(estimates[, "gg"]) - true_gg
-  bias_gk <- mean(estimates[, "gk"]) - true_gk
-  bias_kk <- mean(estimates[, "kk"]) - true_kk
-  bias_gamma <- mean(estimates[, "gamma"]) - true_gamma
-
-  expect_lt(abs(bias_gg), 0.05)
-  expect_lt(abs(bias_gk), 0.05)
-  expect_lt(abs(bias_kk), 0.05)
-  expect_lt(abs(bias_gamma), 0.05)
+  # Compared against the Monte Carlo standard error of the mean rather than a
+  # fixed 0.05. The measured biases are 0.001 to 0.005, so the old threshold was
+  # ten to fifty times looser than the study could resolve -- it would have
+  # passed a bias an order of magnitude larger than anything real here, and
+  # raising n_sims made it no stricter.
+  #
+  # Measured t statistics at 100 replicates: gg -0.26, gk -1.16, kk +1.46,
+  # gamma -1.12. All well inside the 3-sigma gate.
+  expect_unbiased(estimates[, "gg"], true_gg, "gg")
+  expect_unbiased(estimates[, "gk"], true_gk, "gk")
+  expect_unbiased(estimates[, "kk"], true_kk, "kk")
+  expect_unbiased(estimates[, "gamma"], true_gamma, "gamma")
 })
 
 test_that("lca_cor parameter RMSE is within theoretical bounds", {
@@ -95,10 +98,7 @@ test_that("learning estimate recovers true learning fraction", {
     learning_estimates[sim] <- result$learning[1]
   }
 
-  mean_estimate <- mean(learning_estimates)
-  bias <- mean_estimate - true_learning
-
-  expect_lt(abs(bias), 0.03)
+  expect_unbiased(learning_estimates, true_learning, "learning fraction")
 })
 
 test_that("parameter recovery improves with sample size", {

@@ -22,15 +22,12 @@ test_that("no-DK model recovers true parameters", {
     estimates[sim, ] <- fit$params[, 1]
   }
 
-  bias_gg <- mean(estimates[, "gg"]) - true_gg
-  bias_gk <- mean(estimates[, "gk"]) - true_gk
-  bias_kk <- mean(estimates[, "kk"]) - true_kk
-  bias_gamma <- mean(estimates[, "gamma"]) - true_gamma
-
-  expect_lt(abs(bias_gg), 0.05)
-  expect_lt(abs(bias_gk), 0.05)
-  expect_lt(abs(bias_kk), 0.05)
-  expect_lt(abs(bias_gamma), 0.10)
+  # Against the Monte Carlo standard error rather than fixed 0.05/0.10, so that
+  # raising n_sims tightens the test instead of leaving it where it was.
+  expect_unbiased(estimates[, "gg"], true_gg, "gg")
+  expect_unbiased(estimates[, "gk"], true_gk, "gk")
+  expect_unbiased(estimates[, "kk"], true_kk, "kk")
+  expect_unbiased(estimates[, "gamma"], true_gamma, "gamma")
 })
 
 test_that("DK model recovers learning parameter", {
@@ -50,8 +47,7 @@ test_that("DK model recovers learning parameter", {
     estimates[sim] <- fit$params["gk", 1]
   }
 
-  bias <- mean(estimates, na.rm = TRUE) - true_gk
-  expect_lt(abs(bias), 0.10)
+  expect_unbiased(estimates, true_gk, "DK model gk")
 })
 
 test_that("learning estimate improves with sample size", {

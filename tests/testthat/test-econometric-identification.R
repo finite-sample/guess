@@ -61,6 +61,7 @@ test_that("DK model GOF test has reasonable Type I error rate", {
   alpha <- 0.05
 
   rejection_count <- 0
+  converged_count <- 0
 
   for (sim in seq_len(n_sims)) {
     data <- simulate_dk_prepost_data(n)
@@ -78,6 +79,7 @@ test_that("DK model GOF test has reasonable Type I error rate", {
           force9 = TRUE
         )
 
+        converged_count <- converged_count + 1
         if (any(fit_result["p-value", ] < alpha, na.rm = TRUE)) {
           rejection_count <- rejection_count + 1
         }
@@ -86,12 +88,27 @@ test_that("DK model GOF test has reasonable Type I error rate", {
     )
   }
 
-  rejection_rate <- rejection_count / n_sims
+  # A replicate that errored used to increment neither counter while staying in
+  # the denominator, so failures pushed the measured rate *down* and made the
+  # old `>= 0.01` floor easier to clear. Nothing reported how many replicates
+  # actually ran. They are counted now, used as the denominator, and a study
+  # that loses too many fails -- one silently discarding a third of its
+  # replicates is not measuring what it claims. Measured: 100 of 100 converged.
+  expect_gte(converged_count, 0.9 * n_sims)
 
-  expect_true(
-    rejection_rate >= 0.01 && rejection_rate <= 0.20,
-    info = paste("Type I error rate:", rejection_rate)
-  )
+  # Size must not be *inflated*: rejecting true models too often is the
+  # false-positive risk. Under-rejection is conservative and safe, and is
+  # constrained separately by the power test in test-power.R, which is what
+  # stops a test from passing here by never rejecting anything at all.
+  #
+  # Measured: 2 rejections in 100, a rate of 0.02 against a nominal 0.05. This
+  # GOF statistic is conservative, as chi-square tests with estimated parameters
+  # tend to be. A two-sided band around nominal would therefore be the wrong
+  # gate: at 400 replicates it would flag a correct implementation about a third
+  # of the time. The upper bound is still derived from the replicate count.
+  upper <- binomial_band(alpha, converged_count)[2]
+  rejection_rate <- rejection_count / converged_count
+  expect_lte(rejection_rate, upper)
 })
 
 test_that("model recovers extreme parameter values", {

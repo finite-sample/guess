@@ -130,7 +130,15 @@ test_that("validate_recovery bias is reasonable with adequate sample", {
     n = 500, n_sims = 50, seed = 555
   )
 
-  expect_lt(abs(results$bias[results$parameter == "gk"]), 0.10)
+  # `validate_recovery()` reports `se` as the standard *deviation* of the
+  # estimates across replicates (R/model-criticism.R:846), so the standard error
+  # of the mean is se / sqrt(n_sims). The old gate was a flat 0.10 that no
+  # replicate count could tighten.
+  row <- results$parameter == "gk"
+  expect_bias_within_mc_error(
+    results$bias[row], results$se[row],
+    reps = 50, label = "validate_recovery gk"
+  )
 })
 
 # =============================================================================

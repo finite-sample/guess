@@ -35,9 +35,10 @@ test_that("standard correction is unbiased across sample sizes", {
       estimates[rep] <- (correct - incorrect / (1 / lucky - 1)) / n
     }
 
-    bias <- mean(estimates) - true_knowledge
-
-    expect_lt(abs(bias), 0.03)
+    expect_unbiased(
+      estimates, true_knowledge,
+      sprintf("standard correction at n=%d", n)
+    )
   }
 })
 

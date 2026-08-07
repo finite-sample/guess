@@ -21,6 +21,12 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      replicates:
+        description: "Replicates per Monte Carlo study (GUESS_MC_REPS)"
+        required: false
+        default: "100"
 
 jobs:
   monte-carlo:
@@ -30,6 +36,13 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       # The point of this workflow. CI is not CRAN.
       NOT_CRAN: true
+      # Replicates for the studies that read `mc_reps()`. The gates in
+      # tests/testthat/helper-gates.R derive their tolerance from this, so
+      # raising it makes those assertions stricter without a test being edited --
+      # and lowering it cannot quietly weaken them, because the band widens
+      # visibly in the failure message. Raise it on a dispatch run to pin a
+      # result down; the default keeps the suite at about 90 seconds.
+      GUESS_MC_REPS: ${{ github.event.inputs.replicates || '100' }}
 
     steps:
       - uses: actions/checkout@v7

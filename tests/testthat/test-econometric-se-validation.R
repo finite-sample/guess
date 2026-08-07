@@ -76,11 +76,23 @@ test_that("95% confidence intervals achieve reasonable coverage", {
     }
   }
 
-  coverage_rate <- coverage_count / n_sims
-
-  expect_true(
-    coverage_rate >= 0.80 && coverage_rate <= 0.99,
-    info = paste("Coverage rate:", coverage_rate)
+  # The band comes from the replicate count, not from a chosen pair of numbers.
+  # It used to be `coverage_rate >= 0.80 && coverage_rate <= 0.99`: the Monte
+  # Carlo standard error here is about 0.022, so 0.80 sits seven standard errors
+  # below nominal, and a procedure covering 82% of the time passed.
+  #
+  # Measured: 0.93 over 100 replicates, and 0.935 over 400 (MC SE 0.012), which
+  # is 1.2 standard errors below the nominal 0.95 -- low, as a bootstrap Wald
+  # interval tends to be in finite samples, but statistically consistent with it.
+  #
+  # Two limits of 100 replicates, stated rather than left implicit. The 3-sigma
+  # upper bound clips at 1.0, so **over-coverage is not detectable here**: an
+  # interval so wide it always covers would pass. And the lower bound is 0.885,
+  # so only a large drop is caught. Four hundred replicates give [0.917, 0.983]
+  # and catch both, but cost 249 seconds against about 31 for this whole file.
+  expect_rate_within_band(
+    coverage_count, n_sims, 0.95,
+    "bootstrap Wald interval for gk"
   )
 })
 

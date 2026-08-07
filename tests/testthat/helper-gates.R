@@ -144,6 +144,43 @@ expect_unbiased <- function(estimates, truth, label = "", sigmas = GATE_SIGMAS) 
 }
 
 
+#' Fail if a bias is large relative to the Monte Carlo error of the study.
+#'
+#' The same test as [expect_unbiased()], for callers that have summary
+#' statistics rather than the estimates themselves -- `validate_recovery()`
+#' returns a bias and a standard *deviation*, so the standard error of the mean
+#' has to be formed here as `sd / sqrt(reps)`.
+#'
+#' @param bias Observed mean estimate minus the truth.
+#' @param sd Standard deviation of the estimates across replicates.
+#' @param reps Number of replicates behind those two numbers.
+#' @param label Included in the failure message.
+#' @param sigmas How many Monte Carlo standard errors of slack to allow.
+#' @return Invisibly, the t statistic.
+expect_bias_within_mc_error <- function(bias, sd, reps, label = "",
+                                        sigmas = GATE_SIGMAS) {
+  if (!is.numeric(sd) || length(sd) != 1 || is.na(sd) || sd <= 0) {
+    stop(
+      label, ": need a positive standard deviation to judge the bias against, got ",
+      sd
+    )
+  }
+  if (!is.numeric(reps) || length(reps) != 1 || is.na(reps) || reps < 2) {
+    stop(label, ": need at least two replicates, got ", reps)
+  }
+  mc_se <- sd / sqrt(reps)
+  t_stat <- bias / mc_se
+  testthat::expect_true(
+    abs(t_stat) < sigmas,
+    info = sprintf(
+      "%s: bias %+.6f is %+.2f Monte Carlo standard errors from zero over %d replicates (sd %.6f, mc se %.6f)",
+      label, bias, t_stat, as.integer(reps), sd, mc_se
+    )
+  )
+  invisible(t_stat)
+}
+
+
 #' Replicate count for the current tier.
 #'
 #' Reading this from the environment is what lets a scheduled job run a deeper

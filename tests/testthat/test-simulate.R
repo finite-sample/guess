@@ -123,10 +123,7 @@ test_that("validate_recovery works with DK model", {
 })
 
 test_that("validate_recovery bias is reasonable with adequate sample", {
-  skip_if(
-    Sys.getenv("GUESS_FULL_TESTS") != "true",
-    "Extended tests require GUESS_FULL_TESTS=true"
-  )
+  skip_on_cran()
 
   results <- validate_recovery(
     c(gg = 0.35, gk = 0.30, kk = 0.35, gamma = 0.25),

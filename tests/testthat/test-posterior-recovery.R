@@ -147,10 +147,7 @@ test_that("cross_sectional_learning_score returns values in [0,1]", {
 })
 
 test_that("LCA outperforms cross-sectional for learning recovery", {
-  skip_if(
-    Sys.getenv("GUESS_FULL_TESTS") != "true",
-    "Extended tests require GUESS_FULL_TESTS=true"
-  )
+  skip_on_cran()
 
   sim <- simulate_lca(
     n = 1000, n_items = 5, gk = 0.30, gamma = 0.25,
@@ -228,10 +225,7 @@ test_that("gk class individuals get moderate P_gk posterior", {
 })
 
 test_that("Monte Carlo: LCA consistently outperforms cross-sectional", {
-  skip_if(
-    Sys.getenv("GUESS_FULL_TESTS") != "true",
-    "Extended Monte Carlo tests require GUESS_FULL_TESTS=true"
-  )
+  skip_on_cran()
 
   results <- compare_learning_recovery_test(
     n = 500, n_items = 5, n_sims = 20,
@@ -249,10 +243,7 @@ test_that("Monte Carlo: LCA consistently outperforms cross-sectional", {
 })
 
 test_that("Monte Carlo: person-level LCA wins across guessing rates", {
-  skip_if(
-    Sys.getenv("GUESS_FULL_TESTS") != "true",
-    "Extended Monte Carlo tests require GUESS_FULL_TESTS=true"
-  )
+  skip_on_cran()
 
   results_low_gamma <- compare_learning_recovery_test(
     n = 500, n_items = 5, n_sims = 10,

@@ -1,8 +1,5 @@
 test_that("lca_cor recovers true parameters with low bias", {
-  skip_if(
-    Sys.getenv("GUESS_FULL_TESTS") != "true",
-    "Extended tests require GUESS_FULL_TESTS=true"
-  )
+  skip_on_cran()
 
   set.seed(54321)
 
@@ -40,10 +37,7 @@ test_that("lca_cor recovers true parameters with low bias", {
 })
 
 test_that("lca_cor parameter RMSE is within theoretical bounds", {
-  skip_if(
-    Sys.getenv("GUESS_FULL_TESTS") != "true",
-    "Extended tests require GUESS_FULL_TESTS=true"
-  )
+  skip_on_cran()
 
   set.seed(98765)
 
@@ -83,10 +77,7 @@ test_that("lca_cor parameter RMSE is within theoretical bounds", {
 })
 
 test_that("learning estimate recovers true learning fraction", {
-  skip_if(
-    Sys.getenv("GUESS_FULL_TESTS") != "true",
-    "Extended tests require GUESS_FULL_TESTS=true"
-  )
+  skip_on_cran()
 
   set.seed(11111)
 

@@ -1,8 +1,5 @@
 test_that("no-DK model recovers true parameters", {
-  skip_if(
-    Sys.getenv("GUESS_FULL_TESTS") != "true",
-    "Extended tests require GUESS_FULL_TESTS=true"
-  )
+  skip_on_cran()
 
   set.seed(12345)
   true_gg <- 0.35
@@ -37,10 +34,7 @@ test_that("no-DK model recovers true parameters", {
 })
 
 test_that("DK model recovers learning parameter", {
-  skip_if(
-    Sys.getenv("GUESS_FULL_TESTS") != "true",
-    "Extended tests require GUESS_FULL_TESTS=true"
-  )
+  skip_on_cran()
 
   set.seed(67890)
   true_gk <- 0.15

@@ -52,10 +52,7 @@ test_that("lambda parameters sum to 1", {
 })
 
 test_that("DK model GOF test has reasonable Type I error rate", {
-  skip_if(
-    Sys.getenv("GUESS_FULL_TESTS") != "true",
-    "Extended tests require GUESS_FULL_TESTS=true"
-  )
+  skip_on_cran()
 
   set.seed(55555)
 

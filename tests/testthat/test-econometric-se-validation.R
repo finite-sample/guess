@@ -1,8 +1,5 @@
 test_that("bootstrap SEs are consistent with Monte Carlo SEs", {
-  skip_if(
-    Sys.getenv("GUESS_FULL_TESTS") != "true",
-    "Extended tests require GUESS_FULL_TESTS=true"
-  )
+  skip_on_cran()
 
   set.seed(99999)
 
@@ -50,10 +47,7 @@ test_that("bootstrap SEs are consistent with Monte Carlo SEs", {
 })
 
 test_that("95% confidence intervals achieve reasonable coverage", {
-  skip_if(
-    Sys.getenv("GUESS_FULL_TESTS") != "true",
-    "Extended tests require GUESS_FULL_TESTS=true"
-  )
+  skip_on_cran()
 
   set.seed(77777)
 

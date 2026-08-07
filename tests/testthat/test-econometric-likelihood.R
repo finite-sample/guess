@@ -75,10 +75,7 @@ test_that("expected values match likelihood function formulas", {
 })
 
 test_that("negative log-likelihood is minimized near true parameters", {
-  skip_if(
-    Sys.getenv("GUESS_FULL_TESTS") != "true",
-    "Extended tests require GUESS_FULL_TESTS=true"
-  )
+  skip_on_cran()
 
   set.seed(123)
   n <- 1000

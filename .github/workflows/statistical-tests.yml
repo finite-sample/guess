@@ -1,0 +1,63 @@
+name: statistical-tests
+
+# The Monte Carlo tests -- parameter recovery, bootstrap standard-error
+# calibration, confidence-interval coverage, and the Type I error rate of the
+# goodness-of-fit test -- are the package's only evidence that its estimates are
+# any good, as opposed to merely computed without error.
+#
+# They carry skip_on_cran(), because they are slower than CRAN's budget rewards
+# and a Monte Carlo assertion that goes marginal on one of CRAN's many platforms
+# is an expensive way to find out. But skip_on_cran() runs only when NOT_CRAN is
+# "true", and neither r-canon's reusable check nor rcmdcheck sets that -- checked,
+# rather than assumed: no function in the rcmdcheck namespace mentions NOT_CRAN.
+#
+# So without this workflow the tests are skipped everywhere. They were: before
+# this file existed they sat behind GUESS_FULL_TESTS, a variable set in no file in
+# the repository, and a recorded run showed `SKIP 17 | PASS 3988` with all sixteen
+# statistical tests among the skips. They cost about 31 seconds.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  monte-carlo:
+    runs-on: ubuntu-latest
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      # The point of this workflow. CI is not CRAN.
+      NOT_CRAN: true
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::testthat, any::devtools
+          needs: check
+
+      - name: Run the full test suite, statistical tests included
+        run: |
+          Rscript -e '
+            devtools::load_all(".", quiet = TRUE)
+            results <- testthat::test_dir("tests/testthat", stop_on_failure = FALSE)
+            frame <- as.data.frame(results)
+            skipped <- sum(frame$skipped)
+            failed <- sum(frame$failed)
+            cat(sprintf("passed %d  failed %d  skipped %d\n",
+                        sum(frame$passed), failed, skipped))
+            # A skip here means the gate is dormant again, which is the failure
+            # this workflow exists to prevent. Treat it as a failure.
+            if (skipped > 0L) {
+              cat("Statistical tests were skipped; NOT_CRAN is not taking effect.\n")
+              quit(status = 1L)
+            }
+            if (failed > 0L) quit(status = 1L)
+          '

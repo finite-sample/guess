@@ -55,10 +55,7 @@ test_that("lca_difficulty accepts custom base_rate", {
 # =============================================================================
 
 test_that("lca_difficulty recovers direction of difficulty ordering", {
-  skip_if(
-    Sys.getenv("GUESS_FULL_TESTS") != "true",
-    "Extended tests require GUESS_FULL_TESTS=true"
-  )
+  skip_on_cran()
 
   true_difficulty <- c(2, 0, -2)
   sim <- simulate_lca(
@@ -77,10 +74,7 @@ test_that("lca_difficulty recovers direction of difficulty ordering", {
 })
 
 test_that("lca_difficulty recovers difficulty with reasonable accuracy", {
-  skip_if(
-    Sys.getenv("GUESS_FULL_TESTS") != "true",
-    "Extended tests require GUESS_FULL_TESTS=true"
-  )
+  skip_on_cran()
 
   true_difficulty <- c(1, 0, -1)
   sim <- simulate_lca(

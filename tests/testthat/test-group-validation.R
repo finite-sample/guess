@@ -19,10 +19,7 @@ test_that("group_adj learning estimates are bounded", {
 })
 
 test_that("group_adj with true gamma improves estimates", {
-  skip_if(
-    Sys.getenv("GUESS_FULL_TESTS") != "true",
-    "Extended tests require GUESS_FULL_TESTS=true"
-  )
+  skip_on_cran()
 
   set.seed(789)
   true_gamma <- 0.25

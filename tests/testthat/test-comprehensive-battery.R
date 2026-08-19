@@ -147,7 +147,10 @@ test_that("Don't Know simulation validation (based on data-raw/fakeDK.R)", {
         pre_test_dk[j, i] <- "1" # Know it
       } else {
         # Don't know - could be DK, wrong, or lucky guess
-        rand_outcome <- sample(c("d", "0", "1"), 1, prob = c(dk_prob[i], 1 - dk_prob[i] - gamma[i], gamma[i]))
+        rand_outcome <- sample(
+          c("d", "0", "1"), 1,
+          prob = c(dk_prob[i], 1 - dk_prob[i] - gamma[i], gamma[i])
+        )
         pre_test_dk[j, i] <- rand_outcome
       }
 
@@ -156,7 +159,10 @@ test_that("Don't Know simulation validation (based on data-raw/fakeDK.R)", {
         post_test_dk[j, i] <- "1" # Know it
       } else {
         # Don't know - could be DK, wrong, or lucky guess
-        rand_outcome <- sample(c("d", "0", "1"), 1, prob = c(dk_prob[i], 1 - dk_prob[i] - gamma[i], gamma[i]))
+        rand_outcome <- sample(
+          c("d", "0", "1"), 1,
+          prob = c(dk_prob[i], 1 - dk_prob[i] - gamma[i], gamma[i])
+        )
         post_test_dk[j, i] <- rand_outcome
       }
     }

@@ -30,7 +30,7 @@ gof_rejections <- function(shift, n_sims, n = 500, alpha = 0.05, seed = 20260807
   converged <- 0L
 
   for (sim in seq_len(n_sims)) {
-    data <- simulate_dk_prepost_data(n)
+    data <- simulate_dk_prepost_data(n) # nolint: object_usage_linter.
     trans <- multi_transmat(data$pre, data$post, force9 = TRUE)
 
     tryCatch(

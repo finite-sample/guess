@@ -9,7 +9,7 @@
 # The motivating case is real. The version these were ported from accepted either
 # a count or a rate and guessed which:
 #
-#     observed <- if (successes > 1) successes / reps else successes
+#   observed <- if (successes > 1) successes / reps else successes # nolint
 #
 # One hit in four hundred replicates against a nominal 0.95 is a total failure of
 # the procedure. One is not greater than one, so it was read as a rate of 1.0,

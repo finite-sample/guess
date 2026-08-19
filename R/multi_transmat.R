@@ -55,7 +55,6 @@ multi_transmat <- function(pre_test = NULL, pst_test = NULL,
 
   # Get transition matrix for each item pair
   for (i in seq_len(n_items)) {
-    # cat("\n Item", i, "\n")
     res[[i]] <- transmat(
       pre_test[[i]], pst_test[[i]],
       force9 = force9,

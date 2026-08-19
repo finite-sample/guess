@@ -56,9 +56,9 @@ install.packages("guess")
 To get the current development version from GitHub:
 
 ```{r, eval = FALSE, install}
-# install.packages("devtools")
+# install.packages("devtools") # nolint
 library(devtools)
-# devtools::install_github("soodoku/guess")
+# devtools::install_github("soodoku/guess") # nolint
 ```
 
 ### Usage
@@ -86,7 +86,7 @@ lucky <- rep(.25, 2)
 colMeans(nona(pst_test) - nona(pre_test))
 
 # MCAR
-colMeans(pst_test - pre_test, na.rm = T)
+colMeans(pst_test - pre_test, na.rm = TRUE)
 
 # Adjusted Effect
 stnd_cor(pre_test, pst_test, lucky)
@@ -128,8 +128,12 @@ round(res$learning[1:4], 3)
 
 # LCA Correction with Don't Know responses
 # Generate data with Don't Know responses (coded as 2)
-pre_test_dk <- replicate(nitems, sample(c(0, 1, 2), npeople, replace = TRUE, prob = c(0.5, 0.35, 0.15)))
-post_test_dk <- replicate(nitems, sample(c(0, 1, 2), npeople, replace = TRUE, prob = c(0.4, 0.45, 0.15)))
+pre_test_dk <- replicate(
+  nitems, sample(c(0, 1, 2), npeople, replace = TRUE, prob = c(0.5, 0.35, 0.15))
+)
+post_test_dk <- replicate(
+  nitems, sample(c(0, 1, 2), npeople, replace = TRUE, prob = c(0.4, 0.45, 0.15))
+)
 
 transmatrix <- multi_transmat(pre_test_dk, post_test_dk, force9 = TRUE)
 res_dk <- lca_cor(transmatrix)
@@ -144,7 +148,9 @@ round(res_dk$learning[1:4], 3)
 Account for propensity to guess and item level attribute that a guess would be lucky. 
 
 ```{r eval = FALSE, grp_adjust}
-pre_test_var <- data.frame(pre = c(1, 0, 1, 1, 0, "d", "d", 0, 1, NA, 0, 1, 1, 1, 1, 0, 0, "d", 0, 0))
+pre_test_var <- data.frame(
+  pre = c(1, 0, 1, 1, 0, "d", "d", 0, 1, NA, 0, 1, 1, 1, 1, 0, 0, "d", 0, 0)
+)
 pst_test_var <- data.frame(pst = c(1, 0, NA, 1, "d", 1, 0, 1, 1, "d", 1, 1, 1, 0, 1, 1, 0, 1, 1, 0))
 grp <- c(rep(1, 10), rep(0, 10))
 
@@ -152,11 +158,23 @@ group_adj(pre_test_var, pst_test_var, gamma = 0, dk = 0)$learn
 group_adj(pre_test_var, pst_test_var, gamma = .25, dk = 0)$learn
 stnd_cor(pre_test_var, pst_test_var, lucky = .25)$learn
 
-grp0_raw <- group_adj(subset(pre_test_var, grp == 0), subset(pst_test_var, grp == 0), gamma = 0, dk = 0)$learn
-grp1_raw <- group_adj(subset(pre_test_var, grp == 1), subset(pst_test_var, grp == 1), gamma = 0, dk = 0)$learn
+grp0_raw <- group_adj(
+  subset(pre_test_var, grp == 0), subset(pst_test_var, grp == 0),
+  gamma = 0, dk = 0
+)$learn
+grp1_raw <- group_adj(
+  subset(pre_test_var, grp == 1), subset(pst_test_var, grp == 1),
+  gamma = 0, dk = 0
+)$learn
 
-grp0_adj <- group_adj(subset(pre_test_var, grp == 0), subset(pst_test_var, grp == 0), gamma = .25, dk = 0)$learn
-grp1_adj <- group_adj(subset(pre_test_var, grp == 1), subset(pst_test_var, grp == 1), gamma = .25, dk = 0)$learn
+grp0_adj <- group_adj(
+  subset(pre_test_var, grp == 0), subset(pst_test_var, grp == 0),
+  gamma = .25, dk = 0
+)$learn
+grp1_adj <- group_adj(
+  subset(pre_test_var, grp == 1), subset(pst_test_var, grp == 1),
+  gamma = .25, dk = 0
+)$learn
 
 grp0_raw - grp1_raw
 grp0_adj - grp1_adj
@@ -170,7 +188,7 @@ grp0_adj - grp1_adj
 pre_test <- data.frame(item1 = c(1, 0, 0, 1, 0), item2 = c(1, NA, 0, 1, 0))
 pst_test <- pre_test + cbind(c(0, 1, 1, 0, 0), c(0, 1, 0, 0, 1))
 diff <- pst_test - pre_test
-stnd_err <- sapply(diff, function(x) sqrt(var(x, na.rm = T) / length(x)))
+stnd_err <- sapply(diff, function(x) sqrt(var(x, na.rm = TRUE) / length(x)))
 
 # Bootstrapped s.e.
 
@@ -189,7 +207,12 @@ fit <- fit_nodk(pre_test, post_test, res$params["gamma", ], res$params[c("gg", "
 
 print(fit[, 1:4])
 
-fit <- fit_dk(pre_test_dk, post_test_dk, res_dk$params["gamma", ], res_dk$params[c("gg", "gk", "gd", "kk", "dg", "dk", "dd"), ], force9 = TRUE)
+fit <- fit_dk(
+  pre_test_dk, post_test_dk,
+  res_dk$params["gamma", ],
+  res_dk$params[c("gg", "gk", "gd", "kk", "dg", "dk", "dd"), ],
+  force9 = TRUE
+)
 
 print(fit[, 1:4])
 ```
@@ -213,16 +236,18 @@ nitems <- 10
 npeople <- 200
 
 pre_test <- as.data.frame(replicate(nitems, rbinom(npeople, 1, 0.4)))
-post_test <- as.data.frame(replicate(nitems, pmin(1, pre_test +
-  replicate(nitems, rbinom(npeople, 1, 0.25)))))
+post_test <- as.data.frame(replicate(
+  nitems,
+  pmin(1, pre_test + replicate(nitems, rbinom(npeople, 1, 0.25)))
+))
 names(pre_test) <- names(post_test) <- paste0("item", 1:nitems)
 
 # Fit model using convenience wrapper
 fit <- item_lca_fit(pre_test, post_test)
 
 # Or equivalently:
-# transmatrix <- multi_transmat(pre_test, post_test)
-# fit <- lca_cor(transmatrix)
+# transmatrix <- multi_transmat(pre_test, post_test) # nolint
+# fit <- lca_cor(transmatrix) # nolint
 ```
 
 ##### Perplexity from aggregated data (items)

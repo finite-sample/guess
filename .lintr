@@ -1,24 +1,8 @@
-cache_directory: ".lintr_cache"
 linters: linters_with_defaults(
-    line_length_linter = line_length_linter(100),
-    object_length_linter = object_length_linter(40),
-    commented_code_linter = NULL,
-    trailing_whitespace_linter = NULL,
-    indentation_linter = indentation_linter(2),
-    assignment_linter = NULL,
-    object_name_linter = object_name_linter(styles = c("snake_case", "dotted.case"))
- )
+    line_length_linter(100L),
+    object_name_linter(styles = c("snake_case", "dotted.case", "SNAKE_CASE"))
+  )
 exclusions: list(
-    "data-raw" = list(
-        trailing_whitespace_linter = Inf,
-        line_length_linter = Inf
-    ),
-    "vignettes" = list(
-        line_length_linter = Inf
-    ),
-    "tests" = Inf,
-    "R/RcppExports.R" = Inf,
-    "R/utils-constants.R" = list(
-        object_name_linter = Inf
-    )
- )
+    "R/RcppExports.R",
+    "tests/testthat/_fixtures"
+  )

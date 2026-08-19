@@ -27,7 +27,6 @@ Suggests:
     knitr (>= 1.11),
     rmarkdown,
     testthat (>= 3.0.0),
-    lintr,
     covr,
     dplyr,
     tibble

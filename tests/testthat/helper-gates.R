@@ -40,7 +40,7 @@ GATE_SIGMAS <- 3
 #' @return Numeric vector `c(low, high)`, clipped to `[0, 1]`.
 binomial_band <- function(nominal, reps, sigmas = GATE_SIGMAS) {
   if (!is.numeric(nominal) || length(nominal) != 1 || is.na(nominal) ||
-    nominal < 0 || nominal > 1) {
+        nominal < 0 || nominal > 1) {
     stop("nominal must be a single probability in [0, 1], got ", nominal)
   }
   if (!is.numeric(reps) || length(reps) != 1 || is.na(reps) || reps <= 0) {
@@ -66,7 +66,7 @@ binomial_band <- function(nominal, reps, sigmas = GATE_SIGMAS) {
 expect_proportion_within_band <- function(observed, reps, nominal, label = "",
                                           sigmas = GATE_SIGMAS) {
   if (!is.numeric(observed) || length(observed) != 1 || is.na(observed) ||
-    observed < 0 || observed > 1) {
+        observed < 0 || observed > 1) {
     stop(
       "observed must be a rate in [0, 1], got ", observed,
       ". If this is a count of successes, use expect_rate_within_band()."
@@ -76,7 +76,10 @@ expect_proportion_within_band <- function(observed, reps, nominal, label = "",
   testthat::expect_true(
     observed >= band[1] && observed <= band[2],
     info = sprintf(
-      "%s: observed rate %.4f outside the %g-sigma band [%.4f, %.4f] for a nominal %.4f over %d replicates",
+      paste0(
+        "%s: observed rate %.4f outside the %g-sigma band ",
+        "[%.4f, %.4f] for a nominal %.4f over %d replicates"
+      ),
       label, observed, sigmas, band[1], band[2], nominal, as.integer(reps)
     )
   )
@@ -95,7 +98,7 @@ expect_proportion_within_band <- function(observed, reps, nominal, label = "",
 expect_rate_within_band <- function(successes, reps, nominal, label = "",
                                     sigmas = GATE_SIGMAS) {
   if (!is.numeric(successes) || length(successes) != 1 || is.na(successes) ||
-    successes < 0 || successes > reps) {
+        successes < 0 || successes > reps) {
     stop("successes must be a single number in [0, ", reps, "], got ", successes)
   }
   expect_proportion_within_band(successes / reps, reps, nominal, label, sigmas)
@@ -136,7 +139,10 @@ expect_unbiased <- function(estimates, truth, label = "", sigmas = GATE_SIGMAS) 
   testthat::expect_true(
     abs(t_stat) < sigmas,
     info = sprintf(
-      "%s: bias %+.6f is %+.2f Monte Carlo standard errors from zero over %d replicates (sd %.6f, mc se %.6f)",
+      paste0(
+        "%s: bias %+.6f is %+.2f Monte Carlo standard errors from zero ",
+        "over %d replicates (sd %.6f, mc se %.6f)"
+      ),
       label, bias, t_stat, length(finite), spread, mc_se
     )
   )
@@ -173,7 +179,10 @@ expect_bias_within_mc_error <- function(bias, sd, reps, label = "",
   testthat::expect_true(
     abs(t_stat) < sigmas,
     info = sprintf(
-      "%s: bias %+.6f is %+.2f Monte Carlo standard errors from zero over %d replicates (sd %.6f, mc se %.6f)",
+      paste0(
+        "%s: bias %+.6f is %+.2f Monte Carlo standard errors from zero ",
+        "over %d replicates (sd %.6f, mc se %.6f)"
+      ),
       label, bias, t_stat, as.integer(reps), sd, mc_se
     )
   )

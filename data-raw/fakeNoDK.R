@@ -12,7 +12,8 @@
 # 	Difficulty
 # 		uniform, item-level, covers most of the range of theta (-2.5,2.5)
 # 	Learning
-# 		Each item: A base chance that everyone who doesn't know the item gets (this varies between (.05 and .6))
+# 		Each item: A base chance that everyone who does not know the item
+# 		gets (this varies between .05 and .6)
 # 		By person: b*ability; b varies from 0 to 1.5 (so covers all scenarios)
 # 	Gamma
 # 		uniform, covers broad range (.1, .6), orthogonal to item diff.
@@ -51,8 +52,10 @@ wave1 <- rmvlogis(n, cbind(diff, 1), z.vals = theta)
 wave2 <- wave1
 
 # Setting the knowledge gains
-for (i in 1:ncol(wave1)) {
-  probab <- ifelse(range(alpha[i] + beta[i] * theta)[2] >= 1 | range(alpha[i] + beta[i] * theta)[1] < 0, zero1(alpha[i] + beta[i] * theta), alpha[i] + beta[i] * theta)
+for (i in seq_len(ncol(wave1))) {
+  linpred <- alpha[i] + beta[i] * theta
+  out_of_range <- range(linpred)[2] >= 1 | range(linpred)[1] < 0
+  probab <- ifelse(out_of_range, zero1(linpred), linpred)
   wave2[, i] <- ifelse(wave1[, i] == 0, rbinom(n, 1, probab), wave1[, i])
 }
 
@@ -68,13 +71,13 @@ gamma2 <- rep(gamma, 2)
 
 # Only the ignorant can guess
 # Those who guess are lucky gamma_i of the time on the ith item
-for (i in 1:ncol(waves)) {
+for (i in seq_len(ncol(waves))) {
   wavem[, i] <- ifelse(!is.na(wavem[, i]) & wavem[, i] == 0, rbinom(n, 1, gamma2[i]), wavem[, i])
 }
 
 # Check
-mean(rowMeans(wave2 - wave1, na.rm = T))
-mean(rowMeans(wavem[, (nitems + 1):ncol(wavem)] - wavem[, 1:nitems], na.rm = T))
+mean(rowMeans(wave2 - wave1, na.rm = TRUE))
+mean(rowMeans(wavem[, (nitems + 1):ncol(wavem)] - wavem[, 1:nitems], na.rm = TRUE))
 
 # Create fake data dataset
 rawdata <- waves

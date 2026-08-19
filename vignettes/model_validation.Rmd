@@ -432,7 +432,8 @@ The standard deviation of estimates across simulations approximates the true sta
 ```{r se_assessment}
 se_estimates <- apply(estimates, 2, sd, na.rm = TRUE)
 rmse <- sqrt(colMeans(
-  (estimates - matrix(true_params,
+  (estimates - matrix(
+    true_params,
     nrow = n_sims,
     ncol = 4, byrow = TRUE
   ))^2,
@@ -460,8 +461,10 @@ coverage <- numeric(4)
 for (j in 1:4) {
   ci_lower <- estimates[, j] - 1.96 * se_estimates[j]
   ci_upper <- estimates[, j] + 1.96 * se_estimates[j]
-  coverage[j] <- mean(true_params[j] >= ci_lower &
-    true_params[j] <= ci_upper, na.rm = TRUE)
+  coverage[j] <- mean(
+    true_params[j] >= ci_lower & true_params[j] <= ci_upper,
+    na.rm = TRUE
+  )
 }
 
 coverage_table <- data.frame(
@@ -528,7 +531,8 @@ for (s in seq_along(sample_sizes)) {
   }
 
   rmse_by_n[s, ] <- sqrt(colMeans(
-    (estimates_n - matrix(true_params,
+    (estimates_n - matrix(
+      true_params,
       nrow = n_sims_quick,
       ncol = 4,
       byrow = TRUE

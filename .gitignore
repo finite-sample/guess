@@ -37,3 +37,7 @@ vignettes/.build.timestamp
 vignettes/model_validation.R
 vignettes/model_validation_files/
 *.tar.gz
+
+# pkgdown output. Disposable local build product; CI builds and
+# publishes the definitive site.
+/docs/

@@ -19,4 +19,4 @@ permissions:
 
 jobs:
   links:
-    uses: gojiplus/r-canon/.github/workflows/reusable-link-check.yml@v1
+    uses: gojiplus/r-canon/.github/workflows/reusable-link-check.yml@v2

@@ -1,9 +1,0 @@
-pandoc: 2.2.1
-pkgdown: 1.1.0
-pkgdown_sha: ~
-articles:
-  using_guess: using_guess.html
-urls:
-  reference: http://soodoku.github.io/guess/reference
-  article: http://soodoku.github.io/guess/articles
-

@@ -21,16 +21,22 @@ estimate_logit_score(
 numeric vector of logit scores (length = n individuals)
 }
 \description{
-Computes the logit of each person's proportion correct. This is a descriptive
-score, not a fitted item-response model.
+Computes the empirical logit of each person's proportion correct. The
+denominator-aware half-count correction keeps all-observed scores finite.
+This is a descriptive score, not a fitted item-response model.
 }
 \details{
 Observed d/DK responses are scored as incorrect in this binary
   correctness baseline. They remain a distinct response category in the LCA
-  functions.
+  functions. The empirical-logit correction is from Cox and Snell (1989,
+  Section 2.1.6); respondents with no observed responses receive `NA`.
 }
 \examples{
 sim <- simulate_lca(n = 100, seed = 123)
 score_pre <- estimate_logit_score(sim$pre)
 score_post <- estimate_logit_score(sim$post)
+}
+\references{
+Cox, D. R., and Snell, E. J. (1989). *Analysis of Binary Data* (2nd ed.).
+Chapman and Hall.
 }

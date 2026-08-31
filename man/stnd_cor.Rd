@@ -6,8 +6,8 @@
 \usage{
 stnd_cor(
   pre_test = NULL,
-  pst_test = NULL,
-  lucky = NULL,
+  post_test = NULL,
+  guessing_probability = NULL,
   item_names = NULL,
   na_as = c("dk", "missing"),
   missing_action = c("omit", "error")
@@ -16,9 +16,9 @@ stnd_cor(
 \arguments{
 \item{pre_test}{Required. data.frame carrying responses to pre-test questions.}
 
-\item{pst_test}{Required. data.frame carrying responses to post-test questions.}
+\item{post_test}{Required. data.frame carrying responses to post-test questions.}
 
-\item{lucky}{Required. A vector. Each entry is 1/(number of options)}
+\item{guessing_probability}{Required. A vector. Each entry is 1/(number of options)}
 
 \item{item_names}{Optional. A vector carrying item names.}
 
@@ -40,7 +40,7 @@ The function takes separate pre-test and post-test dataframes. Why do we
 need dataframes? To accomodate multiple items. The items can carry NA
 (missing). Items must be in the same order in each dataframe. Assumes that
 respondents are posed same questions twice.
-The function also takes a \code{lucky} vector --- the chance of getting a
+The function also takes a \code{guessing_probability} vector --- the chance of getting a
 correct answer if guessing randomly. Each entry is 1/(number of options).
 The function also optionally takes a vector carrying names of the items.
 By default, the vector carrying adjusted learning estimates takes same
@@ -50,12 +50,12 @@ separately via \code{item_names}.
 \examples{
 # Without DK
 pre_test <- data.frame(item1 = c(1, 0, 0, 1, 0), item2 = c(1, NA, 0, 1, 0))
-pst_test <- pre_test + cbind(c(0, 1, 1, 0, 0), c(0, 1, 0, 0, 1))
-lucky <- rep(.25, 2)
-stnd_cor(pre_test, pst_test, lucky)
+post_test <- pre_test + cbind(c(0, 1, 1, 0, 0), c(0, 1, 0, 0, 1))
+guessing_probability <- rep(.25, 2)
+stnd_cor(pre_test, post_test, guessing_probability)
 # With DK
 pre_test <- data.frame(item1 = c(1, 0, 0, 1, 0, "d", 0), item2 = c(1, NA, 0, 1, 0, "d", "d"))
-pst_test <- data.frame(item1 = c(1, 0, 0, 1, 0, "d", 1), item2 = c(1, NA, 0, 1, 0, 1, "d"))
-lucky <- rep(.25, 2)
-stnd_cor(pre_test, pst_test, lucky)
+post_test <- data.frame(item1 = c(1, 0, 0, 1, 0, "d", 1), item2 = c(1, NA, 0, 1, 0, 1, "d"))
+guessing_probability <- rep(.25, 2)
+stnd_cor(pre_test, post_test, guessing_probability)
 }

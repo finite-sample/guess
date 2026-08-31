@@ -4,7 +4,7 @@
 \alias{person_item_maximization}
 \title{Person/item EM maximization step}
 \usage{
-person_item_maximization(pre, post, complete, expected, gamma, epsilon)
+person_item_maximization(pre, post, complete, expected, gamma)
 }
 \arguments{
 \item{pre}{numeric pre-test matrix}
@@ -16,8 +16,6 @@ person_item_maximization(pre, post, complete, expected, gamma, epsilon)
 \item{expected}{output from person_item_expectation}
 
 \item{gamma}{current item guessing probabilities}
-
-\item{epsilon}{boundary used to keep probabilities in the open interval}
 }
 \value{
 updated class proportions and guessing probabilities

@@ -6,11 +6,8 @@ test_that("item and person/item models expose distinct fitted structures", {
     seed = 941, return_classes = TRUE
   )
 
-  item_fit <- item_lca_fit(sim$pre, sim$post)
-  person_fit <- person_item_lca_fit(
-    sim$pre, sim$post,
-    item_fit = item_fit
-  )
+  item_fit <- fit_item_lca(sim$pre, sim$post)
+  person_fit <- fit_person_lca(sim$pre, sim$post)
 
   expect_s3_class(item_fit, "guess_fit")
   expect_equal(dim(item_fit$params), c(4L, 4L))
@@ -23,7 +20,11 @@ test_that("item and person/item models expose distinct fitted structures", {
     )
   )
   expect_equal(nrow(person_fit$posterior), 2500L)
-  expect_equal(rowSums(person_fit$posterior), rep(1, 2500), tolerance = 1e-10)
+  expect_equal(
+    unname(rowSums(person_fit$posterior)),
+    rep(1, 2500),
+    tolerance = 1e-10
+  )
 })
 
 test_that("person/item EM recovers shared classes and item gamma", {
@@ -35,7 +36,7 @@ test_that("person/item EM recovers shared classes and item gamma", {
     gamma = gamma, seed = 942
   )
 
-  fit <- person_item_lca_fit(sim$pre, sim$post)
+  fit <- fit_person_lca(sim$pre, sim$post)
 
   expect_true(fit$converged)
   expect_equal(fit$class_priors, truth, tolerance = 0.035)
@@ -49,11 +50,7 @@ test_that("posterior wrappers use the explicit person/item model", {
     gg = 0.35, gk = 0.35, kk = 0.30,
     gamma = 0.25, seed = 943, return_classes = TRUE
   )
-  item_fit <- item_lca_fit(sim$pre, sim$post)
-  person_fit <- person_item_lca_fit(
-    sim$pre, sim$post,
-    item_fit = item_fit
-  )
+  person_fit <- fit_person_lca(sim$pre, sim$post)
 
   posterior <- posterior_class_probs(person_fit)
   learned <- posterior_learned(person_fit)
@@ -70,26 +67,23 @@ test_that("person/item model omits structural pairs and rejects DK", {
   pre[1:100, 1] <- NA
   post[51:150, 2] <- NA
 
-  fit <- person_item_lca_fit(
-    pre, post,
-    na_as = "missing"
-  )
+  fit <- fit_person_lca(pre, post)
   expected_pairs <- sum(!is.na(pre) & !is.na(post))
 
   expect_equal(fit$n_obs, expected_pairs)
   expect_true(fit$converged)
   expect_error(
-    person_item_lca_fit(
+    fit_person_lca(
       data.frame(i = c("d", "1")),
       data.frame(i = c("1", "1"))
     ),
-    "only the no-DK model"
+    "binary responses only"
   )
 })
 
 test_that("person/item fit has useful print and coefficient methods", {
   sim <- simulate_lca(n = 400, n_items = 2, seed = 945)
-  fit <- person_item_lca_fit(sim$pre, sim$post)
+  fit <- fit_person_lca(sim$pre, sim$post)
 
   expect_output(print(fit), "Joint Person-Level LCA Fit")
   expect_equal(
@@ -100,22 +94,20 @@ test_that("person/item fit has useful print and coefficient methods", {
 
 test_that("person/item fit preserves a single item name", {
   sim <- simulate_lca(n = 500, n_items = 1, seed = 947)
-  fit <- person_item_lca_fit(sim$pre, sim$post)
+  fit <- fit_person_lca(sim$pre, sim$post)
 
   expect_named(fit$gamma, "item1")
   expect_equal(nrow(fit$posterior), 500L)
 })
 
-test_that("person/item fit aligns item parameters by name", {
+test_that("person-level fit aligns post-test items by name", {
   sim <- simulate_lca(
     n = 1500, n_items = 4,
     gamma = c(0.15, 0.25, 0.35, 0.45), seed = 946
   )
-  original <- person_item_lca_fit(sim$pre, sim$post)
+  original <- fit_person_lca(sim$pre, sim$post)
   order <- c(4L, 2L, 1L, 3L)
-  permuted <- person_item_lca_fit(
-    sim$pre[order], sim$post[order]
-  )
+  permuted <- fit_person_lca(sim$pre, sim$post[order])
 
   expect_equal(
     original$gamma,
@@ -128,10 +120,12 @@ test_that("person/item fit aligns item parameters by name", {
     tolerance = 1e-8
   )
 
-  item_fit <- item_lca_fit(sim$pre, sim$post)
-  colnames(item_fit$params) <- paste0("wrong", seq_len(ncol(item_fit$params)))
+  invalid_start <- list(
+    class_priors = c(gg = 0.4, gk = 0.3, kk = 0.3),
+    gamma = stats::setNames(rep(0.25, 4L), paste0("wrong", seq_len(4L)))
+  )
   expect_error(
-    person_item_lca_fit(sim$pre, sim$post, item_fit = item_fit),
-    "item names must match"
+    fit_person_lca(sim$pre, sim$post, start = invalid_start),
+    "for every item"
   )
 })

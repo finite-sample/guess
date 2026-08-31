@@ -139,6 +139,147 @@ multinomial_nll <- function(data, probs) {
   -sum(data[observed] * log(probs[observed]))
 }
 
+#' Validate an optional LCA starting vector
+#' @param start optional named numeric vector
+#' @param parameter_names required parameter names
+#' @return reordered starting vector or NULL
+#' @keywords internal
+validate_lca_start <- function(start, parameter_names) {
+  if (is.null(start)) {
+    return(NULL)
+  }
+  if (
+    !is.numeric(start) || anyNA(start) || any(!is.finite(start)) ||
+      length(start) != length(parameter_names) || is.null(names(start)) ||
+      anyDuplicated(names(start)) || !setequal(names(start), parameter_names)
+  ) {
+    stop(
+      "start must be a finite named numeric vector with names: ",
+      paste(parameter_names, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+  start <- start[parameter_names]
+  if (any(start < 0 | start > 1)) {
+    stop("start values must lie between 0 and 1.", call. = FALSE)
+  }
+  class_values <- start[parameter_names != "gamma"]
+  if (abs(sum(class_values) - 1) > sqrt(.Machine$double.eps)) {
+    stop("Latent-class start values must sum to 1.", call. = FALSE)
+  }
+  start
+}
+
+#' Construct a deterministic feasible LCA starting vector
+#' @param counts named transition counts
+#' @param parameter_names parameter names for the selected model
+#' @return named numeric vector
+#' @keywords internal
+make_lca_start <- function(counts, parameter_names) {
+  class_names <- parameter_names[parameter_names != "gamma"]
+  denominator <- counts[["x00"]] + counts[["x10"]]
+  gamma <- if (denominator > 0) counts[["x10"]] / denominator else 0.5
+  tolerance <- sqrt(.Machine$double.eps)
+  gamma <- min(max(gamma, tolerance), 1 - tolerance)
+
+  start <- rep(1 / length(class_names), length(class_names))
+  names(start) <- class_names
+  c(start, gamma = gamma)
+}
+
+#' Fit one transition-count row
+#' @param counts named transition counts
+#' @param item_name item label for diagnostics and errors
+#' @param is_dk whether the model includes don't-know states
+#' @param start optional user-supplied starting vector
+#' @param control Rsolnp control list
+#' @return list with parameters, learning, and diagnostics
+#' @keywords internal
+fit_lca_count_row <- function(counts, item_name, is_dk, start, control) {
+  parameter_names <- if (is_dk) {
+    c("gg", "gk", "gd", "kk", "dg", "dk", "dd", "gamma")
+  } else {
+    c("gg", "gk", "kk", "gamma")
+  }
+  row_start <- if (is.null(start)) {
+    make_lca_start(counts, parameter_names)
+  } else {
+    start
+  }
+  objective <- if (is_dk) guessdk_lik else guess_lik
+  equality <- if (is_dk) eq1dk else eqn1
+
+  result <- tryCatch(
+    solnp(
+      row_start,
+      objective,
+      eqfun = equality,
+      eqB = 1,
+      LB = rep(0, length(parameter_names)),
+      UB = rep(1, length(parameter_names)),
+      data = counts,
+      control = control
+    ),
+    error = function(error) {
+      stop(
+        "Optimization failed for item `",
+        item_name,
+        "`: ",
+        conditionMessage(error),
+        call. = FALSE
+      )
+    }
+  )
+
+  if (!is.numeric(result$convergence) || length(result$convergence) != 1L) {
+    stop("Optimizer returned no convergence code for item `", item_name, "`.", call. = FALSE)
+  }
+  if (result$convergence != 0) {
+    stop(
+      "Optimization did not converge for item `",
+      item_name,
+      "` (code ",
+      result$convergence,
+      ").",
+      call. = FALSE
+    )
+  }
+
+  params <- result$pars
+  tolerance <- sqrt(.Machine$double.eps)
+  if (
+    !is.numeric(params) || length(params) != length(parameter_names) ||
+      anyNA(params) || any(!is.finite(params)) ||
+      any(params < -tolerance | params > 1 + tolerance)
+  ) {
+    stop("Optimizer returned invalid parameters for item `", item_name, "`.", call. = FALSE)
+  }
+  names(params) <- parameter_names
+  if (abs(sum(params[parameter_names != "gamma"]) - 1) > tolerance) {
+    stop("Optimizer violated the class constraint for item `", item_name, "`.", call. = FALSE)
+  }
+  params <- pmin(pmax(params, 0), 1)
+
+  final_objective <- utils::tail(result$values, 1L)
+  if (length(final_objective) != 1L || !is.finite(final_objective)) {
+    stop("Optimizer returned an invalid objective for item `", item_name, "`.", call. = FALSE)
+  }
+  learning <- if (is_dk) params[["gk"]] + params[["dk"]] else params[["gk"]]
+
+  list(
+    params = params,
+    learning = unname(learning),
+    diagnostics = data.frame(
+      convergence = as.integer(result$convergence),
+      objective = as.numeric(final_objective),
+      evaluations = as.integer(result$nfuneval),
+      iterations = as.integer(result$outer.iter),
+      row.names = item_name
+    )
+  )
+}
+
 #' Interleave vectors
 #' @description Interleaves two vectors. Used internally.
 #' @keywords internal
@@ -175,68 +316,4 @@ interleave <- function(a, b) {
 
 zero1 <- function(x) {
   pmax(0, pmin(1, x))
-}
-
-#' Create difficulty-parameterized likelihood function (no DK)
-#' @description Factory function that creates a likelihood function parameterized with
-#'   an unbounded difficulty score instead of gamma. Used internally by
-#'   lca_difficulty().
-#' @keywords internal
-#'
-#' @param base_rate minimum guessing probability (1/K for K-choice items)
-#' @return A function that takes x (parameters) and data (transition matrix)
-
-make_guess_lik_difficulty <- function(base_rate = 0.25) {
-  function(x, g1 = NA, data) {
-    g1 <- base_rate + (1 - base_rate) * plogis(-x[4])
-    multinomial_nll(
-      data,
-      nodk_cell_probs(x[1], x[2], x[3], g1)
-    )
-  }
-}
-
-#' Create difficulty-parameterized likelihood function (DK)
-#' @description Factory function that creates a likelihood function parameterized with
-#'   an unbounded difficulty score instead of gamma. Used internally by
-#'   lca_difficulty().
-#' @keywords internal
-#'
-#' @param base_rate minimum guessing probability (1/K for K-choice items)
-#' @return A function that takes x (parameters) and data (transition matrix)
-
-make_guessdk_lik_difficulty <- function(base_rate = 0.25) {
-  function(x, g1 = NA, data) {
-    g1 <- base_rate + (1 - base_rate) * plogis(-x[8])
-    multinomial_nll(
-      data,
-      dk_cell_probs(x[1], x[2], x[3], x[4], x[5], x[6], x[7], g1)
-    )
-  }
-}
-
-#' Transform difficulty to gamma
-#' @description Convert a difficulty score to a guessing probability.
-#' @keywords internal
-#'
-#' @param difficulty numeric vector of difficulty parameters
-#' @param base_rate minimum guessing probability (1/K for K-choice items)
-#' @return numeric vector of gamma values
-
-difficulty_to_gamma <- function(difficulty, base_rate = 0.25) {
-  base_rate + (1 - base_rate) * plogis(-difficulty)
-}
-
-#' Transform gamma to difficulty
-#' @description Convert guessing probability to a difficulty score.
-#' @keywords internal
-#'
-#' @param gamma numeric vector of guessing probabilities
-#' @param base_rate minimum guessing probability (1/K for K-choice items)
-#' @return numeric vector of difficulty values
-
-gamma_to_difficulty <- function(gamma, base_rate = 0.25) {
-  p <- (gamma - base_rate) / (1 - base_rate)
-  p <- pmax(pmin(p, 0.9999), 0.0001)
-  -qlogis(p)
 }

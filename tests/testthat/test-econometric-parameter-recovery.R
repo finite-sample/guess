@@ -1,4 +1,4 @@
-test_that("lca_cor recovers true parameters with low bias", {
+test_that("count-based LCA recovers true parameters with low bias", {
   skip_on_cran()
 
   set.seed(54321)
@@ -20,8 +20,8 @@ test_that("lca_cor recovers true parameters with low bias", {
       c(true_gg, true_gk, true_kk),
       true_gamma
     )
-    trans <- multi_transmat(data$pre, data$post)
-    result <- lca_cor(trans)
+    trans <- count_item_transitions(data$pre, data$post)
+    result <- fit_item_lca_counts(trans)
     estimates[sim, ] <- result$params[, 1]
   }
 
@@ -39,7 +39,7 @@ test_that("lca_cor recovers true parameters with low bias", {
   expect_unbiased(estimates[, "gamma"], true_gamma, "gamma")
 })
 
-test_that("lca_cor parameter RMSE is within theoretical bounds", {
+test_that("count-based LCA parameter RMSE is within theoretical bounds", {
   skip_on_cran()
 
   set.seed(98765)
@@ -61,8 +61,8 @@ test_that("lca_cor parameter RMSE is within theoretical bounds", {
       c(true_gg, true_gk, true_kk),
       true_gamma
     )
-    trans <- multi_transmat(data$pre, data$post)
-    result <- lca_cor(trans)
+    trans <- count_item_transitions(data$pre, data$post)
+    result <- fit_item_lca_counts(trans)
     estimates[sim, ] <- result$params[, 1]
   }
 
@@ -93,8 +93,8 @@ test_that("learning estimate recovers true learning fraction", {
 
   for (sim in seq_len(n_sims)) {
     data <- simulate_with_learning(n_obs, learning_frac = true_learning, gamma = 0.25)
-    trans <- multi_transmat(data$pre, data$post)
-    result <- lca_cor(trans)
+    trans <- count_item_transitions(data$pre, data$post)
+    result <- fit_item_lca_counts(trans)
     learning_estimates[sim] <- result$learning[1]
   }
 
@@ -124,8 +124,8 @@ test_that("parameter recovery improves with sample size", {
         c(true_gg, true_gk, true_kk),
         true_gamma
       )
-      trans <- multi_transmat(data$pre, data$post)
-      result <- lca_cor(trans)
+      trans <- count_item_transitions(data$pre, data$post)
+      result <- fit_item_lca_counts(trans)
       gk_estimates[sim] <- result$params["gk", 1]
     }
 

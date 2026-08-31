@@ -29,23 +29,45 @@ validate_compatible_dataframes <- function(pre_test, pst_test) {
   TRUE
 }
 
-#' Validate lucky vector for standard correction
-#' @param lucky vector of guessing probabilities
+#' Validate names of paired item data
+#' @param pre_test pre-test item data frame
+#' @param post_test post-test item data frame
+#' @return item names in pre-test column order
+#' @keywords internal
+validate_paired_item_names <- function(pre_test, post_test) {
+  pre_names <- names(pre_test)
+  post_names <- names(post_test)
+
+  if (anyNA(pre_names) || any(!nzchar(pre_names)) || anyDuplicated(pre_names)) {
+    stop("pre_test must have unique, non-empty item names.", call. = FALSE)
+  }
+  if (anyNA(post_names) || any(!nzchar(post_names)) || anyDuplicated(post_names)) {
+    stop("post_test must have unique, non-empty item names.", call. = FALSE)
+  }
+  if (!setequal(pre_names, post_names)) {
+    stop("pre_test and post_test must contain the same item names.", call. = FALSE)
+  }
+
+  pre_names
+}
+
+#' Validate guessing probabilities for standard correction
+#' @param guessing_probability vector of guessing probabilities
 #' @param n_items number of items to validate against
 #' @return TRUE if valid, throws error otherwise
-validate_lucky_vector <- function(lucky, n_items) {
+validate_guessing_probability <- function(guessing_probability, n_items) {
   assert_numeric(
-    lucky,
+    guessing_probability,
     lower = 0, upper = 1,
     finite = TRUE,
     any.missing = FALSE,
     len = n_items,
     null.ok = FALSE,
-    .var.name = "lucky"
+    .var.name = "guessing_probability"
   )
 
-  if (!all(lucky > 0 & lucky < 1)) {
-    stop("All lucky values must be between 0 and 1 (exclusive).")
+  if (!all(guessing_probability > 0 & guessing_probability < 1)) {
+    stop("All guessing probabilities must be between 0 and 1 (exclusive).")
   }
   TRUE
 }
@@ -206,6 +228,73 @@ validate_matrix <- function(x, arg_name, valid_ncols = NULL) {
   TRUE
 }
 
+#' Validate and order transition counts
+#' @param x transition-count matrix
+#' @param arg_name argument name for errors
+#' @return validated matrix in canonical cell order
+#' @keywords internal
+prepare_transition_counts <- function(x, arg_name = "transition_counts") {
+  assert_matrix(x, min.rows = 1L, .var.name = arg_name)
+  if (!is.numeric(x)) {
+    stop(arg_name, " must be a numeric matrix.", call. = FALSE)
+  }
+  if (anyNA(x) || any(!is.finite(x))) {
+    stop(arg_name, " must contain only finite, non-missing counts.", call. = FALSE)
+  }
+  if (any(x < 0)) {
+    stop(arg_name, " cannot contain negative counts.", call. = FALSE)
+  }
+  integer_tolerance <- sqrt(.Machine$double.eps) * pmax(1, abs(x))
+  if (any(abs(x - round(x)) > integer_tolerance)) {
+    stop(arg_name, " must contain whole-number counts.", call. = FALSE)
+  }
+  x <- round(x)
+
+  expected_cells <- switch(
+    as.character(ncol(x)),
+    `4` = c("x00", "x01", "x10", "x11"),
+    `9` = c("x00", "x01", "x0d", "x10", "x11", "x1d", "xd0", "xd1", "xdd"),
+    NULL
+  )
+  if (is.null(expected_cells)) {
+    stop(arg_name, " must have 4 or 9 transition columns.", call. = FALSE)
+  }
+
+  cell_names <- colnames(x)
+  if (
+    is.null(cell_names) || anyNA(cell_names) || any(!nzchar(cell_names)) ||
+      anyDuplicated(cell_names) || !setequal(cell_names, expected_cells)
+  ) {
+    stop(
+      arg_name,
+      " must have the canonical transition-cell names: ",
+      paste(expected_cells, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+
+  item_names <- rownames(x)
+  if (
+    is.null(item_names) || anyNA(item_names) || any(!nzchar(item_names)) ||
+      anyDuplicated(item_names)
+  ) {
+    stop(arg_name, " must have unique, non-empty item names.", call. = FALSE)
+  }
+
+  x <- x[, expected_cells, drop = FALSE]
+  empty_items <- item_names[rowSums(x) == 0]
+  if (length(empty_items) > 0L) {
+    stop(
+      "Every item must contain at least one transition; empty: ",
+      paste(empty_items, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+  x
+}
+
 #' Validate subgroup parameter
 #' @param subgroup logical vector for subsetting
 #' @param expected_length expected length to match
@@ -213,7 +302,12 @@ validate_matrix <- function(x, arg_name, valid_ncols = NULL) {
 #' @keywords internal
 validate_subgroup <- function(subgroup, expected_length) {
   if (!is.null(subgroup)) {
-    assert_logical(subgroup, len = expected_length, .var.name = "subgroup")
+    assert_logical(
+      subgroup,
+      any.missing = FALSE,
+      len = expected_length,
+      .var.name = "subgroup"
+    )
   }
   TRUE
 }
@@ -267,4 +361,117 @@ validate_dk <- function(dk) {
     .var.name = "dk"
   )
   TRUE
+}
+
+#' Validate an item-level latent-class fit
+#' @param fit fitted item-level latent-class model
+#' @return TRUE if valid, throws error otherwise
+#' @keywords internal
+validate_item_lca_fit <- function(fit) {
+  if (!inherits(fit, "guess_fit")) {
+    stop("fit must be a guess_fit object.", call. = FALSE)
+  }
+  if (!identical(fit$model_type, "nodk") && !identical(fit$model_type, "dk")) {
+    stop("fit$model_type must be either \"nodk\" or \"dk\".", call. = FALSE)
+  }
+  if (!is.matrix(fit$params) || !is.numeric(fit$params)) {
+    stop("fit$params must be a numeric matrix.", call. = FALSE)
+  }
+  if (anyNA(fit$params) || any(!is.finite(fit$params))) {
+    stop("fit$params must contain only finite values.", call. = FALSE)
+  }
+  parameter_names <- if (fit$model_type == "dk") {
+    c("gg", "gk", "gd", "kk", "dg", "dk", "dd", "gamma")
+  } else {
+    c("gg", "gk", "kk", "gamma")
+  }
+  if (
+    is.null(rownames(fit$params)) || anyDuplicated(rownames(fit$params)) ||
+      !setequal(rownames(fit$params), parameter_names)
+  ) {
+    stop(
+      "fit$params must have parameter rows: ",
+      paste(parameter_names, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+  if (
+    is.null(colnames(fit$params)) || anyNA(colnames(fit$params)) ||
+      any(!nzchar(colnames(fit$params))) || anyDuplicated(colnames(fit$params))
+  ) {
+    stop("fit$params must have unique, non-empty item names.", call. = FALSE)
+  }
+  params <- fit$params[parameter_names, , drop = FALSE]
+  class_weights <- params[setdiff(parameter_names, "gamma"), , drop = FALSE]
+  if (any(class_weights < 0 | class_weights > 1)) {
+    stop("Latent-class weights in fit$params must lie between 0 and 1.", call. = FALSE)
+  }
+  if (any(abs(colSums(class_weights) - 1) > sqrt(.Machine$double.eps))) {
+    stop("Latent-class weights in fit$params must sum to 1 for every item.", call. = FALSE)
+  }
+  if (any(params["gamma", ] < 0 | params["gamma", ] > 1)) {
+    stop("gamma values in fit$params must lie between 0 and 1.", call. = FALSE)
+  }
+  TRUE
+}
+
+#' Validate a person-level latent-class fit
+#' @param fit fitted person-level latent-class model
+#' @return TRUE if valid, throws error otherwise
+#' @keywords internal
+validate_person_lca_fit <- function(fit) {
+  if (!inherits(fit, "guess_person_fit")) {
+    stop("fit must be a guess_person_fit object.", call. = FALSE)
+  }
+  if (!is.data.frame(fit$posterior) ||
+        !identical(names(fit$posterior), paste0("P_", PERSON_CLASS_NAMES))) {
+    stop(
+      "fit$posterior must be a data frame with columns P_gg, P_gk, and P_kk.",
+      call. = FALSE
+    )
+  }
+  posterior <- as.matrix(fit$posterior)
+  if (!is.numeric(posterior) || any(!is.finite(posterior[!is.na(posterior)])) ||
+        any(posterior < 0 | posterior > 1, na.rm = TRUE)) {
+    stop("fit$posterior must contain probabilities between 0 and 1.", call. = FALSE)
+  }
+  partly_missing <- apply(is.na(posterior), 1L, any) &
+    !apply(is.na(posterior), 1L, all)
+  if (any(partly_missing) ||
+        any(abs(rowSums(posterior, na.rm = TRUE) - 1) > sqrt(.Machine$double.eps) &
+              !apply(is.na(posterior), 1L, all))) {
+    stop(
+      "Each observed row of fit$posterior must sum to 1; unobserved rows must be all NA.",
+      call. = FALSE
+    )
+  }
+  TRUE
+}
+
+#' Evaluate an expression with a temporary random seed
+#' @param seed integer seed or NULL
+#' @param expr expression to evaluate
+#' @return value of expr
+#' @keywords internal
+with_preserved_seed <- function(seed, expr) {
+  if (is.null(seed)) {
+    return(force(expr))
+  }
+  assert_int(seed, .var.name = "seed")
+  rng_name <- ".Random.seed"
+  had_seed <- exists(rng_name, envir = .GlobalEnv, inherits = FALSE)
+  if (had_seed) {
+    old_seed <- get(rng_name, envir = .GlobalEnv, inherits = FALSE)
+  }
+  on.exit(
+    if (had_seed) {
+      assign(rng_name, old_seed, envir = .GlobalEnv)
+    } else if (exists(rng_name, envir = .GlobalEnv, inherits = FALSE)) {
+      rm(list = rng_name, envir = .GlobalEnv)
+    },
+    add = TRUE
+  )
+  set.seed(seed)
+  force(expr)
 }

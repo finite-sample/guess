@@ -83,7 +83,7 @@ transformation: gamma_i = base_rate + (1 - base_rate) * plogis(-difficulty_i).
 \examples{
 # Simulate DK data
 sim <- simulate_lca_dk(n = 5000, gk = 0.15, seed = 123)
-fit <- item_lca_fit(sim$pre, sim$post)
+fit <- fit_item_lca(sim$pre, sim$post)
 fit$params["gk", ] # Should be close to 0.15
 
 # Item-specific gamma (vector)

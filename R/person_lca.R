@@ -69,7 +69,6 @@ person_item_expectation <- function(pre, post, complete, class_priors, gamma) {
 #' @param complete logical matrix of complete response pairs
 #' @param expected output from person_item_expectation
 #' @param gamma current item guessing probabilities
-#' @param epsilon boundary used to keep probabilities in the open interval
 #' @return updated class proportions and guessing probabilities
 #' @keywords internal
 person_item_maximization <- function(
@@ -77,8 +76,7 @@ person_item_maximization <- function(
   post,
   complete,
   expected,
-  gamma,
-  epsilon
+  gamma
 ) {
   posterior_all <- matrix(
     NA_real_,
@@ -100,65 +98,163 @@ person_item_maximization <- function(
     denominator <- sum(2 * z[, "gg"] + z[, "gk"])
     if (denominator > 0) {
       updated_gamma[[j]] <- numerator / denominator
+      if (updated_gamma[[j]] < 0 || updated_gamma[[j]] > 1) {
+        stop("The person-level EM update produced an invalid guessing probability.")
+      }
     }
   }
 
-  class_priors <- pmax(class_priors, epsilon)
-  class_priors <- class_priors / sum(class_priors)
-  updated_gamma <- pmin(pmax(updated_gamma, epsilon), 1 - epsilon)
   list(class_priors = class_priors, gamma = updated_gamma)
 }
 
-#' Fit a Joint Person-Level Latent Class Model
+#' Validate a joint person-level LCA starting point
+#'
+#' @param start named list of class priors and item guessing probabilities
+#' @param item_names response item names
+#' @return validated, canonically ordered starting point
+#' @keywords internal
+validate_person_lca_start <- function(start, item_names) {
+  if (!is.list(start) || !setequal(names(start), c("class_priors", "gamma"))) {
+    stop("start must be a list containing `class_priors` and `gamma`.", call. = FALSE)
+  }
+  class_priors <- start$class_priors
+  gamma <- start$gamma
+  if (!is.numeric(class_priors) ||
+        length(class_priors) != length(PERSON_CLASS_NAMES) ||
+        !setequal(names(class_priors), PERSON_CLASS_NAMES) ||
+        any(!is.finite(class_priors)) ||
+        any(class_priors < 0 | class_priors > 1)) {
+    stop(
+      "start$class_priors must be a finite named probability vector for gg, gk, and kk.",
+      call. = FALSE
+    )
+  }
+  class_priors <- class_priors[PERSON_CLASS_NAMES]
+  if (abs(sum(class_priors) - 1) > sqrt(.Machine$double.eps)) {
+    stop("start$class_priors must sum to 1.", call. = FALSE)
+  }
+  if (!is.numeric(gamma) ||
+        length(gamma) != length(item_names) ||
+        !setequal(names(gamma), item_names) ||
+        any(!is.finite(gamma)) ||
+        any(gamma < 0 | gamma > 1)) {
+    stop(
+      "start$gamma must be a finite named probability vector for every item.",
+      call. = FALSE
+    )
+  }
+  list(class_priors = class_priors, gamma = gamma[item_names])
+}
+
+#' Make a joint person-level LCA starting point
+#'
+#' @param pre_test normalized binary pre-test responses
+#' @param post_test normalized binary post-test responses
+#' @return named list of class priors and item guessing probabilities
+#' @keywords internal
+make_person_lca_start <- function(pre_test, post_test) {
+  item_fit <- fit_item_lca(
+    pre_test,
+    post_test,
+    na_as = "missing",
+    missing_action = "omit"
+  )
+  gamma <- item_fit$params["gamma", , drop = TRUE]
+  names(gamma) <- colnames(item_fit$params)
+  list(
+    class_priors = rowMeans(
+      item_fit$params[PERSON_CLASS_NAMES, , drop = FALSE]
+    ),
+    gamma = gamma
+  )
+}
+
+#' Fit a joint person-level latent-class model
 #'
 #' Fits one latent transition class per person across repeated items. Class
 #' proportions are shared across items, while guessing probabilities are
 #' item-specific. Parameters are estimated jointly by expectation-maximization.
+#' This is a package-specific joint extension of the item-level response model,
+#' not the item-wise estimator developed by Cor and Sood (2016).
 #'
-#' This is distinct from \code{\link{item_lca_fit}}, which fits independent
-#' class proportions for each item.
+#' The model accepts binary responses and structural missingness only. It assumes
+#' each person has one `gg`, `gk`, or `kk` trajectory across all items and that
+#' observed item pairs are conditionally independent given that trajectory.
 #'
-#' @param pre_test data frame of pre-test responses
-#' @param pst_test data frame of post-test responses
-#' @param na_as classification of NA responses
-#' @param missing_action structural missingness handling
-#' @param item_fit optional item-wise fit used to initialize the EM algorithm
-#' @param max_iter maximum EM iterations
-#' @param tol convergence tolerance
-#' @return An object of class \code{guess_person_fit} containing shared class
+#' @param pre_test Data frame containing one binary pre-test item per column.
+#' @param post_test Data frame containing the corresponding binary post-test
+#'   items. Items are paired by name, not position.
+#' @param ... Must be empty. Its presence requires optional arguments to be
+#'   named.
+#' @param missing_action How to handle structural missingness: `"omit"`
+#'   excludes incomplete pairs and `"error"` rejects them.
+#' @param start Optional named list with `class_priors` (named `gg`, `gk`, `kk`)
+#'   and item-named `gamma`. When `NULL`, [fit_item_lca()] supplies a
+#'   deterministic item-level initialization.
+#' @param max_iterations Maximum EM iterations before an error is raised.
+#' @param tolerance Strictly positive finite convergence tolerance for the
+#'   maximum absolute parameter change.
+#' @return An object of class `guess_person_fit` containing shared class
 #'   proportions, item-specific guessing probabilities, person-level posterior
-#'   probabilities, log-likelihood, and convergence information.
+#'   probabilities, log-likelihood, and convergence information. `n_obs` is the
+#'   number of observed item-response pairs.
+#'
+#' @references
+#' Cor, M. K., and Sood, G. (2016). Guessing and Forgetting: A Latent Class
+#' Model for Measuring Learning. *Political Analysis*, 24(2), 226--242.
+#'
+#' Dempster, A. P., Laird, N. M., and Rubin, D. B. (1977). Maximum Likelihood
+#' from Incomplete Data via the EM Algorithm. *Journal of the Royal Statistical
+#' Society: Series B*, 39(1), 1--38.
+#'
 #' @export
 #' @examples
 #' sim <- simulate_lca(n = 500, n_items = 4, seed = 123)
-#' fit <- person_item_lca_fit(sim$pre, sim$post)
+#' fit <- fit_person_lca(sim$pre, sim$post)
 #' fit$class_priors
 #' head(fit$posterior)
-person_item_lca_fit <- function(
+fit_person_lca <- function(
   pre_test,
-  pst_test,
-  na_as = c("dk", "missing"),
+  post_test,
+  ...,
   missing_action = c("omit", "error"),
-  item_fit = NULL,
-  max_iter = 1000L,
-  tol = 1e-8
+  start = NULL,
+  max_iterations = 1000L,
+  tolerance = sqrt(.Machine$double.eps)
 ) {
-  validate_dataframe(pre_test, "pre_test")
-  validate_dataframe(pst_test, "pst_test")
-  validate_compatible_dataframes(pre_test, pst_test)
-  if (anyDuplicated(names(pre_test))) {
-    stop("Item names must be unique.")
+  if (length(list(...)) > 0L) {
+    stop("`...` must be empty.", call. = FALSE)
   }
-  assert_int(max_iter, lower = 1L)
-  assert_numeric(tol, lower = 0, len = 1L)
+  assert_data_frame(pre_test, min.rows = 1L, min.cols = 1L, .var.name = "pre_test")
+  assert_data_frame(
+    post_test,
+    nrows = nrow(pre_test),
+    min.cols = 1L,
+    .var.name = "post_test"
+  )
+  respondent_ids <- rownames(pre_test)
+  item_names <- validate_paired_item_names(pre_test, post_test)
+  post_test <- post_test[item_names]
+  assert_int(max_iterations, lower = 1L, .var.name = "max_iterations")
+  assert_numeric(
+    tolerance,
+    lower = 0,
+    finite = TRUE,
+    any.missing = FALSE,
+    len = 1L,
+    .var.name = "tolerance"
+  )
+  if (tolerance == 0) {
+    stop("tolerance must be strictly positive.", call. = FALSE)
+  }
 
   response_data <- prepare_response_data(
-    pre_test, pst_test, na_as, missing_action
+    pre_test, post_test, na_as = "missing", missing_action = missing_action
   )
   pre_test <- response_data$pre
-  pst_test <- response_data$post
-  if (any(pre_test == "d" | pst_test == "d", na.rm = TRUE)) {
-    stop("person_item_lca_fit() currently supports only the no-DK model.")
+  post_test <- response_data$post
+  if (any(pre_test == "d" | post_test == "d", na.rm = TRUE)) {
+    stop("fit_person_lca() supports binary responses only.", call. = FALSE)
   }
 
   pre <- matrix(
@@ -167,64 +263,32 @@ person_item_lca_fit <- function(
     dimnames = dimnames(pre_test)
   )
   post <- matrix(
-    as.numeric(as.matrix(pst_test)),
-    nrow = nrow(pst_test),
-    dimnames = dimnames(pst_test)
+    as.numeric(as.matrix(post_test)),
+    nrow = nrow(post_test),
+    dimnames = dimnames(post_test)
   )
   complete <- !is.na(pre) & !is.na(post)
   observed_person <- rowSums(complete) > 0L
   if (!any(observed_person)) {
-    stop("No complete pre/post response pairs are available.")
-  }
-
-  item_fit_supplied <- !is.null(item_fit)
-  if (is.null(item_fit)) {
-    item_fit <- item_lca_fit(
-      pre_test, pst_test,
-      na_as = "missing", missing_action = "omit"
-    )
-  }
-  if (!inherits(item_fit, "guess_fit") || nrow(item_fit$params) != 4L) {
-    stop("item_fit must be a no-DK item_lca_fit() result.")
+    stop("No complete pre/post response pairs are available.", call. = FALSE)
   }
 
   n_ind <- nrow(pre)
   n_items <- ncol(pre)
-  epsilon <- 1e-8
-  class_priors <- rowMeans(
-    item_fit$params[PERSON_CLASS_NAMES, , drop = FALSE]
-  )
-  class_priors <- pmax(class_priors, epsilon)
-  class_priors <- class_priors / sum(class_priors)
-  gamma_matrix <- item_fit$params["gamma", , drop = FALSE]
-  gamma <- as.numeric(gamma_matrix)
-  names(gamma) <- colnames(gamma_matrix)
-  item_names <- names(pre_test)
-  if (!item_fit_supplied) {
-    # multi_transmat() labels items positionally as item1..itemN and discards
-    # the source column names, so the initializer built just above never
-    # matches the data's own names -- which made this function reject its own
-    # default for any data frame not already named itemN. It is built from
-    # these columns in this order, so aligning positionally is exact.
-    if (length(gamma) != length(item_names)) {
-      stop("Internal initializer returned the wrong number of items.")
-    }
-    names(gamma) <- item_names
+  if (is.null(start)) {
+    start <- make_person_lca_start(pre_test, post_test)
   }
-  if (is.null(names(gamma)) || !setequal(names(gamma), item_names)) {
-    stop("item_fit item names must match the response data.")
-  }
-  gamma <- gamma[item_names]
-  gamma <- pmin(pmax(gamma, epsilon), 1 - epsilon)
-  names(gamma) <- item_names
+  start <- validate_person_lca_start(start, item_names)
+  class_priors <- start$class_priors
+  gamma <- start$gamma
 
   converged <- FALSE
-  for (iteration in seq_len(max_iter)) {
+  for (iteration in seq_len(max_iterations)) {
     expected <- person_item_expectation(
       pre, post, complete, class_priors, gamma
     )
     updated <- person_item_maximization(
-      pre, post, complete, expected, gamma, epsilon
+      pre, post, complete, expected, gamma
     )
     change <- max(
       abs(updated$class_priors - class_priors),
@@ -232,10 +296,18 @@ person_item_lca_fit <- function(
     )
     class_priors <- updated$class_priors
     gamma <- updated$gamma
-    if (change < tol) {
+    if (change < tolerance) {
       converged <- TRUE
       break
     }
+  }
+  if (!converged) {
+    stop(
+      "fit_person_lca() did not converge within ", max_iterations,
+      " iterations; last maximum parameter change was ", format(change, digits = 6),
+      ".",
+      call. = FALSE
+    )
   }
 
   expected <- person_item_expectation(
@@ -245,7 +317,7 @@ person_item_lca_fit <- function(
     NA_real_,
     nrow = n_ind,
     ncol = length(PERSON_CLASS_NAMES),
-    dimnames = list(NULL, paste0("P_", PERSON_CLASS_NAMES))
+    dimnames = list(respondent_ids, paste0("P_", PERSON_CLASS_NAMES))
   )
   posterior[expected$observed_person, ] <- expected$posterior
   posterior <- as.data.frame(posterior)

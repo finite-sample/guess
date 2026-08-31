@@ -3,11 +3,20 @@ test_that("no-DK model converges to unique solution from different starting valu
   n <- 1000
 
   data <- simulate_prepost_data(n, c(0.35, 0.30, 0.35), 0.25)
-  trans <- multi_transmat(data$pre, data$post)
+  trans <- count_item_transitions(data$pre, data$post)
 
-  result1 <- lca_cor(trans, nodk_priors = c(0.3, 0.3, 0.3, 0.25))
-  result2 <- lca_cor(trans, nodk_priors = c(0.5, 0.2, 0.2, 0.30))
-  result3 <- lca_cor(trans, nodk_priors = c(0.2, 0.4, 0.3, 0.20))
+  result1 <- fit_item_lca_counts(
+    trans,
+    start = c(gg = 0.3, gk = 0.3, kk = 0.4, gamma = 0.25)
+  )
+  result2 <- fit_item_lca_counts(
+    trans,
+    start = c(gg = 0.5, gk = 0.2, kk = 0.3, gamma = 0.30)
+  )
+  result3 <- fit_item_lca_counts(
+    trans,
+    start = c(gg = 0.2, gk = 0.4, kk = 0.4, gamma = 0.20)
+  )
 
   expect_equal(result1$params[, 1], result2$params[, 1], tolerance = 0.05)
   expect_equal(result1$params[, 1], result3$params[, 1], tolerance = 0.05)
@@ -26,8 +35,8 @@ test_that("model estimates are within valid parameter space", {
     data$pre$item1 <- pmax(0, pmin(1, data$pre$item1))
     data$post$item1 <- pmax(0, pmin(1, data$post$item1))
 
-    trans <- multi_transmat(data$pre, data$post)
-    result <- lca_cor(trans)
+    trans <- count_item_transitions(data$pre, data$post)
+    result <- fit_item_lca_counts(trans)
 
     params <- result$params[, 1]
 
@@ -42,8 +51,8 @@ test_that("lambda parameters sum to 1", {
   for (i in 1:20) {
     n <- 300
     data <- simulate_prepost_data(n, c(0.4, 0.3, 0.3), 0.25)
-    trans <- multi_transmat(data$pre, data$post)
-    result <- lca_cor(trans)
+    trans <- count_item_transitions(data$pre, data$post)
+    result <- fit_item_lca_counts(trans)
 
     lambda_sum <- sum(result$params[c("gg", "gk", "kk"), 1])
 
@@ -66,21 +75,16 @@ test_that("DK model GOF test has reasonable Type I error rate", {
   for (sim in seq_len(n_sims)) {
     data <- simulate_dk_prepost_data(n)
 
-    trans <- multi_transmat(data$pre, data$post, force9 = TRUE)
+    trans <- count_item_transitions(data$pre, data$post)
 
     tryCatch(
       {
-        result <- lca_cor(trans)
+        result <- fit_item_lca_counts(trans)
 
-        fit_result <- fit_model(
-          data$pre, data$post,
-          result$params["gamma", ],
-          result$params[c("gg", "gk", "gd", "kk", "dg", "dk", "dd"), ],
-          force9 = TRUE
-        )
+        fit_result <- assess_item_lca_fit(result, data$pre, data$post)
 
         converged_count <- converged_count + 1
-        if (any(fit_result["p-value", ] < alpha, na.rm = TRUE)) {
+        if (any(fit_result$statistics$p_value < alpha, na.rm = TRUE)) {
           rejection_count <- rejection_count + 1
         }
       },
@@ -123,8 +127,8 @@ test_that("model recovers extreme parameter values", {
   for (true_lambdas in extreme_cases) {
     n <- 1000
     data <- simulate_prepost_data(n, true_lambdas, 0.25)
-    trans <- multi_transmat(data$pre, data$post)
-    result <- lca_cor(trans)
+    trans <- count_item_transitions(data$pre, data$post)
+    result <- fit_item_lca_counts(trans)
 
     estimates <- result$params[c("gg", "gk", "kk"), 1]
 
@@ -148,8 +152,8 @@ test_that("gamma estimate is reasonable across different true values", {
   for (true_gamma in gamma_values) {
     n <- 800
     data <- simulate_prepost_data(n, c(0.4, 0.3, 0.3), true_gamma)
-    trans <- multi_transmat(data$pre, data$post)
-    result <- lca_cor(trans)
+    trans <- count_item_transitions(data$pre, data$post)
+    result <- fit_item_lca_counts(trans)
 
     estimated_gamma <- result$params["gamma", 1]
 
@@ -183,8 +187,8 @@ test_that("multi-item estimation produces consistent results", {
   names(pre_df) <- paste0("item", 1:n_items)
   names(post_df) <- paste0("item", 1:n_items)
 
-  trans <- multi_transmat(pre_df, post_df)
-  result <- lca_cor(trans)
+  trans <- count_item_transitions(pre_df, post_df)
+  result <- fit_item_lca_counts(trans)
 
   gammas <- result$params["gamma", ]
 

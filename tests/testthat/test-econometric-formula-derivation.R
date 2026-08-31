@@ -55,7 +55,9 @@ test_that("stnd_cor function matches manual formula application", {
   pre_test <- data.frame(item1 = observed)
   pst_test <- data.frame(item1 = observed)
 
-  result <- stnd_cor(pre_test, pst_test, lucky = lucky)
+  result <- stnd_cor(
+    pre_test, pst_test, guessing_probability = lucky
+  )
 
   correct <- sum(observed == 1)
   incorrect <- sum(observed == 0)
@@ -88,7 +90,7 @@ test_that("correction handles edge case of no incorrect answers", {
   pre_test <- data.frame(item1 = rep(1, 10))
   pst_test <- data.frame(item1 = rep(1, 10))
 
-  result <- stnd_cor(pre_test, pst_test, lucky = 0.25)
+  result <- stnd_cor(pre_test, pst_test, guessing_probability = 0.25)
 
   expect_equal(as.numeric(result$pre[1]), 1.0)
   expect_equal(as.numeric(result$pst[1]), 1.0)
@@ -98,7 +100,7 @@ test_that("correction handles balanced correct/incorrect", {
   pre_test <- data.frame(item1 = c(rep(1, 50), rep(0, 50)))
   pst_test <- data.frame(item1 = c(rep(1, 50), rep(0, 50)))
 
-  result <- stnd_cor(pre_test, pst_test, lucky = 0.25)
+  result <- stnd_cor(pre_test, pst_test, guessing_probability = 0.25)
 
   expected <- (50 - 50 / (1 / 0.25 - 1)) / 100
 

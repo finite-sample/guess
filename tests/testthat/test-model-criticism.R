@@ -71,171 +71,9 @@ test_that("response_to_cell maps correctly for dk", {
   expect_equal(response_to_cell("d", "d", TRUE), 9)
 })
 
-test_that("perplexity_items returns positive value for fitted model", {
-  transmat <- matrix(
-    c(
-      10, 5, 2, 8,
-      12, 3, 4, 6
-    ),
-    nrow = 2, byrow = TRUE
-  )
-  colnames(transmat) <- c("x00", "x01", "x10", "x11")
-  rownames(transmat) <- c("item1", "item2")
-
-  result <- lca_cor(transmat)
-  ppl <- perplexity_items(result, transmat)
-
-  expect_true(is.numeric(ppl))
-  expect_true(ppl > 0)
-  expect_true(is.finite(ppl))
-})
-
-test_that("perplexity_items works with item-specific calculation", {
-  transmat <- matrix(
-    c(
-      10, 5, 2, 8,
-      12, 3, 4, 6
-    ),
-    nrow = 2, byrow = TRUE
-  )
-  colnames(transmat) <- c("x00", "x01", "x10", "x11")
-  rownames(transmat) <- c("item1", "item2")
-
-  result <- lca_cor(transmat)
-
-  ppl1 <- perplexity_items(result, transmat, item = 1)
-  ppl2 <- perplexity_items(result, transmat, item = 2)
-
-  expect_true(is.numeric(ppl1))
-  expect_true(is.numeric(ppl2))
-  expect_true(ppl1 > 0)
-  expect_true(ppl2 > 0)
-})
-
-test_that("perplexity_items accepts raw parameter vector", {
-  params <- c(0.4, 0.3, 0.3, 0.25)
-  transmat <- matrix(c(10, 5, 2, 8), nrow = 1)
-  colnames(transmat) <- c("x00", "x01", "x10", "x11")
-
-  ppl <- perplexity_items(params, transmat)
-
-  expect_true(is.numeric(ppl))
-  expect_true(ppl > 0)
-})
-
-test_that("cv_items runs and returns expected structure", {
-  set.seed(42)
-  transmat <- matrix(
-    c(
-      15, 8, 4, 13,
-      12, 6, 3, 9,
-      18, 5, 2, 15,
-      10, 7, 5, 8,
-      14, 4, 3, 19
-    ),
-    nrow = 5, byrow = TRUE
-  )
-  colnames(transmat) <- c("x00", "x01", "x10", "x11")
-  rownames(transmat) <- paste0("item", 1:5)
-
-  cv_result <- cv_items(transmat, k = 5, seed = 123)
-
-  expect_true(is.list(cv_result))
-  expect_true("fold_results" %in% names(cv_result))
-  expect_true("mean_ll" %in% names(cv_result))
-  expect_true("total_ll" %in% names(cv_result))
-  expect_true("perplexity" %in% names(cv_result))
-  expect_true("se" %in% names(cv_result))
-
-  expect_equal(nrow(cv_result$fold_results), 5)
-  expect_true(cv_result$perplexity > 0)
-})
-
-test_that("cv_items errors when k > n_items", {
-  transmat <- matrix(c(10, 5, 2, 8), nrow = 1)
-  colnames(transmat) <- c("x00", "x01", "x10", "x11")
-
-  expect_error(cv_items(transmat, k = 5), "must be >= k")
-})
-
-test_that("cv_items works with dk model", {
-  set.seed(42)
-  transmat <- matrix(
-    c(
-      5, 3, 1, 2, 6, 1, 2, 1, 2,
-      4, 2, 2, 3, 5, 0, 1, 2, 1,
-      6, 1, 1, 1, 7, 2, 1, 1, 3,
-      3, 4, 0, 2, 4, 1, 2, 2, 2,
-      5, 2, 1, 3, 6, 1, 1, 1, 2
-    ),
-    nrow = 5, byrow = TRUE
-  )
-  colnames(transmat) <- c(
-    "x00", "x01", "x0d", "x10", "x11", "x1d",
-    "xd0", "xd1", "xdd"
-  )
-  rownames(transmat) <- paste0("item", 1:5)
-
-  cv_result <- cv_items(transmat, k = 5, seed = 456)
-
-  expect_true(is.list(cv_result))
-  expect_true(cv_result$perplexity > 0)
-})
-
-test_that("lower perplexity for true model vs misspecified", {
-  set.seed(123)
-  true_lambdas <- c(0.4, 0.3, 0.3)
-  true_gamma <- 0.25
-
-  probs <- numeric(4)
-  probs[1] <- (1 - true_gamma)^2 * true_lambdas[1]
-  probs[2] <- (1 - true_gamma) * true_gamma * true_lambdas[1] +
-    (1 - true_gamma) * true_lambdas[2]
-  probs[3] <- (1 - true_gamma) * true_gamma * true_lambdas[1]
-  probs[4] <- true_gamma^2 * true_lambdas[1] +
-    true_gamma * true_lambdas[2] + true_lambdas[3]
-
-  n <- 100
-  transmat <- matrix(nrow = 5, ncol = 4)
-  for (i in 1:5) {
-    transmat[i, ] <- as.vector(rmultinom(1, n, probs))
-  }
-  colnames(transmat) <- c("x00", "x01", "x10", "x11")
-  rownames(transmat) <- paste0("item", 1:5)
-
-  true_params <- c(true_lambdas, true_gamma)
-  misspec_params <- c(0.1, 0.1, 0.8, 0.5)
-
-  ppl_true <- perplexity_items(true_params, transmat)
-  ppl_misspec <- perplexity_items(misspec_params, transmat)
-
-  expect_true(ppl_true < ppl_misspec)
-})
-
-test_that("cv_items is reproducible with seed", {
-  transmat <- matrix(
-    c(
-      15, 8, 4, 13,
-      12, 6, 3, 9,
-      18, 5, 2, 15,
-      10, 7, 5, 8,
-      14, 4, 3, 19
-    ),
-    nrow = 5, byrow = TRUE
-  )
-  colnames(transmat) <- c("x00", "x01", "x10", "x11")
-  rownames(transmat) <- paste0("item", 1:5)
-
-  cv1 <- cv_items(transmat, k = 5, seed = 999)
-  cv2 <- cv_items(transmat, k = 5, seed = 999)
-
-  expect_equal(cv1$mean_ll, cv2$mean_ll)
-  expect_equal(cv1$perplexity, cv2$perplexity)
-})
-
 # Individual-level tests
 
-test_that("item_lca_fit is equivalent to multi_transmat + lca_cor", {
+test_that("fit_item_lca agrees with explicit transition counts", {
   pre_test <- data.frame(
     item1 = c(1, 0, 0, 1, 0, 1, 0, 1),
     item2 = c(1, 0, 1, 1, 0, 0, 1, 0)
@@ -245,15 +83,15 @@ test_that("item_lca_fit is equivalent to multi_transmat + lca_cor", {
     item2 = c(1, 1, 1, 1, 0, 1, 1, 1)
   )
 
-  fit1 <- item_lca_fit(pre_test, pst_test)
-  transmat <- multi_transmat(pre_test, pst_test)
-  fit2 <- lca_cor(transmat)
+  fit1 <- fit_item_lca(pre_test, pst_test)
+  transmat <- count_item_transitions(pre_test, pst_test)
+  fit2 <- fit_item_lca_counts(transmat)
 
   expect_equal(fit1$params, fit2$params)
   expect_equal(fit1$learning, fit2$learning)
 })
 
-test_that("perplexity_individuals returns positive value", {
+test_that("score_individual_lca returns a positive aggregate perplexity", {
   pre_test <- data.frame(
     item1 = c(1, 0, 0, 1, 0, 1, 0, 1, 0, 0),
     item2 = c(1, 0, 1, 1, 0, 0, 1, 0, 1, 0)
@@ -263,15 +101,15 @@ test_that("perplexity_individuals returns positive value", {
     item2 = c(1, 1, 1, 1, 0, 1, 1, 1, 1, 0)
   )
 
-  fit <- item_lca_fit(pre_test, pst_test)
-  ppl <- perplexity_individuals(fit, pre_test, pst_test)
+  fit <- fit_item_lca(pre_test, pst_test)
+  score <- score_individual_lca(fit, pre_test, pst_test)
 
-  expect_true(is.numeric(ppl))
-  expect_true(ppl > 0)
-  expect_true(is.finite(ppl))
+  expect_true(is.numeric(score$perplexity))
+  expect_true(score$perplexity > 0)
+  expect_true(is.finite(score$perplexity))
 })
 
-test_that("perplexity_individuals per_individual returns vector", {
+test_that("score_individual_lca returns one score per individual", {
   pre_test <- data.frame(
     item1 = c(1, 0, 0, 1, 0),
     item2 = c(1, 0, 1, 1, 0)
@@ -281,14 +119,14 @@ test_that("perplexity_individuals per_individual returns vector", {
     item2 = c(1, 1, 1, 1, 0)
   )
 
-  fit <- item_lca_fit(pre_test, pst_test)
-  ppl_vec <- perplexity_individuals(fit, pre_test, pst_test, per_individual = TRUE)
+  fit <- fit_item_lca(pre_test, pst_test)
+  score <- score_individual_lca(fit, pre_test, pst_test)
 
-  expect_length(ppl_vec, 5)
-  expect_true(all(ppl_vec > 0))
+  expect_equal(nrow(score$individual_scores), 5)
+  expect_true(all(score$individual_scores$perplexity > 0))
 })
 
-test_that("cv_individuals runs and returns expected structure", {
+test_that("cv_individual_lca runs and returns expected structure", {
   set.seed(42)
   pre_test <- data.frame(
     item1 = rbinom(20, 1, 0.4),
@@ -301,26 +139,26 @@ test_that("cv_individuals runs and returns expected structure", {
     item3 = pmin(1, pre_test$item3 + rbinom(20, 1, 0.3))
   )
 
-  cv_result <- cv_individuals(pre_test, pst_test, k = 5, seed = 123)
+  cv_result <- cv_individual_lca(pre_test, pst_test, k = 5, seed = 123)
 
   expect_true(is.list(cv_result))
   expect_true("fold_results" %in% names(cv_result))
   expect_true("mean_ll" %in% names(cv_result))
   expect_true("perplexity" %in% names(cv_result))
-  expect_true("se" %in% names(cv_result))
+  expect_true("fold_id" %in% names(cv_result))
 
   expect_equal(nrow(cv_result$fold_results), 5)
   expect_true(cv_result$perplexity > 0)
 })
 
-test_that("cv_individuals errors when k > n_individuals", {
+test_that("cv_individual_lca errors when k > n_individuals", {
   pre_test <- data.frame(item1 = c(1, 0))
   pst_test <- data.frame(item1 = c(1, 1))
 
-  expect_error(cv_individuals(pre_test, pst_test, k = 5), "must be >= k")
+  expect_error(cv_individual_lca(pre_test, pst_test, k = 5), "must be >= k")
 })
 
-test_that("cv_individuals is reproducible with seed", {
+test_that("cv_individual_lca is reproducible with seed", {
   set.seed(42)
   pre_test <- data.frame(
     item1 = rbinom(15, 1, 0.4),
@@ -331,8 +169,8 @@ test_that("cv_individuals is reproducible with seed", {
     item2 = pmin(1, pre_test$item2 + rbinom(15, 1, 0.3))
   )
 
-  cv1 <- cv_individuals(pre_test, pst_test, k = 5, seed = 999)
-  cv2 <- cv_individuals(pre_test, pst_test, k = 5, seed = 999)
+  cv1 <- cv_individual_lca(pre_test, pst_test, k = 5, seed = 999)
+  cv2 <- cv_individual_lca(pre_test, pst_test, k = 5, seed = 999)
 
   expect_equal(cv1$mean_ll, cv2$mean_ll)
   expect_equal(cv1$perplexity, cv2$perplexity)

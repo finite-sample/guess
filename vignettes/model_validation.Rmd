@@ -43,7 +43,7 @@ compare_learning_recovery <- function(n, n_items, gg = 0.35, gk = 0.30,
 
     tryCatch(
       {
-        fit <- person_item_lca_fit(sim_data$pre, sim_data$post)
+        fit <- fit_person_lca(sim_data$pre, sim_data$post)
         p_learned_lca <- posterior_learned(fit)
         p_learned_cs <- cross_sectional_learning_score(sim_data$pre, sim_data$post)
 
@@ -126,10 +126,10 @@ cat(sprintf("\nMean naive learning: %.3f\n", mean(naive_learning)))
 
 ### Step 3: Fit the LCA Model
 
-Use `item_lca_fit()` to estimate the latent class proportions:
+Use `fit_item_lca()` to estimate the latent class proportions:
 
 ```{r workflow_fit}
-fit <- item_lca_fit(pre_test, post_test)
+fit <- fit_item_lca(pre_test, post_test)
 print(fit)
 ```
 
@@ -165,15 +165,13 @@ se_results <- lca_se(pre_test, post_test, n_boot = 100)
 Check how well the model fits each item:
 
 ```{r workflow_diagnostics}
-fit_stats <- fit_model(
-  pre_test, post_test,
-  fit$params["gamma", ],
-  fit$params[c("gg", "gk", "kk"), ]
-)
-print(fit_stats)
+fit_stats <- assess_item_lca_fit(fit, pre_test, post_test)
+print(fit_stats$statistics)
 ```
 
-Non-significant p-values (> 0.05) indicate adequate fit.
+For the DK model, a small p-value flags evidence against its remaining
+over-identifying restriction. A large p-value does not establish adequate fit;
+inspect residuals and held-out predictive diagnostics as well.
 
 ### Step 7: Compare Across Groups (Optional)
 
@@ -187,8 +185,8 @@ post_treat <- post_test[group == "treatment", ]
 pre_ctrl <- pre_test[group == "control", ]
 post_ctrl <- post_test[group == "control", ]
 
-fit_treat <- item_lca_fit(pre_treat, post_treat)
-fit_ctrl <- item_lca_fit(pre_ctrl, post_ctrl)
+fit_treat <- fit_item_lca(pre_treat, post_treat)
+fit_ctrl <- fit_item_lca(pre_ctrl, post_ctrl)
 
 cat("Treatment group learning:", round(mean(fit_treat$learning), 3), "\n")
 cat("Control group learning:", round(mean(fit_ctrl$learning), 3), "\n")
@@ -341,7 +339,7 @@ sim <- simulate_lca(
   seed = 123
 )
 
-fit <- item_lca_fit(sim$pre, sim$post)
+fit <- fit_item_lca(sim$pre, sim$post)
 
 estimated <- c(
   gg = mean(fit$params["gg", ]),
@@ -387,7 +385,7 @@ for (sim in seq_len(n_sims)) {
 
   tryCatch(
     {
-      fit <- item_lca_fit(sim_data$pre, sim_data$post)
+      fit <- fit_item_lca(sim_data$pre, sim_data$post)
       estimates[sim, ] <- c(
         mean(fit$params["gg", ]),
         mean(fit$params["gk", ]),
@@ -518,7 +516,7 @@ for (s in seq_along(sample_sizes)) {
 
     tryCatch(
       {
-        fit <- item_lca_fit(sim_data$pre, sim_data$post)
+        fit <- fit_item_lca(sim_data$pre, sim_data$post)
         estimates_n[sim, ] <- c(
           mean(fit$params["gg", ]),
           mean(fit$params["gk", ]),
@@ -582,12 +580,12 @@ sim_dk <- simulate_lca_dk(
   seed = 456
 )
 
-fit_dk <- item_lca_fit(sim_dk$pre, sim_dk$post)
+dk_fit <- fit_item_lca(sim_dk$pre, sim_dk$post)
 
 cat("True learning (gk): 0.15\n")
-cat(sprintf("Estimated gk: %.3f\n", fit_dk$params["gk", 1]))
+cat(sprintf("Estimated gk: %.3f\n", dk_fit$params["gk", 1]))
 cat(sprintf("\nTrue total learning (gk + kd): %.2f\n", 0.15 + 0.10))
-cat(sprintf("Estimated total: %.3f\n", fit_dk$learning[1]))
+cat(sprintf("Estimated total: %.3f\n", dk_fit$learning[1]))
 ```
 
 ## Using validate_recovery()
@@ -632,7 +630,7 @@ sim <- simulate_lca(
   seed = 123, return_classes = TRUE
 )
 
-fit <- person_item_lca_fit(sim$pre, sim$post)
+fit <- fit_person_lca(sim$pre, sim$post)
 
 posteriors <- posterior_class_probs(fit)
 head(posteriors)
@@ -649,7 +647,9 @@ cat(sprintf("LCA correlation with true learning: %.3f\n", cor_with_truth))
 
 ### Comparison with a Cross-Sectional Score
 
-The cross-sectional baseline transforms proportion correct at each timepoint and then computes a bounded difference score. It is not a fitted IRT model:
+The cross-sectional baseline applies a denominator-aware empirical-logit
+transformation to proportion correct at each timepoint and then computes a
+bounded difference score. It is not a fitted IRT model:
 
 ```{r cross_sectional_demo}
 p_learned_cs <- cross_sectional_learning_score(sim$pre, sim$post)
@@ -721,7 +721,7 @@ sim <- simulate_lca(
   n = 500, n_items = 5, gk = 0.30, gamma = 0.25,
   seed = 101, return_classes = TRUE
 )
-fit <- person_item_lca_fit(sim$pre, sim$post)
+fit <- fit_person_lca(sim$pre, sim$post)
 posteriors <- posterior_class_probs(fit)
 
 posteriors$true_class <- sim$true_class

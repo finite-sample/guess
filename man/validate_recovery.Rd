@@ -22,8 +22,8 @@ For DK model: c(gg=, gk=, gd=, kk=, dg=, dk=, dd=, gamma=)}
 \value{
 Data frame with one row per parameter containing columns:
   parameter (name), true_value, mean_estimate, bias (mean estimate minus true),
-  rmse (root mean squared error), and se (Monte Carlo standard deviation of
-  estimates).
+  rmse (root mean squared error), estimate_sd (Monte Carlo standard deviation
+  of estimates), and mcse (Monte Carlo standard error of the mean estimate).
 }
 \description{
 Performs Monte Carlo simulations to assess parameter recovery of the

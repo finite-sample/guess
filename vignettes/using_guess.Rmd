@@ -94,16 +94,16 @@ stnd_cor(pre_test, pst_test, lucky)
 
 #### Transition Matrix
 
-```{r eval = FALSE, transmat}
+```{r eval = FALSE, count-transitions}
 # Without Don't Know
 pre_test_var <- c(1, 0, 0, 1, 0, 1, 0)
 pst_test_var <- c(1, 0, 1, 1, 0, 1, 1)
-print(transmat(pre_test_var, pst_test_var))
+count_transitions(pre_test_var, pst_test_var)
 
 # With Don't Know
 pre_test_var <- c(1, 0, NA, 1, "d", "d", 0, 1, 0)
 pst_test_var <- c(1, 0, 1, "d", 1, 0, 1, 1, "d")
-print(transmat(pre_test_var, pst_test_var))
+count_transitions(pre_test_var, pst_test_var)
 ```
 
 #### Adjusting Using the Latent Class Model
@@ -115,28 +115,30 @@ nitems <- 10 # Number of knowledge questions
 npeople <- 100 # Number of respondents
 
 # Generate simulated pre-test and post-test responses (0=incorrect, 1=correct)
-pre_test <- replicate(nitems, rbinom(npeople, 1, 0.4)) # 40% correct pre-test
-post_test <- replicate(nitems, rbinom(npeople, 1, 0.6)) # 60% correct post-test
+pre_test <- as.data.frame(replicate(nitems, rbinom(npeople, 1, 0.4)))
+post_test <- as.data.frame(replicate(nitems, rbinom(npeople, 1, 0.6)))
+names(pre_test) <- names(post_test) <- paste0("item", seq_len(nitems))
 
-transmatrix <- multi_transmat(pre_test, post_test)
+transmatrix <- count_item_transitions(pre_test, post_test)
 
-res <- lca_cor(transmatrix)
+res <- fit_item_lca_counts(transmatrix)
 
 round(res$params[, 1:4], 3)
 
 round(res$learning[1:4], 3)
 
 # LCA Correction with Don't Know responses
-# Generate data with Don't Know responses (coded as 2)
-pre_test_dk <- replicate(
-  nitems, sample(c(0, 1, 2), npeople, replace = TRUE, prob = c(0.5, 0.35, 0.15))
-)
-post_test_dk <- replicate(
-  nitems, sample(c(0, 1, 2), npeople, replace = TRUE, prob = c(0.4, 0.45, 0.15))
-)
+# Generate data with Don't Know responses (coded as "d")
+pre_test_dk <- as.data.frame(replicate(
+  nitems, sample(c("0", "1", "d"), npeople, replace = TRUE, prob = c(0.5, 0.35, 0.15))
+))
+post_test_dk <- as.data.frame(replicate(
+  nitems, sample(c("0", "1", "d"), npeople, replace = TRUE, prob = c(0.4, 0.45, 0.15))
+))
+names(pre_test_dk) <- names(post_test_dk) <- paste0("item", seq_len(nitems))
 
-transmatrix <- multi_transmat(pre_test_dk, post_test_dk, force9 = TRUE)
-res_dk <- lca_cor(transmatrix)
+transmatrix <- count_item_transitions(pre_test_dk, post_test_dk)
+res_dk <- fit_item_lca_counts(transmatrix)
 
 round(res_dk$params[, 1:4], 3)
 
@@ -154,27 +156,33 @@ pre_test_var <- data.frame(
 pst_test_var <- data.frame(pst = c(1, 0, NA, 1, "d", 1, 0, 1, 1, "d", 1, 1, 1, 0, 1, 1, 0, 1, 1, 0))
 grp <- c(rep(1, 10), rep(0, 10))
 
-group_adj(pre_test_var, pst_test_var, gamma = 0, dk = 0)$learn
-group_adj(pre_test_var, pst_test_var, gamma = .25, dk = 0)$learn
-stnd_cor(pre_test_var, pst_test_var, lucky = .25)$learn
+group_adj(
+  pre_test_var, pst_test_var,
+  guessing_probability = 0, knowledge_given_dont_know = 0
+)$mean_learning
+group_adj(
+  pre_test_var, pst_test_var,
+  guessing_probability = .25, knowledge_given_dont_know = 0
+)$mean_learning
+stnd_cor(pre_test_var, pst_test_var, guessing_probability = .25)$learn
 
 grp0_raw <- group_adj(
   subset(pre_test_var, grp == 0), subset(pst_test_var, grp == 0),
-  gamma = 0, dk = 0
-)$learn
+  guessing_probability = 0, knowledge_given_dont_know = 0
+)$mean_learning
 grp1_raw <- group_adj(
   subset(pre_test_var, grp == 1), subset(pst_test_var, grp == 1),
-  gamma = 0, dk = 0
-)$learn
+  guessing_probability = 0, knowledge_given_dont_know = 0
+)$mean_learning
 
 grp0_adj <- group_adj(
   subset(pre_test_var, grp == 0), subset(pst_test_var, grp == 0),
-  gamma = .25, dk = 0
-)$learn
+  guessing_probability = .25, knowledge_given_dont_know = 0
+)$mean_learning
 grp1_adj <- group_adj(
   subset(pre_test_var, grp == 1), subset(pst_test_var, grp == 1),
-  gamma = .25, dk = 0
-)$learn
+  guessing_probability = .25, knowledge_given_dont_know = 0
+)$mean_learning
 
 grp0_raw - grp1_raw
 grp0_adj - grp1_adj
@@ -203,18 +211,13 @@ sapply(lca_dk_stnd_err, function(x) round(head(x, 1), 3))
 #### Fit
 
 ```{r eval = FALSE, fit_lca}
-fit <- fit_nodk(pre_test, post_test, res$params["gamma", ], res$params[c("gg", "gk", "kk"), ])
+fit <- assess_item_lca_fit(res, pre_test, post_test)
 
-print(fit[, 1:4])
+print(fit$statistics)
 
-fit <- fit_dk(
-  pre_test_dk, post_test_dk,
-  res_dk$params["gamma", ],
-  res_dk$params[c("gg", "gk", "gd", "kk", "dg", "dk", "dd"), ],
-  force9 = TRUE
-)
+fit <- assess_item_lca_fit(res_dk, pre_test_dk, post_test_dk)
 
-print(fit[, 1:4])
+print(fit$statistics)
 ```
 
 #### Model Criticism: Perplexity and Cross-Validation
@@ -243,78 +246,44 @@ post_test <- as.data.frame(replicate(
 names(pre_test) <- names(post_test) <- paste0("item", 1:nitems)
 
 # Fit model using convenience wrapper
-fit <- item_lca_fit(pre_test, post_test)
+fit <- fit_item_lca(pre_test, post_test)
 
 # Or equivalently:
-# transmatrix <- multi_transmat(pre_test, post_test) # nolint
-# fit <- lca_cor(transmatrix) # nolint
+# transmatrix <- count_item_transitions(pre_test, post_test) # nolint
+# fit <- fit_item_lca_counts(transmatrix) # nolint
 ```
 
-##### Perplexity from aggregated data (items)
+##### Scores from aggregated item data
 
-```{r eval = FALSE, perplexity_items}
-transmatrix <- multi_transmat(pre_test, post_test)
+```{r eval = FALSE, score_item_lca}
+transmatrix <- count_item_transitions(pre_test, post_test)
+score <- score_item_lca(fit, transmatrix)
 
-# Overall perplexity
-perplexity_items(fit, transmatrix)
-
-# Per-item perplexity
-sapply(1:nitems, function(i) perplexity_items(fit, transmatrix, item = i))
+score$perplexity
+score$item_scores
 ```
 
-##### Perplexity from individual data
+##### Scoring individual data
 
-```{r eval = FALSE, perplexity_individuals}
-# Overall perplexity (averaged across individuals)
-perplexity_individuals(fit, pre_test, post_test)
+```{r eval = FALSE, score_individual_lca}
+individual_score <- score_individual_lca(fit, pre_test, post_test)
 
-# Per-individual perplexity (identify poorly-fit respondents)
-ind_ppl <- perplexity_individuals(fit, pre_test, post_test, per_individual = TRUE)
-hist(ind_ppl, main = "Distribution of Individual Perplexity")
-```
-
-##### Cross-validation over items
-
-Useful when you have many items and want to assess generalization to new items.
-
-```{r eval = FALSE, cv_items}
-transmatrix <- multi_transmat(pre_test, post_test)
-cv_result <- cv_items(transmatrix, k = 5, seed = 123)
-
-cv_result$perplexity # Held-out perplexity
-cv_result$se # Standard error across folds
-cv_result$fold_results # Per-fold details
+individual_score$perplexity
+hist(
+  individual_score$individual_scores$perplexity,
+  main = "Distribution of Individual Perplexity"
+)
 ```
 
 ##### Cross-validation over individuals
 
 Useful when you want to assess generalization to new respondents.
 
-```{r eval = FALSE, cv_individuals}
-cv_result <- cv_individuals(pre_test, post_test, k = 5, seed = 123)
+```{r eval = FALSE, cv_individual_lca}
+cv_result <- cv_individual_lca(pre_test, post_test, k = 5, seed = 123)
 
 cv_result$perplexity # Held-out perplexity
-cv_result$se # Standard error across folds
 cv_result$fold_results # Per-fold details
-```
-
-##### Model comparison
-
-Use perplexity to compare different model specifications or parameter settings.
-
-```{r eval = FALSE, model_comparison}
-# True parameters (if known from simulation)
-true_params <- c(0.4, 0.3, 0.3, 0.25)
-
-# Misspecified parameters
-bad_params <- c(0.1, 0.1, 0.8, 0.5)
-
-transmatrix <- multi_transmat(pre_test, post_test)
-
-# Compare: lower perplexity = better fit
-perplexity_items(true_params, transmatrix)
-perplexity_items(bad_params, transmatrix)
-perplexity_items(fit, transmatrix) # Fitted model should be close to true
 ```
 
 #### Simulation and Parameter Recovery Validation
@@ -336,7 +305,7 @@ sim <- simulate_lca(
 )
 
 # Fit model and check recovery
-fit <- item_lca_fit(sim$pre, sim$post)
+fit <- fit_item_lca(sim$pre, sim$post)
 fit$params["gk", ] # Should be close to 0.30 (true learning rate)
 ```
 
@@ -354,8 +323,8 @@ sim_dk <- simulate_lca_dk(
 )
 
 # Fit DK model
-fit_dk <- item_lca_fit(sim_dk$pre, sim_dk$post)
-fit_dk$params["gk", ] # Should be close to 0.15
+dk_fit <- fit_item_lca(sim_dk$pre, sim_dk$post)
+dk_fit$params["gk", ] # Should be close to 0.15
 ```
 
 ##### Comprehensive parameter recovery validation

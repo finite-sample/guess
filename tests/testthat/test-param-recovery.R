@@ -18,7 +18,7 @@ test_that("no-DK model recovers true parameters", {
       gg = true_gg, gk = true_gk,
       kk = true_kk, gamma = true_gamma
     )
-    fit <- item_lca_fit(data$pre, data$post)
+    fit <- fit_item_lca(data$pre, data$post)
     estimates[sim, ] <- fit$params[, 1]
   }
 
@@ -43,7 +43,7 @@ test_that("DK model recovers learning parameter", {
 
   for (sim in seq_len(n_sims)) {
     data <- simulate_lca_dk(n_obs, gk = true_gk)
-    fit <- item_lca_fit(data$pre, data$post)
+    fit <- fit_item_lca(data$pre, data$post)
     estimates[sim] <- fit$params["gk", 1]
   }
 
@@ -64,7 +64,7 @@ test_that("learning estimate improves with sample size", {
 
     for (sim in seq_len(n_sims)) {
       data <- simulate_lca(n, gg = 0.4, gk = true_gk, kk = 0.35, gamma = 0.25)
-      fit <- item_lca_fit(data$pre, data$post)
+      fit <- fit_item_lca(data$pre, data$post)
       estimates[sim] <- fit$params["gk", 1]
     }
 
@@ -83,7 +83,7 @@ test_that("parameter recovery works across different gamma values", {
       n = 300, gg = 0.4, gk = 0.3, kk = 0.3,
       gamma = true_gamma
     )
-    fit <- item_lca_fit(data$pre, data$post)
+    fit <- fit_item_lca(data$pre, data$post)
 
     est_gamma <- fit$params["gamma", 1]
     expect_lt(abs(est_gamma - true_gamma), 0.20)
@@ -100,7 +100,7 @@ test_that("multi-item estimation produces consistent results", {
     n_items = n_items, gg = 0.35, gk = true_gk,
     kk = 0.35, gamma = 0.25
   )
-  fit <- item_lca_fit(data$pre, data$post)
+  fit <- fit_item_lca(data$pre, data$post)
 
   learning_estimates <- fit$params["gk", ]
   expect_equal(length(learning_estimates), n_items)
@@ -123,7 +123,7 @@ test_that("extreme parameter values are recoverable", {
       n = 500, gg = params["gg"], gk = params["gk"],
       kk = params["kk"], gamma = 0.25
     )
-    fit <- item_lca_fit(data$pre, data$post)
+    fit <- fit_item_lca(data$pre, data$post)
 
     estimates <- fit$params[c("gg", "gk", "kk"), 1]
     correlation <- cor(estimates, unname(params))

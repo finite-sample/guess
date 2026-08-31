@@ -47,13 +47,13 @@ test_that("Large-scale simulation data validation (based on data-raw/fakeNoDK.R)
   colnames(post_test) <- paste0("item", 1:nitems)
 
   # Test 1: Multi-item transition matrix
-  trans_matrix <- multi_transmat(pre_test, post_test)
+  trans_matrix <- count_item_transitions(pre_test, post_test)
   expect_equal(nrow(trans_matrix), nitems)
   expect_equal(ncol(trans_matrix), 4)
   expect_true(all(rowSums(trans_matrix) > 0)) # No empty items
 
   # Test 2: LCA correction
-  lca_results <- lca_cor(trans_matrix)
+  lca_results <- fit_item_lca_counts(trans_matrix)
   expect_true(is.list(lca_results))
   expect_true("params" %in% names(lca_results))
   expect_true("learning" %in% names(lca_results))
@@ -62,27 +62,25 @@ test_that("Large-scale simulation data validation (based on data-raw/fakeNoDK.R)
   expect_equal(length(lca_results$learning), nitems)
 
   # Test 3: Standard correction
-  std_results <- stnd_cor(pre_test, post_test, lucky = gamma)
+  std_results <- stnd_cor(
+    pre_test, post_test, guessing_probability = gamma
+  )
   expect_true(is.list(std_results))
   expect_true(all(c("pre", "pst", "learn") %in% names(std_results)))
   expect_equal(length(std_results$learn), nitems)
   expect_true(all(std_results$learn >= -1 & std_results$learn <= 1))
 
   # Test 4: Unified fit function
-  fit_results <- fit_model(
-    pre_test, post_test,
-    lca_results$params["gamma", ],
-    lca_results$params[c("gg", "gk", "kk"), ]
-  )
-  expect_true(is.matrix(fit_results) || is.data.frame(fit_results))
-  expect_true(ncol(fit_results) >= nitems)
+  fit_results <- assess_item_lca_fit(lca_results, pre_test, post_test)
+  expect_s3_class(fit_results, "guess_gof")
+  expect_equal(nrow(fit_results$statistics), nitems)
 
   # Test 5: Group adjustment with proper gamma values
   # group_adj doesn't take groups parameter - it adjusts based on gamma per item
   group_results <- group_adj(pre_test, post_test, gamma)
   expect_true(is.list(group_results))
-  expect_true(all(c("indiv", "learn") %in% names(group_results)))
-  expect_equal(length(group_results$learn), nitems)
+  expect_true(all(c("adjusted_responses", "mean_learning") %in% names(group_results)))
+  expect_equal(length(group_results$mean_learning), nitems)
 
   # Test 6: Standard errors (with small bootstrap for speed)
   se_results <- lca_se(pre_test, post_test, 5) # Very small bootstrap
@@ -175,28 +173,24 @@ test_that("Don't Know simulation validation (based on data-raw/fakeDK.R)", {
   colnames(post_df) <- paste0("item", 1:nitems)
 
   # Test DK workflow
-  trans_matrix_dk <- multi_transmat(pre_df, post_df, force9 = TRUE)
+  trans_matrix_dk <- count_item_transitions(pre_df, post_df)
   expect_equal(ncol(trans_matrix_dk), 9) # 3x3 transition matrix
   expect_equal(nrow(trans_matrix_dk), nitems)
 
   # Test LCA with DK
-  lca_results_dk <- lca_cor(trans_matrix_dk)
+  lca_results_dk <- fit_item_lca_counts(trans_matrix_dk)
   expect_equal(nrow(lca_results_dk$params), 8) # 7 lambdas + 1 gamma
   expect_equal(ncol(lca_results_dk$params), nitems)
 
   # Test fit with DK
-  fit_results_dk <- fit_model(pre_df, post_df,
-    lca_results_dk$params["gamma", ],
-    lca_results_dk$params[c("gg", "gk", "gd", "kk", "dg", "dk", "dd"), ],
-    force9 = TRUE
-  )
-  expect_true(is.matrix(fit_results_dk) || is.data.frame(fit_results_dk))
+  fit_results_dk <- assess_item_lca_fit(lca_results_dk, pre_df, post_df)
+  expect_s3_class(fit_results_dk, "guess_gof")
 
   # Validate learning estimates
   expect_true(all(lca_results_dk$learning >= -1 & lca_results_dk$learning <= 1))
 })
 
-test_that("Backward compatibility and edge case validation", {
+test_that("Goodness-of-fit and edge case validation", {
   set.seed(12345)
 
   # Create standard test data
@@ -221,40 +215,33 @@ test_that("Backward compatibility and edge case validation", {
     item6 = sample(c(0, 1), n, replace = TRUE, prob = c(0.5, 0.5))
   )
 
-  trans_matrix <- multi_transmat(pre_test, post_test)
-  lca_results <- lca_cor(trans_matrix)
+  trans_matrix <- count_item_transitions(pre_test, post_test)
+  lca_results <- fit_item_lca_counts(trans_matrix)
 
-  # Test backward compatibility - fit_nodk and fit_model should work
-  fit_nodk_result <- fit_nodk(
-    pre_test, post_test,
-    lca_results$params["gamma", ],
-    lca_results$params[c("gg", "gk", "kk"), ]
-  )
-
-  fit_model_result <- fit_model(
-    pre_test, post_test,
-    lca_results$params["gamma", ],
-    lca_results$params[c("gg", "gk", "kk"), ]
-  )
-
-  expect_equal(dim(fit_nodk_result), dim(fit_model_result))
-  # The no-DK model is saturated, so both return NA. expect_equal compares them
-  # as-is; subtracting would give NA and assert nothing.
-  expect_equal(fit_nodk_result, fit_model_result)
+  assessment <- assess_item_lca_fit(lca_results, pre_test, post_test)
+  expect_s3_class(assessment, "guess_gof")
+  expect_true(all(is.na(assessment$statistics$p_value)))
 
   # Test edge case - all correct responses
   all_correct_pre <- data.frame(item1 = rep(1, n), item2 = rep(1, n))
   all_correct_post <- data.frame(item1 = rep(1, n), item2 = rep(1, n))
 
   expect_no_error({
-    edge_trans <- multi_transmat(all_correct_pre, all_correct_post)
+    edge_trans <- count_item_transitions(all_correct_pre, all_correct_post)
     # LCA might have issues with degenerate data but shouldn't crash
   })
 
   # Test validation functions
-  expect_error(multi_transmat(data.frame(), post_test), "Must have at least 1 rows")
   expect_error(
-    stnd_cor(pre_test, post_test, lucky = c(-0.1, rep(0.25, nitems - 1))),
+    count_item_transitions(data.frame(), post_test),
+    "Must have at least 1 rows"
+  )
+  expect_error(
+    stnd_cor(
+      pre_test,
+      post_test,
+      guessing_probability = c(-0.1, rep(0.25, nitems - 1))
+    ),
     "Element 1 is not"
   )
 })
@@ -284,9 +271,11 @@ test_that("Performance and stress testing", {
   # Time the operations (should complete reasonably fast)
   start_time <- Sys.time()
 
-  trans_matrix <- multi_transmat(large_pre, large_post)
-  lca_results <- lca_cor(trans_matrix)
-  std_results <- stnd_cor(large_pre, large_post, lucky = rep(0.25, nitems))
+  trans_matrix <- count_item_transitions(large_pre, large_post)
+  lca_results <- fit_item_lca_counts(trans_matrix)
+  std_results <- stnd_cor(
+    large_pre, large_post, guessing_probability = rep(0.25, nitems)
+  )
 
   end_time <- Sys.time()
   elapsed <- as.numeric(difftime(end_time, start_time, units = "secs"))

@@ -2,46 +2,41 @@
 # Internal matrix manipulation utilities
 # @keywords internal
 
-#' Count transitions between pre and post test responses
+#' Tabulate transitions between pre-test and post-test responses
 #' @param pre_responses character vector of pre-test responses
-#' @param pst_responses character vector of post-test responses
+#' @param post_responses character vector of post-test responses
+#' @param include_dk whether to include the five don't-know transition cells
 #' @return named vector of transition counts
 #' @keywords internal
-count_transitions <- function(pre_responses, pst_responses) {
-  # Create paired responses
-  pre_pst <- paste0(pre_responses, pst_responses)
+tabulate_transition_pairs <- function(
+  pre_responses,
+  post_responses,
+  include_dk = FALSE
+) {
+  pairs <- paste0(pre_responses, post_responses)
+  cell_names <- c("x00", "x01", "x0d", "x10", "x11", "x1d", "xd0", "xd1", "xdd")
+  pair_names <- substring(cell_names, 2L)
+  counts <- vapply(pair_names, function(x) sum(pairs == x), integer(1L))
+  names(counts) <- cell_names
 
-  # Count all possible transitions
-  x00 <- sum(pre_pst == "00")
-  x01 <- sum(pre_pst == "01")
-  x0d <- sum(pre_pst == "0d")
-  x10 <- sum(pre_pst == "10")
-  x11 <- sum(pre_pst == "11")
-  x1d <- sum(pre_pst == "1d")
-  xd0 <- sum(pre_pst == "d0")
-  xd1 <- sum(pre_pst == "d1")
-  xdd <- sum(pre_pst == "dd")
-
-  # Return appropriate vector based on whether DK responses exist
-  has_dk <- (x0d + x1d + xd0 + xd1 + xdd) > 0
-
-  if (has_dk) {
-    result <- c(x00, x01, x0d, x10, x11, x1d, xd0, xd1, xdd)
-    names(result) <- c("x00", "x01", "x0d", "x10", "x11", "x1d", "xd0", "xd1", "xdd")
+  if (include_dk) {
+    counts
   } else {
-    result <- c(x00, x01, x10, x11)
-    names(result) <- c("x00", "x01", "x10", "x11")
+    counts[c("x00", "x01", "x10", "x11")]
   }
-
-  result
 }
 
 #' Format transition matrix result with appropriate row and column names
 #' @param transition_list list of transition vectors
-#' @param n_items number of items
-#' @param add_aggregate whether to add aggregate row
+#' @param item_names item names in output row order
+#' @param include_aggregate whether to add an aggregate row
 #' @return formatted matrix
-format_transition_matrix <- function(transition_list, n_items, add_aggregate = FALSE) {
+format_transition_matrix <- function(
+  transition_list,
+  item_names,
+  include_aggregate = FALSE
+) {
+  n_items <- length(item_names)
   transition_lengths <- lengths(transition_list)
   if (!all(transition_lengths %in% c(4L, 9L))) {
     stop("Transition vectors must contain either 4 or 9 cells.")
@@ -69,17 +64,17 @@ format_transition_matrix <- function(transition_list, n_items, add_aggregate = F
     nrow = n_items,
     byrow = TRUE,
     dimnames = list(
-      paste0("item", 1:n_items),
+      item_names,
       names(transition_list[[1]])
     )
   )
 
-  # Add aggregate row if requested
-  if (add_aggregate) {
-    result_matrix <- rbind(result_matrix, colSums(result_matrix, na.rm = TRUE))
-    rownames(result_matrix)[nrow(result_matrix)] <- "agg"
+  if (include_aggregate) {
+    aggregate_counts <- as.integer(colSums(result_matrix))
+    result_matrix <- rbind(result_matrix, aggregate = aggregate_counts)
   }
 
+  storage.mode(result_matrix) <- "integer"
   result_matrix
 }
 

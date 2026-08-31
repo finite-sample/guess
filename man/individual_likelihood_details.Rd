@@ -2,40 +2,32 @@
 % Please edit documentation in R/model-criticism.R
 \name{individual_likelihood_details}
 \alias{individual_likelihood_details}
-\alias{individual_log_likelihood}
-\title{Calculate per-individual log-likelihood}
+\title{Calculate per-individual log-likelihood details}
 \usage{
 individual_likelihood_details(
-  lca_result,
+  fit,
   pre_test,
-  pst_test,
-  na_as = c("dk", "missing"),
-  missing_action = c("omit", "error")
-)
-
-individual_log_likelihood(
-  lca_result,
-  pre_test,
-  pst_test,
+  post_test,
   na_as = c("dk", "missing"),
   missing_action = c("omit", "error")
 )
 }
 \arguments{
-\item{lca_result}{output from lca_cor() or item_lca_fit()}
+\item{fit}{A `guess_fit` object returned by [fit_item_lca_counts()] or
+[fit_item_lca()].}
 
 \item{pre_test}{data.frame of pre-test responses}
 
-\item{pst_test}{data.frame of post-test responses}
+\item{post_test}{data.frame of post-test responses}
 
 \item{na_as}{classification of NA responses}
 
 \item{missing_action}{structural missingness handling}
 }
 \value{
-numeric vector of log-likelihoods (length = n individuals)
+List with per-individual log likelihoods and observed-pair counts.
 }
 \description{
-Calculate per-individual log-likelihood
+Calculate per-individual log-likelihood details
 }
 \keyword{internal}

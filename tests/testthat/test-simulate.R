@@ -61,17 +61,17 @@ test_that("simulate_lca_dk includes DK responses", {
   expect_true(has_dk_pre || has_dk_post)
 })
 
-test_that("simulated data can be fitted by item_lca_fit", {
+test_that("simulated data can be fitted by fit_item_lca", {
   sim <- simulate_lca(n = 200, gg = 0.4, gk = 0.3, kk = 0.3, gamma = 0.25, seed = 111)
-  fit <- item_lca_fit(sim$pre, sim$post)
+  fit <- fit_item_lca(sim$pre, sim$post)
 
   expect_true(inherits(fit, "guess_fit"))
   expect_true(all(fit$params >= 0 & fit$params <= 1))
 })
 
-test_that("simulated DK data can be fitted by item_lca_fit", {
+test_that("simulated DK data can be fitted by fit_item_lca", {
   sim <- simulate_lca_dk(n = 300, seed = 222)
-  fit <- item_lca_fit(sim$pre, sim$post)
+  fit <- fit_item_lca(sim$pre, sim$post)
 
   expect_true(inherits(fit, "guess_fit"))
   expect_equal(nrow(fit$params), 8)
@@ -87,8 +87,9 @@ test_that("validate_recovery returns expected structure", {
   expect_equal(nrow(results), 4)
   expect_true(all(c(
     "parameter", "true_value", "mean_estimate", "bias",
-    "rmse", "se"
+    "rmse", "estimate_sd", "mcse"
   ) %in% names(results)))
+  expect_false("se" %in% names(results))
   expect_false("coverage_95" %in% names(results))
   expect_equal(results$parameter, c("gg", "gk", "kk", "gamma"))
 })
@@ -130,14 +131,57 @@ test_that("validate_recovery bias is reasonable with adequate sample", {
     n = 500, n_sims = 50, seed = 555
   )
 
-  # `validate_recovery()` reports `se` as the standard *deviation* of the
-  # estimates across replicates (R/model-criticism.R:846), so the standard error
-  # of the mean is se / sqrt(n_sims). The old gate was a flat 0.10 that no
-  # replicate count could tighten.
   row <- results$parameter == "gk"
   expect_bias_within_mc_error(
-    results$bias[row], results$se[row],
+    results$bias[row], results$estimate_sd[row],
     reps = 50, label = "validate_recovery gk"
+  )
+  expect_equal(results$mcse[row], results$estimate_sd[row] / sqrt(50))
+})
+
+test_that("validate_recovery requires a named feasible generating model", {
+  valid <- c(gg = 0.35, gk = 0.30, kk = 0.35, gamma = 0.25)
+
+  expect_error(
+    validate_recovery(unname(valid), n = 100, n_sims = 2),
+    "named"
+  )
+  invalid_names <- valid
+  names(invalid_names)[1] <- "wrong"
+  expect_error(
+    validate_recovery(invalid_names, n = 100, n_sims = 2),
+    "named vector"
+  )
+  invalid_weights <- valid
+  invalid_weights["gg"] <- 0.40
+  expect_error(
+    validate_recovery(invalid_weights, n = 100, n_sims = 2),
+    "sum to 1"
+  )
+  invalid_gamma <- valid
+  invalid_gamma["gamma"] <- 1.1
+  expect_error(
+    validate_recovery(invalid_gamma, n = 100, n_sims = 2),
+    "gamma"
+  )
+})
+
+test_that("validate_recovery preserves caller RNG state", {
+  parameters <- c(gg = 0.35, gk = 0.30, kk = 0.35, gamma = 0.25)
+  set.seed(917)
+  before <- get(".Random.seed", envir = .GlobalEnv)
+  validate_recovery(parameters, n = 100, n_sims = 2, seed = 918)
+  after <- get(".Random.seed", envir = .GlobalEnv)
+
+  expect_identical(before, after)
+})
+
+test_that("validate_recovery surfaces a failed replicate", {
+  degenerate <- c(gg = 0, gk = 0, kk = 1, gamma = 0)
+
+  expect_error(
+    validate_recovery(degenerate, n = 10, n_items = 1, n_sims = 1, seed = 1),
+    "Simulation 1 failed: Optimization did not converge"
   )
 })
 
@@ -214,7 +258,7 @@ test_that("simulate_lca_dk rejects wrong-length difficulty", {
 
 test_that("simulated data with vector gamma can be fitted", {
   sim <- simulate_lca(n = 300, n_items = 3, gamma = c(0.2, 0.25, 0.3), seed = 111)
-  fit <- item_lca_fit(sim$pre, sim$post)
+  fit <- fit_item_lca(sim$pre, sim$post)
 
   expect_true(inherits(fit, "guess_fit"))
   expect_true(all(fit$params >= 0 & fit$params <= 1))
@@ -222,7 +266,7 @@ test_that("simulated data with vector gamma can be fitted", {
 
 test_that("simulated data with difficulty can be fitted", {
   sim <- simulate_lca(n = 300, n_items = 3, difficulty = c(1, 0, -1), seed = 222)
-  fit <- item_lca_fit(sim$pre, sim$post)
+  fit <- fit_item_lca(sim$pre, sim$post)
 
   expect_true(inherits(fit, "guess_fit"))
 })

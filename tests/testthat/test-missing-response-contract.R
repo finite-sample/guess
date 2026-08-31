@@ -4,8 +4,8 @@ test_that("NA defaults to the same observed category as d and DK", {
   pre_dk <- c("1", "d", "0", "1")
   post_dk <- c("1", "1", "DK", "D")
 
-  from_na <- transmat(pre_na, post_na)
-  from_dk <- transmat(pre_dk, post_dk)
+  from_na <- count_transitions(pre_na, post_na)
+  from_dk <- count_transitions(pre_dk, post_dk)
 
   expect_equal(from_na, from_dk)
   expect_length(from_na, 9L)
@@ -19,7 +19,7 @@ test_that("structural missingness omits only incomplete pairs", {
   pre <- c(1, NA, 0, "d")
   post <- c(1, 1, NA, 1)
 
-  result <- transmat(pre, post, na_as = "missing")
+  result <- count_transitions(pre, post, na_as = "missing")
 
   expect_length(result, 9L)
   expect_equal(sum(result), 2)
@@ -29,14 +29,14 @@ test_that("structural missingness omits only incomplete pairs", {
 
 test_that("structural missingness can be rejected", {
   expect_error(
-    transmat(
+    count_transitions(
       c(1, NA), c(1, 0),
       na_as = "missing", missing_action = "error"
     ),
     "Structural missing"
   )
   expect_error(
-    multi_transmat(
+    count_item_transitions(
       data.frame(i = c(1, NA)),
       data.frame(i = c(1, 0)),
       na_as = "missing", missing_action = "error"
@@ -47,14 +47,14 @@ test_that("structural missingness can be rejected", {
 
 test_that("invalid response codes are rejected centrally", {
   expect_error(
-    transmat(c(1, "skipped"), c(1, 0)),
+    count_transitions(c(1, "skipped"), c(1, 0)),
     "Responses must be coded"
   )
   expect_error(
     stnd_cor(
       data.frame(i = c(1, "skipped")),
       data.frame(i = c(1, 0)),
-      lucky = 0.25
+      guessing_probability = 0.25
     ),
     "Responses must be coded"
   )
@@ -74,12 +74,12 @@ test_that("mixed DK and binary items share a valid nine-cell schema", {
     dk = c("1", "1", "1", "d")
   )
 
-  result <- multi_transmat(pre, post)
+  result <- count_item_transitions(pre, post)
 
   expect_equal(dim(result), c(2L, 9L))
-  expect_equal(rowSums(result), c(item1 = 4, item2 = 4))
+  expect_equal(rowSums(result), c(binary = 4, dk = 4))
   expect_equal(
-    unname(result["item1", c("x0d", "x1d", "xd0", "xd1", "xdd")]),
+    unname(result["binary", c("x0d", "x1d", "xd0", "xd1", "xdd")]),
     rep(0, 5)
   )
 })
@@ -91,13 +91,13 @@ test_that("stnd_cor uses the declared response interpretation", {
   post_dk <- data.frame(i = c("1", "1", "1", "d"))
 
   expect_equal(
-    stnd_cor(pre_na, post_na, lucky = 0.25),
-    stnd_cor(pre_dk, post_dk, lucky = 0.25)
+    stnd_cor(pre_na, post_na, guessing_probability = 0.25),
+    stnd_cor(pre_dk, post_dk, guessing_probability = 0.25)
   )
 
   omitted <- stnd_cor(
     pre_na, post_na,
-    lucky = 0.25, na_as = "missing"
+    guessing_probability = 0.25, na_as = "missing"
   )
   expect_equal(omitted$pre, c(i = (2 - 1 / 3) / 3))
   expect_equal(omitted$pst, c(i = 1))
@@ -111,20 +111,20 @@ test_that("group adjustment preserves DK and structural missingness", {
   post_dk <- data.frame(i = c("1", "1", "1", "d", "0"))
 
   expect_equal(
-    group_adj(pre_na, post_na, gamma = 0.25),
-    group_adj(pre_dk, post_dk, gamma = 0.25)
+    group_adj(pre_na, post_na, guessing_probability = 0.25),
+    group_adj(pre_dk, post_dk, guessing_probability = 0.25)
   )
 
   omitted <- group_adj(
     pre_na, post_na,
-    gamma = 0.25, na_as = "missing"
+    guessing_probability = 0.25, na_as = "missing"
   )
-  expect_true(is.na(omitted$indiv$pre_adj[3, 1]))
-  expect_true(is.na(omitted$indiv$pst_adj[4, 1]))
+  expect_true(is.na(omitted$adjusted_responses$pre_test[3, 1]))
+  expect_true(is.na(omitted$adjusted_responses$post_test[4, 1]))
   expect_equal(
-    omitted$learn,
+    omitted$mean_learning,
     colMeans(
-      omitted$indiv$pst_adj - omitted$indiv$pre_adj,
+      omitted$adjusted_responses$post_test - omitted$adjusted_responses$pre_test,
       na.rm = TRUE
     )
   )
@@ -134,6 +134,17 @@ test_that("individual perplexity uses the observed pair denominator", {
   params <- c(gg = 0.4, gk = 0.3, kk = 0.3, gamma = 0.25)
   pre <- data.frame(i1 = c(0, 1), i2 = c(NA, 0))
   post <- data.frame(i1 = c(0, 1), i2 = c(1, 1))
+  fit <- structure(
+    list(
+      params = matrix(
+        rep(params, 2L),
+        ncol = 2L,
+        dimnames = list(names(params), names(pre))
+      ),
+      model_type = "nodk"
+    ),
+    class = "guess_fit"
+  )
   probs <- cell_probs(params)
 
   expected_individual <- c(
@@ -142,18 +153,17 @@ test_that("individual perplexity uses the observed pair denominator", {
   )
 
   expect_equal(
-    perplexity_individuals(
-      params, pre, post,
-      per_individual = TRUE, na_as = "missing"
-    ),
+    score_individual_lca(
+      fit, pre, post, na_as = "missing"
+    )$individual_scores$perplexity,
     expected_individual
   )
   expect_equal(
-    perplexity_individuals(params, pre, post, na_as = "missing"),
+    score_individual_lca(fit, pre, post, na_as = "missing")$perplexity,
     exp(-(log(probs[1]) + log(probs[4]) + log(probs[2])) / 3)
   )
   expect_error(
-    perplexity_individuals(params, pre, post),
+    score_individual_lca(fit, pre, post),
     "require a DK model"
   )
 })
@@ -178,8 +188,9 @@ test_that("raw-response wrappers forward missingness arguments", {
       params = matrix(
         c(0.4, 0.3, 0.3, 0.25),
         ncol = 1,
-        dimnames = list(c("gg", "gk", "kk", "gamma"), "item1")
-      )
+        dimnames = list(c("gg", "gk", "kk", "gamma"), "i")
+      ),
+      model_type = "nodk"
     ),
     class = "guess_fit"
   )
@@ -204,7 +215,7 @@ test_that("raw-response wrappers forward missingness arguments", {
       )
     },
     function() {
-      item_lca_fit(
+      fit_item_lca(
         pre, post,
         na_as = "missing", missing_action = "error"
       )
@@ -217,22 +228,21 @@ test_that("raw-response wrappers forward missingness arguments", {
       )
     },
     function() {
-      fit_model(
-        pre, post,
-        g = 0.25, est_param = c(0.4, 0.3, 0.3),
-        na_as = "missing", missing_action = "error"
-      )
-    },
-    function() {
-      perplexity_individuals(
+      assess_item_lca_fit(
         fit, pre, post,
         na_as = "missing", missing_action = "error"
       )
     },
     function() {
-      person_item_lca_fit(
-        pre, post,
+      score_individual_lca(
+        fit, pre, post,
         na_as = "missing", missing_action = "error"
+      )
+    },
+    function() {
+      fit_person_lca(
+        pre, post,
+        missing_action = "error"
       )
     },
     function() {
@@ -254,7 +264,7 @@ test_that("raw-response wrappers forward missingness arguments", {
       )
     },
     function() {
-      cv_individuals(
+      cv_individual_lca(
         pre, post,
         k = 2,
         na_as = "missing", missing_action = "error"
@@ -289,10 +299,10 @@ test_that("NA-coded DK data recover DK learning", {
   post_na[post_na == "d"] <- NA
 
   expect_equal(
-    multi_transmat(pre_na, post_na),
-    multi_transmat(sim$pre, sim$post)
+    count_item_transitions(pre_na, post_na),
+    count_item_transitions(sim$pre, sim$post)
   )
 
-  fit <- suppressWarnings(item_lca_fit(pre_na, post_na))
+  fit <- suppressWarnings(fit_item_lca(pre_na, post_na))
   expect_equal(unname(fit$learning[1]), 0.25, tolerance = 0.04)
 })

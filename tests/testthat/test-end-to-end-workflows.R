@@ -7,8 +7,8 @@ test_that("public item and person workflows recover no-DK simulations", {
     gamma = gamma, seed = 951, return_classes = TRUE
   )
 
-  item_fit <- item_lca_fit(sim$pre, sim$post)
-  person_fit <- person_item_lca_fit(sim$pre, sim$post, item_fit = item_fit)
+  item_fit <- fit_item_lca(sim$pre, sim$post)
+  person_fit <- fit_person_lca(sim$pre, sim$post)
   posterior <- posterior_class_probs(person_fit)
 
   expect_s3_class(item_fit, "guess_fit")
@@ -18,7 +18,11 @@ test_that("public item and person workflows recover no-DK simulations", {
   expect_true(person_fit$converged)
   expect_equal(person_fit$class_priors, truth, tolerance = 0.04)
   expect_equal(person_fit$gamma, gamma, tolerance = 0.04)
-  expect_equal(rowSums(posterior), rep(1, nrow(sim$pre)), tolerance = 1e-10)
+  expect_equal(
+    unname(rowSums(posterior)),
+    rep(1, nrow(sim$pre)),
+    tolerance = 1e-10
+  )
   expect_equal(posterior_learned(person_fit), posterior$P_gk)
   expect_gt(cor(posterior$P_gk, as.numeric(sim$learned)), 0.8)
 })
@@ -35,10 +39,10 @@ test_that("public DK workflow preserves explicit and NA-coded DK responses", {
   pre_na[pre_na == "d"] <- NA
   post_na[post_na == "d"] <- NA
 
-  explicit_transitions <- multi_transmat(sim$pre, sim$post)
-  na_transitions <- multi_transmat(pre_na, post_na)
-  explicit_fit <- item_lca_fit(sim$pre, sim$post)
-  na_fit <- item_lca_fit(pre_na, post_na)
+  explicit_transitions <- count_item_transitions(sim$pre, sim$post)
+  na_transitions <- count_item_transitions(pre_na, post_na)
+  explicit_fit <- fit_item_lca(sim$pre, sim$post)
+  na_fit <- fit_item_lca(pre_na, post_na)
 
   expect_equal(na_transitions, explicit_transitions)
   expect_equal(na_fit$params, explicit_fit$params, tolerance = 1e-8)
@@ -48,14 +52,9 @@ test_that("public DK workflow preserves explicit and NA-coded DK responses", {
     stats::setNames(rep(2200, 3), names(sim$pre))
   )
 
-  fit_stats <- fit_model(
-    pre_na, post_na,
-    g = na_fit$params["gamma", ],
-    est_param = na_fit$params[-nrow(na_fit$params), ],
-    force9 = TRUE
-  )
-  expect_equal(dim(fit_stats), c(2L, 3L))
-  expect_true(all(is.finite(fit_stats)))
+  fit_stats <- assess_item_lca_fit(na_fit, pre_na, post_na)
+  expect_equal(dim(fit_stats$statistics), c(3L, 4L))
+  expect_true(all(is.finite(as.matrix(fit_stats$statistics))))
 })
 
 test_that("public structural-missingness workflow omits only incomplete pairs", {
@@ -66,15 +65,15 @@ test_that("public structural-missingness workflow omits only incomplete pairs", 
   post[101:300, 2] <- NA
   complete <- !is.na(as.matrix(pre)) & !is.na(as.matrix(post))
 
-  transitions <- multi_transmat(pre, post, na_as = "missing")
-  item_fit <- item_lca_fit(pre, post, na_as = "missing")
-  person_fit <- person_item_lca_fit(pre, post, na_as = "missing")
+  transitions <- count_item_transitions(pre, post, na_as = "missing")
+  item_fit <- fit_item_lca(pre, post, na_as = "missing")
+  person_fit <- fit_person_lca(pre, post)
 
   expect_equal(rowSums(transitions), colSums(complete))
   expect_equal(item_fit$n_obs, sum(complete))
   expect_equal(person_fit$n_obs, sum(complete))
   expect_error(
-    item_lca_fit(
+    fit_item_lca(
       pre, post,
       na_as = "missing", missing_action = "error"
     ),
@@ -82,19 +81,8 @@ test_that("public structural-missingness workflow omits only incomplete pairs", 
   )
 })
 
-test_that("public difficulty and score workflows satisfy their definitions", {
-  difficulty <- c(item1 = 1, item2 = 0, item3 = -1)
-  sim <- simulate_lca(
-    n = 1800, n_items = 3,
-    difficulty = difficulty, base_rate = 0.25, seed = 954
-  )
-  transitions <- multi_transmat(sim$pre, sim$post)
-  difficulty_fit <- lca_difficulty(transitions, base_rate = 0.25)
-
-  expected_gamma <- 0.25 + 0.75 * plogis(-difficulty_fit$params["difficulty", ])
-  expect_s3_class(difficulty_fit, "guess_difficulty_fit")
-  expect_equal(difficulty_fit$gamma, expected_gamma, tolerance = 1e-8)
-
+test_that("public score workflows satisfy their definitions", {
+  sim <- simulate_lca(n = 1800, n_items = 3, seed = 954)
   pre_score <- estimate_logit_score(sim$pre)
   post_score <- estimate_logit_score(sim$post)
   learning <- cross_sectional_learning(sim$pre, sim$post)

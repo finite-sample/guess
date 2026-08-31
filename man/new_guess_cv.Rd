@@ -12,6 +12,7 @@ new_guess_cv(
   se,
   cv_type,
   k,
+  fold_id = NULL,
   call = NULL
 )
 }
@@ -24,11 +25,13 @@ new_guess_cv(
 
 \item{perplexity}{perplexity}
 
-\item{se}{standard error of perplexity across folds}
+\item{se}{standard error of perplexity across folds, if available}
 
-\item{cv_type}{"items" or "individuals"}
+\item{cv_type}{cross-validation unit}
 
 \item{k}{number of folds}
+
+\item{fold_id}{integer vector mapping each input row to its held-out fold}
 
 \item{call}{original function call}
 }

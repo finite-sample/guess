@@ -4,10 +4,10 @@
 \alias{posterior_class_probs}
 \title{Compute posterior class probabilities}
 \usage{
-posterior_class_probs(object)
+posterior_class_probs(fit)
 }
 \arguments{
-\item{object}{output from person_item_lca_fit()}
+\item{fit}{output from fit_person_lca()}
 }
 \value{
 data.frame with columns P_gg, P_gk, P_kk (rows = individuals)
@@ -18,7 +18,7 @@ fitted person/item model.
 }
 \examples{
 sim <- simulate_lca(n = 100, gk = 0.30, seed = 123, return_classes = TRUE)
-fit <- person_item_lca_fit(sim$pre, sim$post)
+fit <- fit_person_lca(sim$pre, sim$post)
 posteriors <- posterior_class_probs(fit)
 head(posteriors)
 }

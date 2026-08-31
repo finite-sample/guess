@@ -14,11 +14,10 @@ before interpreting its output.
 
 | Function | Estimand | Main assumption |
 |---|---|---|
-| `item_lca_fit()` | Proportion who learned each item | Each item has its own latent transition distribution |
-| `person_item_lca_fit()` | Shared person-level trajectory and posterior probability of learning | A person has one `gg`, `gk`, or `kk` trajectory across all items |
-| `lca_difficulty()` | Item-wise LCA with guessing expressed through a difficulty link | This is a reparameterized LCA, not an IRT model |
+| `fit_item_lca()` | Proportion who learned each item | Each item has its own latent transition distribution |
+| `fit_person_lca()` | Shared person-level trajectory and posterior probability of learning | A person has one `gg`, `gk`, or `kk` trajectory across all items |
 | `stnd_cor()` | Corrected pre, post, and gain scores | The guessing probability is supplied by the user |
-| `group_adj()` | Guessing-adjusted group estimates | Guessing probabilities are supplied by group and item |
+| `group_adj()` | Guessing-adjusted group estimates | Guessing probabilities are supplied for each item |
 
 `estimate_logit_score()`, `cross_sectional_learning()`, and
 `cross_sectional_learning_score()` are descriptive score baselines. They do
@@ -53,9 +52,9 @@ pre/post pairs are then omitted by default. Set `missing_action = "error"` to
 reject them instead.
 
 ```r
-fit <- item_lca_fit(pre_test, post_test, na_as = "missing")
+fit <- fit_item_lca(pre_test, post_test, na_as = "missing")
 
-fit <- item_lca_fit(
+fit <- fit_item_lca(
   pre_test,
   post_test,
   na_as = "missing",
@@ -68,7 +67,7 @@ setting. Structural missingness is not treated as a latent response class.
 
 ## Item-Level Learning
 
-`item_lca_fit()` is the direct entry point for the model in Cor and Sood
+`fit_item_lca()` is the direct entry point for the model in Cor and Sood
 (2016). It fits every item separately from its paired response transitions.
 
 ```r
@@ -84,7 +83,7 @@ item_sim <- simulate_lca(
   seed = 123
 )
 
-item_fit <- item_lca_fit(item_sim$pre, item_sim$post)
+item_fit <- fit_item_lca(item_sim$pre, item_sim$post)
 item_fit$learning
 item_fit$params
 ```
@@ -98,17 +97,17 @@ For binary responses, the parameter rows are:
 | `kk` | Know at both waves |
 | `gamma` | Probability of a correct response while guessing |
 
-`multi_transmat()` and `lca_cor()` expose the same workflow in two steps when
-you already work with transition counts.
+`count_item_transitions()` and `fit_item_lca_counts()` expose the same workflow
+in two steps when you already work with transition counts.
 
 ```r
-transitions <- multi_transmat(item_sim$pre, item_sim$post)
-count_fit <- lca_cor(transitions)
+transitions <- count_item_transitions(item_sim$pre, item_sim$post)
+count_fit <- fit_item_lca_counts(transitions)
 ```
 
 ## Person-Level Learning
 
-`person_item_lca_fit()` jointly uses all repeated items. It estimates shared
+`fit_person_lca()` jointly uses all repeated items. It estimates shared
 class proportions, item-specific guessing rates, and one posterior trajectory
 for each person.
 
@@ -124,7 +123,7 @@ person_sim <- simulate_lca(
   return_classes = TRUE
 )
 
-person_fit <- person_item_lca_fit(person_sim$pre, person_sim$post)
+person_fit <- fit_person_lca(person_sim$pre, person_sim$post)
 person_fit$class_priors
 person_fit$gamma
 
@@ -134,7 +133,7 @@ p_learned <- posterior_learned(person_fit)
 
 This model is useful only when one common trajectory across items is
 substantively defensible. It does not allow the same person to know one item,
-learn another, and remain ignorant on a third. Use `item_lca_fit()` when the
+learn another, and remain ignorant on a third. Use `fit_item_lca()` when the
 item-specific learning proportions are the target.
 
 The person model currently supports binary responses but not the explicit DK
@@ -162,7 +161,7 @@ dk_sim <- simulate_lca_dk(
   seed = 789
 )
 
-dk_fit <- item_lca_fit(dk_sim$pre, dk_sim$post)
+dk_fit <- fit_item_lca(dk_sim$pre, dk_sim$post)
 dk_fit$learning
 dk_fit$params
 ```
@@ -190,26 +189,19 @@ content can be forgotten.
 
 The binary item model is saturated, so it has no residual degrees of freedom
 for a goodness-of-fit test. The DK model has one over-identifying restriction,
-and `fit_model()` reports its Pearson test.
+and `assess_item_lca_fit()` reports its Pearson diagnostic.
 
 ```r
-fit_stats <- fit_model(
-  dk_sim$pre,
-  dk_sim$post,
-  g = dk_fit$params["gamma", ],
-  est_param = dk_fit$params[-nrow(dk_fit$params), ],
-  force9 = TRUE
-)
+fit_stats <- assess_item_lca_fit(dk_fit, dk_sim$pre, dk_sim$post)
 ```
 
 Use held-out likelihood and perplexity to compare predictive performance.
 
 ```r
-transitions <- multi_transmat(item_sim$pre, item_sim$post)
-perplexity_items(item_fit, transitions)
-perplexity_individuals(item_fit, item_sim$pre, item_sim$post)
-cv_items(transitions, k = 4, seed = 321)
-cv_individuals(item_sim$pre, item_sim$post, k = 5, seed = 321)
+transitions <- count_item_transitions(item_sim$pre, item_sim$post)
+score_item_lca(item_fit, transitions)$perplexity
+score_individual_lca(item_fit, item_sim$pre, item_sim$post)$perplexity
+cv_individual_lca(item_sim$pre, item_sim$post, k = 5, seed = 321)
 ```
 
 Validate recovery under sample sizes, item counts, class proportions, and
@@ -228,12 +220,7 @@ recovery
 
 ## Longitudinal IRT
 
-The package does not yet fit a longitudinal IRT model. The planned model will
-estimate a population ability gain directly, constrain latent mastery to be
-nondecreasing over the study interval, and retain item-specific guessing. It
-will be exported separately only after simulation establishes identification,
-parameter recovery, interval coverage, and agreement with standard
-longitudinal IRT fits in compatible limiting cases.
+This package does not fit a longitudinal IRT model.
 
 ## Documentation
 

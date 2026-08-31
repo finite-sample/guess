@@ -39,13 +39,6 @@ test_that("lca_adj handles NA values", {
   expect_named(result, c("pre", "pst"))
 })
 
-test_that("lca_adj validates basic inputs", {
-  # Test with NULL inputs (should error)
+test_that("lca_adj rejects missing inputs", {
   expect_error(lca_adj(NULL, NULL))
-
-  # Test basic functionality doesn't crash
-  pre_test <- data.frame(item1 = c(1, 0, "d", 1, 0))
-  pst_test <- data.frame(item1 = c(1, "d", 1, 0, 1))
-
-  expect_no_error(result <- lca_adj(pre_test, pst_test))
 })

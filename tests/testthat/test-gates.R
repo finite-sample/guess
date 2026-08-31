@@ -73,10 +73,10 @@ test_that("over-coverage fails when the study is large enough to see it", {
 
 test_that("an unbiased sample passes and a shifted one fails", {
   set.seed(1)
-  centred <- rnorm(400, mean = 2, sd = 0.5)
-  expect_unbiased(centred, 2, "centred")
+  centered <- rnorm(400, mean = 2, sd = 0.5)
+  expect_unbiased(centered, 2, "centered")
 
-  shifted <- centred + 0.5
+  shifted <- centered + 0.5
   expect_gate_fails(expect_unbiased(shifted, 2, "shifted by one sd"))
 })
 

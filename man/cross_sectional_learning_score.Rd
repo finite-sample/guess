@@ -6,7 +6,7 @@
 \usage{
 cross_sectional_learning_score(
   pre_test,
-  pst_test,
+  post_test,
   scale = 1,
   na_as = c("dk", "missing"),
   missing_action = c("omit", "error")
@@ -15,7 +15,7 @@ cross_sectional_learning_score(
 \arguments{
 \item{pre_test}{data.frame of pre-test responses}
 
-\item{pst_test}{data.frame of post-test responses}
+\item{post_test}{data.frame of post-test responses}
 
 \item{scale}{numeric scaling factor for the score difference (default 1)}
 

@@ -31,11 +31,11 @@ gof_rejections <- function(shift, n_sims, n = 500, alpha = 0.05, seed = 20260807
 
   for (sim in seq_len(n_sims)) {
     data <- simulate_dk_prepost_data(n) # nolint: object_usage_linter.
-    trans <- multi_transmat(data$pre, data$post, force9 = TRUE)
+    trans <- count_item_transitions(data$pre, data$post)
 
     tryCatch(
       {
-        result <- lca_cor(trans)
+        result <- fit_item_lca_counts(trans)
         params <- result$params[
           c("gg", "gk", "gd", "kk", "dg", "dk", "dd"), ,
           drop = FALSE
@@ -46,12 +46,15 @@ gof_rejections <- function(shift, n_sims, n = 500, alpha = 0.05, seed = 20260807
         params["gg", ] <- pmax(params["gg", ] - shift, 1e-6)
         params["kk", ] <- params["kk", ] + shift
 
-        fit <- fit_model(
-          data$pre, data$post, result$params["gamma", ], params,
-          force9 = TRUE
+        misspecified_fit <- result
+        misspecified_fit$params[rownames(params), ] <- params
+        assessment <- guess::assess_item_lca_fit(
+          misspecified_fit,
+          data$pre,
+          data$post
         )
         converged <- converged + 1L
-        if (any(fit["p-value", ] < alpha, na.rm = TRUE)) {
+        if (any(assessment$statistics$p_value < alpha, na.rm = TRUE)) {
           rejected <- rejected + 1L
         }
       },

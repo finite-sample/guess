@@ -51,7 +51,7 @@
 #' @examples
 #' # Simulate data with 30% learning
 #' sim <- simulate_lca(n = 500, gg = 0.35, gk = 0.30, kk = 0.35, gamma = 0.25, seed = 123)
-#' fit <- item_lca_fit(sim$pre, sim$post)
+#' fit <- fit_item_lca(sim$pre, sim$post)
 #' fit$params["gk", ] # Should be close to 0.30
 #'
 #' # Multi-item simulation
@@ -200,7 +200,7 @@ simulate_lca <- function(n, n_items = 1, gg = 0.35, gk = 0.30, kk = 0.35,
 #' @examples
 #' # Simulate DK data
 #' sim <- simulate_lca_dk(n = 5000, gk = 0.15, seed = 123)
-#' fit <- item_lca_fit(sim$pre, sim$post)
+#' fit <- fit_item_lca(sim$pre, sim$post)
 #' fit$params["gk", ] # Should be close to 0.15
 #'
 #' # Item-specific gamma (vector)

@@ -6,10 +6,9 @@
 \usage{
 lca_se(
   pre_test = NULL,
-  pst_test = NULL,
+  post_test = NULL,
   n_resamples = 100,
-  seed = 31415,
-  force9 = FALSE,
+  seed = NULL,
   na_as = c("dk", "missing"),
   missing_action = c("omit", "error")
 )
@@ -17,14 +16,12 @@ lca_se(
 \arguments{
 \item{pre_test}{data.frame carrying pre_test items}
 
-\item{pst_test}{data.frame carrying pst_test items}
+\item{post_test}{data.frame carrying post-test items}
 
 \item{n_resamples}{number of resamples, default is 100}
 
-\item{seed}{random seed, default is 31415}
-
-\item{force9}{Optional. Force 9-column format even if no DK responses.
-Default is FALSE.}
+\item{seed}{Optional integer seed. When `NULL`, resampling uses the current
+random-number-generator state.}
 
 \item{na_as}{Classification of NA responses: `"dk"` (the default) treats
 them as observed don't know responses; `"missing"` treats them as
@@ -35,20 +32,20 @@ excludes incomplete pairs and `"error"` rejects them.}
 }
 \value{
 list with:
-  \item{se_params}{standard errors of parameters by item}
-  \item{avg_effects}{mean learning estimates}
-  \item{se_effects}{standard error of learning by item}
+  \item{parameter_standard_error}{standard errors of parameters by item}
+  \item{mean_learning}{mean learning estimates}
+  \item{learning_standard_error}{standard error of learning by item}
 }
 \description{
 Bootstrapped Standard Errors
 }
 \examples{
-pre_test <- data.frame(pre_item1 = c(1, 0, 0, 1, 0), pre_item2 = c(1, NA, 0, 1, 0))
-pst_test <- data.frame(
-  pst_item1 = pre_test[, 1] + c(0, 1, 1, 0, 0),
-  pst_item2 = pre_test[, 2] + c(0, 1, 0, 0, 1)
+pre_test <- data.frame(item1 = c(1, 0, 0, 1, 0), item2 = c(1, NA, 0, 1, 0))
+post_test <- data.frame(
+  item1 = pre_test[, 1] + c(0, 1, 1, 0, 0),
+  item2 = pre_test[, 2] + c(0, 1, 0, 0, 1)
 )
 \dontrun{
-lca_se(pre_test, pst_test, n_resamples = 10, seed = 31415)
+lca_se(pre_test, post_test, n_resamples = 10, seed = 123)
 }
 }

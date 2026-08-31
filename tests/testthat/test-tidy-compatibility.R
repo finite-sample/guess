@@ -6,16 +6,16 @@ test_that("tibbles produce the same transitions and fits as data frames", {
   post_tbl <- tibble::as_tibble(sim$post)
 
   expect_equal(
-    multi_transmat(pre_tbl, post_tbl),
-    multi_transmat(sim$pre, sim$post)
+    count_item_transitions(pre_tbl, post_tbl),
+    count_item_transitions(sim$pre, sim$post)
   )
   expect_equal(
-    item_lca_fit(pre_tbl, post_tbl)$params,
-    item_lca_fit(sim$pre, sim$post)$params
+    fit_item_lca(pre_tbl, post_tbl)$params,
+    fit_item_lca(sim$pre, sim$post)$params
   )
   expect_equal(
-    stnd_cor(pre_tbl, post_tbl, lucky = rep(0.25, 2)),
-    stnd_cor(sim$pre, sim$post, lucky = rep(0.25, 2))
+    stnd_cor(pre_tbl, post_tbl, guessing_probability = rep(0.25, 2)),
+    stnd_cor(sim$pre, sim$post, guessing_probability = rep(0.25, 2))
   )
 })
 
@@ -40,7 +40,7 @@ test_that("dplyr-selected tibbles work in a native pipe workflow", {
     dplyr::rename_with(function(x) sub("^post_", "", x))
 
   fit <- pre |>
-    item_lca_fit(pst_test = post)
+    fit_item_lca(post_test = post)
 
   expect_s3_class(pre, "tbl_df")
   expect_s3_class(fit, "guess_fit")
@@ -54,10 +54,10 @@ test_that("tibbles preserve the missing-response contract", {
   pre <- tibble::tibble(i1 = c(1, NA, 0), i2 = c("d", "1", "0"))
   post <- tibble::tibble(i1 = c(1, 1, 0), i2 = c("1", "1", "0"))
 
-  default <- multi_transmat(pre, post)
-  omitted <- multi_transmat(pre, post, na_as = "missing")
+  default <- count_item_transitions(pre, post)
+  omitted <- count_item_transitions(pre, post, na_as = "missing")
 
   expect_equal(ncol(default), 9L)
-  expect_equal(rowSums(default), c(item1 = 3, item2 = 3))
-  expect_equal(rowSums(omitted), c(item1 = 2, item2 = 3))
+  expect_equal(rowSums(default), c(i1 = 3, i2 = 3))
+  expect_equal(rowSums(omitted), c(i1 = 2, i2 = 3))
 })

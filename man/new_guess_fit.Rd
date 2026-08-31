@@ -4,7 +4,16 @@
 \alias{new_guess_fit}
 \title{S3 Methods for guess Objects}
 \usage{
-new_guess_fit(params, learning, n_items, n_obs, model_type, call = NULL)
+new_guess_fit(
+  params,
+  learning,
+  n_items,
+  n_obs,
+  model_type,
+  diagnostics = NULL,
+  aggregate = NULL,
+  call = NULL
+)
 }
 \arguments{
 \item{params}{parameter matrix (rows = parameters, cols = items)}
@@ -16,6 +25,10 @@ new_guess_fit(params, learning, n_items, n_obs, model_type, call = NULL)
 \item{n_obs}{total observations}
 
 \item{model_type}{"nodk" or "dk"}
+
+\item{diagnostics}{optimizer diagnostics by item}
+
+\item{aggregate}{optional separately fitted aggregate counts}
 
 \item{call}{original function call}
 }

@@ -26,23 +26,23 @@ test_that("validate_compatible_dataframes works correctly", {
   )
 })
 
-test_that("validate_lucky_vector works correctly", {
+test_that("validate_guessing_probability works correctly", {
   # Valid lucky vector
-  expect_true(validate_lucky_vector(c(0.25, 0.33, 0.5), 3))
+  expect_true(validate_guessing_probability(c(0.25, 0.33, 0.5), 3))
 
   # Invalid inputs
-  expect_error(validate_lucky_vector(NULL, 3), "NULL")
-  expect_error(validate_lucky_vector(c(0.25, 0.33), 3), "length")
+  expect_error(validate_guessing_probability(NULL, 3), "NULL")
+  expect_error(validate_guessing_probability(c(0.25, 0.33), 3), "length")
   expect_error(
-    validate_lucky_vector(c(0, 0.25, 0.5), 3),
+    validate_guessing_probability(c(0, 0.25, 0.5), 3),
     "exclusive"
   )
   expect_error(
-    validate_lucky_vector(c(0.25, 1, 0.5), 3),
+    validate_guessing_probability(c(0.25, 1, 0.5), 3),
     "exclusive"
   )
   expect_error(
-    validate_lucky_vector(c(0.25, -0.1, 0.5), 3),
+    validate_guessing_probability(c(0.25, -0.1, 0.5), 3),
     "Element 2 is not"
   )
 })
@@ -97,11 +97,11 @@ test_that("validate_priors works correctly", {
   )
 })
 
-test_that("count_transitions works correctly", {
+test_that("tabulate_transition_pairs works correctly", {
   # Test without DK responses
   pre_simple <- c("1", "0", "0", "1")
   pst_simple <- c("1", "0", "1", "1")
-  result_simple <- count_transitions(pre_simple, pst_simple)
+  result_simple <- tabulate_transition_pairs(pre_simple, pst_simple)
 
   expect_equal(length(result_simple), 4)
   expect_equal(names(result_simple), c("x00", "x01", "x10", "x11"))
@@ -113,7 +113,7 @@ test_that("count_transitions works correctly", {
   # Test with DK responses
   pre_dk <- c("1", "0", "d", "1")
   pst_dk <- c("1", "d", "1", "0")
-  result_dk <- count_transitions(pre_dk, pst_dk)
+  result_dk <- tabulate_transition_pairs(pre_dk, pst_dk, include_dk = TRUE)
 
   expect_equal(length(result_dk), 9)
   expect_equal(names(result_dk), c("x00", "x01", "x0d", "x10", "x11", "x1d", "xd0", "xd1", "xdd"))
@@ -129,20 +129,27 @@ test_that("format_transition_matrix works correctly", {
   transitions2 <- c(x00 = 1, x01 = 2, x10 = 1, x11 = 1)
   transition_list <- list(transitions1, transitions2)
 
-  result <- format_transition_matrix(transition_list, 2, add_aggregate = FALSE)
+  result <- format_transition_matrix(
+    transition_list,
+    c("algebra", "reading")
+  )
 
   expect_equal(nrow(result), 2)
   expect_equal(ncol(result), 4)
-  expect_equal(rownames(result), c("item1", "item2"))
+  expect_equal(rownames(result), c("algebra", "reading"))
   expect_equal(colnames(result), c("x00", "x01", "x10", "x11"))
   expect_equal(result[1, ], transitions1)
   expect_equal(result[2, ], transitions2)
 
   # Test with aggregate
-  result_agg <- format_transition_matrix(transition_list, 2, add_aggregate = TRUE)
+  result_agg <- format_transition_matrix(
+    transition_list,
+    c("algebra", "reading"),
+    include_aggregate = TRUE
+  )
   expect_equal(nrow(result_agg), 3)
-  expect_equal(rownames(result_agg)[3], "agg")
-  expect_equal(result_agg[3, ], colSums(result))
+  expect_equal(rownames(result_agg)[3], "aggregate")
+  expect_equal(unname(result_agg[3, ]), as.integer(colSums(result)))
 })
 
 test_that("calculate_expected_values works correctly for nodk model", {

@@ -28,20 +28,18 @@ test_that("All core functions work together in realistic workflow", {
   # Test complete workflow
   expect_no_error({
     # 1. Create transition matrix
-    trans_matrix <- multi_transmat(pre_test, post_test)
+    trans_matrix <- count_item_transitions(pre_test, post_test)
 
     # 2. Apply LCA correction
-    lca_results <- lca_cor(trans_matrix)
+    lca_results <- fit_item_lca_counts(trans_matrix)
 
     # 3. Apply standard correction
-    std_results <- stnd_cor(pre_test, post_test, lucky = rep(0.25, n_items))
+    std_results <- stnd_cor(
+      pre_test, post_test, guessing_probability = rep(0.25, n_items)
+    )
 
     # 4. Test fit
-    fit_results <- fit_model(
-      pre_test, post_test,
-      lca_results$params["gamma", ],
-      lca_results$params[c("gg", "gk", "kk"), ]
-    )
+    fit_results <- assess_item_lca_fit(lca_results, pre_test, post_test)
 
     # 5. Test group adjustment
     group_results <- group_adj(pre_test, post_test, rep(0.25, n_items))
@@ -54,7 +52,7 @@ test_that("All core functions work together in realistic workflow", {
   expect_true(all(c("params", "learning") %in% names(lca_results)))
   expect_equal(length(std_results$learn), n_items)
   expect_true(is.list(group_results))
-  expect_equal(length(group_results$learn), n_items)
+  expect_equal(length(group_results$mean_learning), n_items)
 
   # Validate learning estimates are reasonable
   expect_true(all(lca_results$learning >= -1 & lca_results$learning <= 1))
@@ -84,23 +82,19 @@ test_that("Functions handle Don't Know responses correctly", {
 
   expect_no_error({
     # Create 9-column transition matrix
-    trans_matrix_dk <- multi_transmat(pre_test_dk, post_test_dk, force9 = TRUE)
+    trans_matrix_dk <- count_item_transitions(pre_test_dk, post_test_dk)
 
     # Apply LCA correction with DK
-    lca_results_dk <- lca_cor(trans_matrix_dk)
+    lca_results_dk <- fit_item_lca_counts(trans_matrix_dk)
 
     # Test fit with DK
-    fit_results_dk <- fit_model(pre_test_dk, post_test_dk,
-      lca_results_dk$params["gamma", ],
-      lca_results_dk$params[c("gg", "gk", "gd", "kk", "dg", "dk", "dd"), ],
-      force9 = TRUE
-    )
+    fit_results_dk <- assess_item_lca_fit(lca_results_dk, pre_test_dk, post_test_dk)
   })
 
   # Validate DK-specific results
   expect_equal(ncol(trans_matrix_dk), 9) # 3x3 transition matrix
   expect_equal(nrow(lca_results_dk$params), 8) # 7 lambdas + 1 gamma
-  expect_true(is.matrix(fit_results_dk) || is.data.frame(fit_results_dk))
+  expect_s3_class(fit_results_dk, "guess_gof")
 })
 
 test_that("Edge cases and error handling work correctly", {
@@ -109,20 +103,20 @@ test_that("Edge cases and error handling work correctly", {
   small_post <- data.frame(item1 = c(1, 1, 0, 1))
 
   expect_no_error({
-    small_trans <- multi_transmat(small_pre, small_post)
-    small_lca <- lca_cor(small_trans)
+    small_trans <- count_item_transitions(small_pre, small_post)
+    small_lca <- fit_item_lca_counts(small_trans)
   })
 
   # Test validation functions work
-  expect_error(multi_transmat(data.frame(), small_post)) # Empty pre-test
-  expect_error(multi_transmat(small_pre, data.frame())) # Empty post-test
+  expect_error(count_item_transitions(data.frame(), small_post))
+  expect_error(count_item_transitions(small_pre, data.frame()))
 
   # Test with all same responses (edge case)
   same_pre <- data.frame(item1 = rep(1, 10))
   same_post <- data.frame(item1 = rep(1, 10))
 
   expect_no_error({
-    same_trans <- multi_transmat(same_pre, same_post)
+    same_trans <- count_item_transitions(same_pre, same_post)
     # LCA may have convergence issues with degenerate data, but shouldn't crash
   })
 })
@@ -140,26 +134,10 @@ test_that("Backward compatibility maintained", {
     item2 = sample(c(0, 1), 20, replace = TRUE)
   )
 
-  trans_mat <- multi_transmat(pre_test, post_test)
-  lca_result <- lca_cor(trans_mat)
+  trans_mat <- count_item_transitions(pre_test, post_test)
+  lca_result <- fit_item_lca_counts(trans_mat)
 
-  # Test that both fit functions work
-  expect_no_error({
-    fit_nodk_result <- fit_nodk(
-      pre_test, post_test,
-      lca_result$params["gamma", ],
-      lca_result$params[c("gg", "gk", "kk"), ]
-    )
-  })
-
-  expect_no_error({
-    fit_model_result <- fit_model(
-      pre_test, post_test,
-      lca_result$params["gamma", ],
-      lca_result$params[c("gg", "gk", "kk"), ]
-    )
-  })
-
-  # Results should be equivalent
-  expect_equal(dim(fit_nodk_result), dim(fit_model_result))
+  assessment <- assess_item_lca_fit(lca_result, pre_test, post_test)
+  expect_s3_class(assessment, "guess_gof")
+  expect_true(all(is.na(assessment$statistics$p_value)))
 })

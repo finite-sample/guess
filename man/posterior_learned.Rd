@@ -4,10 +4,10 @@
 \alias{posterior_learned}
 \title{Compute posterior probability of learning}
 \usage{
-posterior_learned(object)
+posterior_learned(fit)
 }
 \arguments{
-\item{object}{output from person_item_lca_fit()}
+\item{fit}{output from fit_person_lca()}
 }
 \value{
 numeric vector of P(learned | data) for each individual
@@ -18,7 +18,7 @@ that the individual truly learned (vs. guessing or already knowing).
 }
 \examples{
 sim <- simulate_lca(n = 100, gk = 0.30, seed = 123, return_classes = TRUE)
-fit <- person_item_lca_fit(sim$pre, sim$post)
+fit <- fit_person_lca(sim$pre, sim$post)
 p_learned <- posterior_learned(fit)
 cor(p_learned, sim$learned)
 }

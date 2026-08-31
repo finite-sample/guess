@@ -1,5 +1,9 @@
 .PHONY: help check test coverage doc build install clean
 
+PACKAGE := $(shell sed -n 's/^Package: //p' DESCRIPTION)
+VERSION := $(shell sed -n 's/^Version: //p' DESCRIPTION)
+TARBALL := $(PACKAGE)_$(VERSION).tar.gz
+
 help:
 	@echo "Available commands:"
 	@echo "  make check    - Run R CMD check"
@@ -10,8 +14,8 @@ help:
 	@echo "  make install  - Install package locally"
 	@echo "  make clean    - Clean build artifacts"
 
-check:
-	R CMD check .
+check: build
+	R CMD check $(TARBALL)
 
 test:
 	Rscript -e "devtools::test()"

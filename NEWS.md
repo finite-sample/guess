@@ -1,3 +1,33 @@
+# version 0.8.0 2026-08-30
+
+## Breaking Changes
+
+* Replaced ambiguous model, transition, scoring, and cross-validation entry
+  points with level-specific APIs: `fit_item_lca()`, `fit_person_lca()`,
+  `count_transitions()`, `count_item_transitions()`, `score_item_lca()`,
+  `score_individual_lca()`, and `cv_individual_lca()`. Superseded entry points
+  have been removed.
+
+* Raw-response functions now infer the binary or don't-know transition schema
+  from the data. `na_as` only controls whether `NA` is an observed don't-know
+  response or structural missingness.
+
+* Standardized shared argument names to `pre_test`, `post_test`, and
+  `guessing_probability`. `group_adj()` now uses
+  `knowledge_given_dont_know` and returns `adjusted_responses` and
+  `mean_learning`.
+
+* `lca_se()` and `validate_recovery()` use an optional `seed`; `NULL` uses the
+  current random-number-generator state, while an explicit seed is preserved.
+
+## Bug Fixes
+
+* Cross-sectional learning uses empirical-logit smoothing and returns `NA` for
+  items with no observed responses.
+
+* Bootstrap and cross-validation computations retain one inferred response
+  schema across resamples and folds.
+
 # version 0.7.0 2026-08-02
 
 This release incorporates 0.6.0, which was tagged but never submitted to
@@ -159,7 +189,7 @@ restriction `x1d/x0d = x10/x00`.
   `chisq.test()` as the observed vector and observed proportions as `p` -- had load order
   ever changed, they would have returned chi-square statistics between 0.83x and 2.08x
   the correct ones. `fit_nodk()` and `fit_dk()` remain exported and unchanged in
-  behaviour.
+  behavior.
 
 * **The optimiser no longer prints its iteration trace.** `solnp()` is called with
   `control = list(trace = 0)`, so `lca_fit()` and `lca_se()` are silent. A 100-resample

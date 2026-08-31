@@ -5,8 +5,13 @@ test_that("group_adj returns expected structure", {
   result <- group_adj(sim$pre, sim$post, gamma)
 
   expect_true(is.list(result))
-  expect_true(all(c("indiv", "learn") %in% names(result)))
-  expect_equal(length(result$learn), 3)
+  expect_named(result, c("adjusted_responses", "mean_learning"))
+  expect_named(result$adjusted_responses, c("pre_test", "post_test"))
+  expect_equal(length(result$mean_learning), 3)
+  expect_error(
+    group_adj(sim$pre, sim$post, gamma, dk = 0.03),
+    "unused argument"
+  )
 })
 
 test_that("group_adj learning estimates are bounded", {
@@ -15,7 +20,7 @@ test_that("group_adj learning estimates are bounded", {
 
   result <- group_adj(sim$pre, sim$post, gamma)
 
-  expect_true(all(result$learn >= -1 & result$learn <= 1))
+  expect_true(all(result$mean_learning >= -1 & result$mean_learning <= 1))
 })
 
 test_that("group_adj with true gamma improves estimates", {
@@ -35,8 +40,10 @@ test_that("group_adj with true gamma improves estimates", {
       kk = 0.35, gamma = true_gamma
     )
 
-    result <- group_adj(sim$pre, sim$post, gamma = true_gamma)
-    adj_errors[i] <- abs(result$learn[1] - true_learning)
+    result <- group_adj(
+      sim$pre, sim$post, guessing_probability = true_gamma
+    )
+    adj_errors[i] <- abs(result$mean_learning[1] - true_learning)
 
     naive <- mean(sim$post$item1) - mean(sim$pre$item1)
     naive_errors[i] <- abs(naive - true_learning)
@@ -70,8 +77,8 @@ test_that("group_adj handles varying gamma across items", {
 
   result <- group_adj(sim$pre, sim$post, gamma)
 
-  expect_equal(length(result$learn), 3)
-  expect_true(all(is.finite(result$learn)))
+  expect_equal(length(result$mean_learning), 3)
+  expect_true(all(is.finite(result$mean_learning)))
 })
 
 test_that("lca_adj returns expected structure", {
@@ -119,7 +126,7 @@ test_that("group_adj produces consistent results across runs with same data", {
   result1 <- group_adj(sim$pre, sim$post, gamma)
   result2 <- group_adj(sim$pre, sim$post, gamma)
 
-  expect_equal(result1$learn, result2$learn)
+  expect_equal(result1$mean_learning, result2$mean_learning)
 })
 
 test_that("group_adj handles single item", {
@@ -128,8 +135,8 @@ test_that("group_adj handles single item", {
 
   result <- group_adj(sim$pre, sim$post, gamma)
 
-  expect_equal(length(result$learn), 1)
-  expect_true(is.finite(result$learn))
+  expect_equal(length(result$mean_learning), 1)
+  expect_true(is.finite(result$mean_learning))
 })
 
 test_that("lca_adj does not crash with missing values", {

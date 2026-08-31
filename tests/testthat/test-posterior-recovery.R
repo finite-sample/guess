@@ -16,7 +16,7 @@ compare_learning_recovery_test <- function(n, n_items, n_sims, seed = NULL, ...)
 
     tryCatch(
       {
-        fit <- person_item_lca_fit(sim_data$pre, sim_data$post)
+        fit <- fit_person_lca(sim_data$pre, sim_data$post)
         p_learned_lca <- posterior_learned(fit)
         p_learned_cs <- cross_sectional_learning_score(sim_data$pre, sim_data$post)
 
@@ -74,7 +74,7 @@ test_that("simulate_lca without return_classes has no class info", {
 
 test_that("posterior_class_probs returns valid probabilities", {
   sim <- simulate_lca(n = 50, n_items = 3, gk = 0.30, seed = 123, return_classes = TRUE)
-  fit <- person_item_lca_fit(sim$pre, sim$post)
+  fit <- fit_person_lca(sim$pre, sim$post)
 
   posteriors <- posterior_class_probs(fit)
 
@@ -89,9 +89,18 @@ test_that("posterior_class_probs returns valid probabilities", {
   expect_true(all(abs(row_sums - 1) < 1e-10))
 })
 
+test_that("posterior extractors reject malformed fitted objects", {
+  sim <- simulate_lca(n = 30, n_items = 2, seed = 321)
+  fit <- fit_person_lca(sim$pre, sim$post)
+
+  expect_error(posterior_class_probs(list()), "guess_person_fit")
+  fit$posterior$P_gk[1] <- 1.1
+  expect_error(posterior_class_probs(fit), "probabilities between 0 and 1")
+})
+
 test_that("posterior_learned returns vector of correct length", {
   sim <- simulate_lca(n = 50, n_items = 3, gk = 0.30, seed = 123)
-  fit <- person_item_lca_fit(sim$pre, sim$post)
+  fit <- fit_person_lca(sim$pre, sim$post)
 
   p_learned <- posterior_learned(fit)
 
@@ -105,7 +114,7 @@ test_that("posterior_learned correlates with true learning status", {
     n = 500, n_items = 5, gk = 0.30, gamma = 0.25,
     seed = 123, return_classes = TRUE
   )
-  fit <- person_item_lca_fit(sim$pre, sim$post)
+  fit <- fit_person_lca(sim$pre, sim$post)
 
   p_learned <- posterior_learned(fit)
   cor_with_truth <- cor(p_learned, as.numeric(sim$learned))
@@ -125,6 +134,20 @@ test_that("estimate_logit_score returns valid scores", {
   expect_true(all(is.finite(score_post)))
 })
 
+test_that("estimate_logit_score uses a denominator-aware empirical logit", {
+  responses <- data.frame(
+    item1 = c(0, 1, 0, NA),
+    item2 = c(0, 1, 1, NA)
+  )
+
+  score <- estimate_logit_score(responses, na_as = "missing")
+  expected <- qlogis(c(0.5 / 3, 2.5 / 3, 1.5 / 3, NA_real_))
+
+  expect_equal(unname(score), expected)
+  expect_lt(abs(score[1]), abs(qlogis(0.0001)))
+  expect_true(is.na(score[4]))
+})
+
 test_that("cross_sectional_learning returns difference in logit scores", {
   sim <- simulate_lca(n = 100, n_items = 3, seed = 123)
 
@@ -134,6 +157,25 @@ test_that("cross_sectional_learning returns difference in logit scores", {
   score_post <- estimate_logit_score(sim$post)
 
   expect_equal(learning_cs, score_post - score_pre)
+})
+
+test_that("cross-sectional learning aligns post-test items by name", {
+  pre_test <- data.frame(i1 = c(1, NA), i2 = c(0, 1))
+  post_test <- data.frame(i1 = c(1, 0), i2 = c(1, 1))
+
+  original <- cross_sectional_learning(
+    pre_test, post_test, na_as = "missing"
+  )
+  reordered <- cross_sectional_learning(
+    pre_test, post_test[c("i2", "i1")], na_as = "missing"
+  )
+
+  expect_equal(original, reordered)
+  names(post_test)[1] <- "wrong"
+  expect_error(
+    cross_sectional_learning(pre_test, post_test),
+    "same item names"
+  )
 })
 
 test_that("cross_sectional_learning_score returns values in [0,1]", {
@@ -146,6 +188,23 @@ test_that("cross_sectional_learning_score returns values in [0,1]", {
   expect_true(all(learning_score <= 1))
 })
 
+test_that("cross-sectional scale must be finite and nonzero", {
+  sim <- simulate_lca(n = 10, n_items = 2, seed = 741)
+
+  expect_error(
+    cross_sectional_learning_score(sim$pre, sim$post, scale = 0),
+    "scale must be nonzero"
+  )
+  expect_error(
+    cross_sectional_learning_score(sim$pre, sim$post, scale = Inf),
+    "scale"
+  )
+  expect_error(
+    cross_sectional_learning_score(sim$pre, sim$post, scale = NA_real_),
+    "scale"
+  )
+})
+
 test_that("LCA outperforms cross-sectional for learning recovery", {
   skip_on_cran()
 
@@ -153,7 +212,7 @@ test_that("LCA outperforms cross-sectional for learning recovery", {
     n = 1000, n_items = 5, gk = 0.30, gamma = 0.25,
     seed = 123, return_classes = TRUE
   )
-  fit <- person_item_lca_fit(sim$pre, sim$post)
+  fit <- fit_person_lca(sim$pre, sim$post)
 
   p_learned_lca <- posterior_learned(fit)
   p_learned_cs <- cross_sectional_learning_score(sim$pre, sim$post)
@@ -194,7 +253,7 @@ test_that("kk class individuals get high P_kk posterior", {
     n = 500, gg = 0.33, gk = 0.34, kk = 0.33, n_items = 5,
     seed = 123, return_classes = TRUE
   )
-  fit <- person_item_lca_fit(sim$pre, sim$post)
+  fit <- fit_person_lca(sim$pre, sim$post)
 
   posteriors <- posterior_class_probs(fit)
 
@@ -211,7 +270,7 @@ test_that("gk class individuals get moderate P_gk posterior", {
     n = 500, gg = 0.33, gk = 0.34, kk = 0.33, n_items = 5,
     seed = 456, return_classes = TRUE
   )
-  fit <- person_item_lca_fit(sim$pre, sim$post)
+  fit <- fit_person_lca(sim$pre, sim$post)
 
   p_learned <- posterior_learned(fit)
 
@@ -274,7 +333,7 @@ test_that("person-level posterior estimates shared class proportions", {
     gg = 0.40, gk = 0.30, kk = 0.30,
     gamma = 0.25, seed = 731
   )
-  fit <- person_item_lca_fit(sim$pre, sim$post)
+  fit <- fit_person_lca(sim$pre, sim$post)
   posterior <- posterior_class_probs(fit)
 
   expect_equal(posterior, fit$posterior)

@@ -5,16 +5,16 @@
 \title{Person Level Adjustment}
 \usage{
 lca_adj(
-  pre = NULL,
-  pst = NULL,
+  pre_test = NULL,
+  post_test = NULL,
   na_as = c("dk", "missing"),
   missing_action = c("omit", "error")
 )
 }
 \arguments{
-\item{pre}{pre data frame}
+\item{pre_test}{Pre-test data frame.}
 
-\item{pst}{pst data frame}
+\item{post_test}{Post-test data frame.}
 
 \item{na_as}{Classification of NA responses: `"dk"` (the default) treats
 them as observed don't know responses; `"missing"` treats them as
@@ -33,7 +33,7 @@ Adjusts observed 1s based on item level parameters of the LCA
 By default, NAs are treated as acknowledgments of ignorance.
 }
 \examples{
-pre_test_var <- data.frame(pre = c(1, 0, 0, 1, "d", "d", 0, 1, NA))
-pst_test_var <- data.frame(pst = c(1, NA, 1, "d", 1, 0, 1, 1, "d"))
-lca_adj(pre_test_var, pst_test_var)
+pre_test <- data.frame(item = c(1, 0, 0, 1, "d", "d", 0, 1, NA))
+post_test <- data.frame(item = c(1, NA, 1, "d", 1, 0, 1, 1, "d"))
+lca_adj(pre_test, post_test)
 }

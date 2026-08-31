@@ -1,166 +1,142 @@
-#' Unified Goodness of Fit Statistics
+#' Assess goodness of fit for an item-level latent-class model
 #'
-#' @title Goodness of fit statistics for transition matrix data
+#' @description Computes per-item Pearson diagnostics between paired observed
+#'   responses and the cell counts implied by a [fit_item_lca()] or
+#'   [fit_item_lca_counts()] result. It is an in-sample specification
+#'   diagnostic, not a measure of held-out predictive performance. Use
+#'   [score_item_lca()] with independent transition counts or
+#'   [cv_individual_lca()] for held-out evaluation.
 #'
-#' @description Pearson chi-square goodness of fit between the observed
-#' transition counts and those the fitted model implies. Handles data with and
-#' without don't know responses automatically.
+#' The binary model is saturated: its three free cell probabilities are exactly
+#' accounted for by its three free parameters, so it has zero degrees of freedom
+#' and no p-value. The don't-know model has one remaining over-identifying
+#' restriction and therefore one degree of freedom.
 #'
-#' Degrees of freedom are the free cell probabilities less the parameters
-#' estimated from the same counts. The don't-know model leaves 1 degree of
-#' freedom. The model without don't know is saturated -- 3 free parameters
-#' against 3 free cell probabilities -- so no test is possible and both rows
-#' are `NA`.
-#'
-#' @param pre_test data.frame carrying pre_test items
-#' @param pst_test data.frame carrying pst_test items
-#' @param g estimates of gamma produced from \code{\link{lca_cor}}
-#' @param est_param estimated parameters produced from \code{\link{lca_cor}}
-#' @param force9 Optional. Force 9-column format even if no DK responses. Default is FALSE.
-#' @param na_as Classification of NA responses: `"dk"` (the default) treats
-#'   them as observed don't know responses; `"missing"` treats them as
-#'   structural missingness.
+#' @param fit A `guess_fit` object returned by [fit_item_lca()] or
+#'   [fit_item_lca_counts()].
+#' @param pre_test Data frame containing one pre-test item per column.
+#' @param post_test Data frame containing the corresponding post-test items.
+#' @param ... Must be empty. Its presence requires optional arguments to be
+#'   named.
+#' @param na_as Classification of `NA` responses: `"dk"` treats them as
+#'   observed don't-know responses and `"missing"` treats them as structural
+#'   missingness.
 #' @param missing_action How to handle structural missingness: `"omit"`
 #'   excludes incomplete pairs and `"error"` rejects them.
-#' @return matrix with two rows: top row carrying chi-square value, bottom row p-values
+#'
+#' @return A `guess_gof` object with `statistics`, a data frame containing the
+#'   unrounded Pearson statistic, degrees of freedom, p-value, and observation
+#'   count for each item; plus `observed`, `expected`, and `residuals` matrices.
+#'
+#' @references
+#' Pearson, K. (1900). On the criterion that a given system of deviations from
+#' the probable in the case of a correlated system of variables is such that it
+#' can be reasonably supposed to have arisen from random sampling. *Philosophical
+#' Magazine*, 50(302), 157--175. doi:10.1080/14786440009463897.
+#'
+#' Cor, M. K., and Sood, G. (2016). Guessing and Forgetting: A Latent Class
+#' Model for Measuring Learning. *Political Analysis*, 24(2), 226--242.
+#'
 #' @export
 #' @examples
-#' \dontrun{
-#' # Fit model first
-#' transmatrix <- multi_transmat(pre_test, pst_test)
-#' res <- lca_cor(transmatrix)
-#'
-#' # Calculate goodness of fit
-#' fit_stats <- fit_model(
-#'   pre_test, pst_test, res$params[nrow(res$params), ],
-#'   res$params[-nrow(res$params), ]
-#' )
-#' }
-fit_model <- function(
+#' sim <- simulate_lca_dk(n = 500, n_items = 2, seed = 123)
+#' fit <- fit_item_lca(sim$pre, sim$post)
+#' assess_item_lca_fit(fit, sim$pre, sim$post)
+assess_item_lca_fit <- function(
+  fit,
   pre_test,
-  pst_test,
-  g,
-  est_param,
-  force9 = FALSE,
+  post_test,
+  ...,
   na_as = c("dk", "missing"),
   missing_action = c("omit", "error")
 ) {
-  # Input validation
+  if (length(list(...)) > 0L) {
+    stop("`...` must be empty.", call. = FALSE)
+  }
+  validate_item_lca_fit(fit)
   validate_dataframe(pre_test, "pre_test")
-  validate_dataframe(pst_test, "pst_test")
-  validate_compatible_dataframes(pre_test, pst_test)
-
-  validate_required(g = g, est_param = est_param)
-
-  # Generate transition matrix
-  data <- multi_transmat(
-    pre_test, pst_test,
-    force9 = force9,
-    na_as = na_as, missing_action = missing_action
-  )
-
-  # Remove aggregate row if present
-  if ("agg" %in% rownames(data)) {
-    data <- data[rownames(data) != "agg", , drop = FALSE]
+  validate_dataframe(post_test, "post_test")
+  input_items <- validate_paired_item_names(pre_test, post_test)
+  fit_items <- colnames(fit$params)
+  if (!setequal(input_items, fit_items)) {
+    stop(
+      "pre_test and post_test must contain the same item names as fit$params.",
+      call. = FALSE
+    )
   }
 
-  # Determine model type
-  model_type <- if (ncol(data) == 9) "dk" else "nodk"
+  post_test <- post_test[input_items]
+  fit_params <- fit$params[, input_items, drop = FALSE]
+  response_schema <- if (fit$model_type == "dk") "dk" else "binary"
+  observed <- count_item_transitions_impl(
+    pre_test,
+    post_test,
+    response_schema = response_schema,
+    na_as = na_as,
+    missing_action = missing_action
+  )
+  expected <- matrix(
+    NA_real_,
+    nrow = nrow(observed),
+    ncol = ncol(observed),
+    dimnames = dimnames(observed)
+  )
+  residuals <- expected
+  statistic <- rep(NA_real_, nrow(observed))
+  p_value <- rep(NA_real_, nrow(observed))
+  n_observations <- rowSums(observed)
+  df <- if (fit$model_type == "dk") 1L else 0L
 
-  # Initialize results matrix
-  n_items <- nrow(data)
-  fit_results <- matrix(nrow = 2, ncol = n_items)
-  colnames(fit_results) <- rownames(data)
-  rownames(fit_results) <- c("chi-square", "p-value")
+  for (item_index in seq_len(nrow(observed))) {
+    item_name <- rownames(observed)[item_index]
+    params <- fit_params[, item_name]
+    expected_item <- calculate_expected_values(
+      gamma_i = params["gamma"],
+      params = params[names(params) != "gamma"],
+      total_obs = n_observations[item_index],
+      model_type = fit$model_type
+    )
+    names(expected_item) <- colnames(observed)
+    expected[item_index, ] <- expected_item
 
-  # Calculate fit statistics for each item
-  for (i in seq_len(n_items)) {
-    # Get item-specific gamma and parameters
-    gamma_i <- if (is.list(g)) g[[i]] else g[i]
-    params_i <- if (is.matrix(est_param)) est_param[, i] else est_param
+    nonzero_expected <- expected_item > 0
+    observed_item <- observed[item_index, ]
+    residual_item <- rep(NA_real_, length(observed_item))
+    residual_item[nonzero_expected] <- (
+      observed_item[nonzero_expected] - expected_item[nonzero_expected]
+    ) / sqrt(expected_item[nonzero_expected])
+    residual_item[!nonzero_expected & observed_item > 0] <- Inf
+    residuals[item_index, ] <- residual_item
 
-    # Calculate expected values using utility function
-    total_obs <- sum(data[i, ])
-    expected <- calculate_expected_values(gamma_i, params_i, total_obs, model_type)
-
-    # Validate expected values before chi-square test
-    if (any(!is.finite(expected)) || any(expected < 0)) {
-      # Handle invalid expected values
-      fit_results[1, i] <- NA
-      fit_results[2, i] <- NA
-      next
+    if (df > 0L) {
+      if (any(!nonzero_expected & observed_item > 0)) {
+        statistic[item_index] <- Inf
+        p_value[item_index] <- 0
+      } else {
+        statistic[item_index] <- sum(residual_item[nonzero_expected]^2)
+        p_value[item_index] <- stats::pchisq(
+          statistic[item_index],
+          df = df,
+          lower.tail = FALSE
+        )
+      }
     }
-
-    # Pearson goodness of fit, against the right degrees of freedom.
-    #
-    # chisq.test(observed, p = expected_probs) charges df = cells - 1, which
-    # ignores every parameter estimated from these same counts. The no-DK model
-    # has 3 free parameters (gg, gk, kk sum to 1, plus gamma) against 3 free
-    # cell probabilities: it is saturated, df = 0, and there is nothing to test.
-    # The DK model has 7 free parameters against 8 free cell probabilities,
-    # leaving df = 1 -- the single over-identifying restriction x1d/x0d =
-    # x10/x00. Charging df = 8 there made the test almost incapable of
-    # rejecting.
-    observed <- as.numeric(data[i, ])
-    expected_counts <- expected / sum(expected) * total_obs
-
-    n_free <- if (model_type == "dk") 7L else 3L
-    df <- length(observed) - 1L - n_free
-
-    if (df <= 0L) {
-      fit_results[1, i] <- NA
-      fit_results[2, i] <- NA
-      next
-    }
-
-    nonzero <- expected_counts > 0
-    if (any(observed[!nonzero] > 0)) {
-      stat <- Inf
-    } else {
-      stat <- sum(
-        (observed[nonzero] - expected_counts[nonzero])^2 / expected_counts[nonzero]
-      )
-    }
-
-    fit_results[1, i] <- round(stat, 3)
-    fit_results[2, i] <- round(stats::pchisq(stat, df = df, lower.tail = FALSE), 3)
   }
 
-  fit_results
-}
-
-# Maintain backward compatibility with existing function names
-#' @rdname fit_model
-#' @export
-fit_dk <- function(
-  pre_test,
-  pst_test,
-  g,
-  est_param,
-  force9 = FALSE,
-  na_as = c("dk", "missing"),
-  missing_action = c("omit", "error")
-) {
-  fit_model(
-    pre_test, pst_test, g, est_param,
-    force9 = force9,
-    na_as = na_as, missing_action = missing_action
-  )
-}
-
-#' @rdname fit_model
-#' @export
-fit_nodk <- function(
-  pre_test,
-  pst_test,
-  g,
-  est_param,
-  na_as = c("dk", "missing"),
-  missing_action = c("omit", "error")
-) {
-  fit_model(
-    pre_test, pst_test, g, est_param,
-    force9 = FALSE,
-    na_as = na_as, missing_action = missing_action
+  structure(
+    list(
+      statistics = data.frame(
+        statistic = statistic,
+        df = rep.int(df, nrow(observed)),
+        p_value = p_value,
+        n_observations = n_observations,
+        row.names = rownames(observed)
+      ),
+      observed = observed,
+      expected = expected,
+      residuals = residuals,
+      call = match.call()
+    ),
+    class = "guess_gof"
   )
 }

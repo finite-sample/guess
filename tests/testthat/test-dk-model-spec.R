@@ -148,7 +148,7 @@ test_that("the estimator recovers the truth from exact model-implied counts", {
     dimnames = list("item1", TRANSMAT_COLS_DK)
   )
 
-  fit <- lca_cor(tm)
+  fit <- fit_item_lca_counts(tm)
   est <- fit$params[, 1]
 
   expect_equal(unname(est), unname(c(truth, gamma)), tolerance = 1e-3)
@@ -176,7 +176,7 @@ test_that("simulate_lca_dk can produce learning from confessed ignorance", {
 
 test_that("simulate_lca_dk never shows a knower answering wrongly later", {
   sim <- simulate_lca_dk(n = 4000, n_items = 1, gamma = 0.25, seed = 78)
-  tm <- multi_transmat(sim$pre, sim$post, force9 = TRUE)
+  tm <- count_item_transitions(sim$pre, sim$post)
 
   # Cell 10 can only come from a guesser lucky then unlucky, so it must be far
   # smaller than cell 11; the point is that no structural zero is violated.
@@ -198,8 +198,8 @@ test_that("estimates converge on the truth as the simulated sample grows", {
       kk = truth[["kk"]], dg = truth[["dg"]], dk = truth[["dk"]],
       dd = truth[["dd"]], gamma = gamma, seed = 31
     )
-    tm <- multi_transmat(sim$pre, sim$post, force9 = TRUE)
-    est <- lca_cor(tm)$params[, 1]
+    tm <- count_item_transitions(sim$pre, sim$post)
+    est <- fit_item_lca_counts(tm)$params[, 1]
     max(abs(est - c(truth, gamma = gamma)))
   }, numeric(1))
 
@@ -213,26 +213,21 @@ test_that("estimates converge on the truth as the simulated sample grows", {
 
 test_that("the goodness of fit test uses the surviving degrees of freedom", {
   sim <- simulate_lca_dk(n = 8000, n_items = 1, gamma = 0.25, seed = 88)
-  tm <- multi_transmat(sim$pre, sim$post, force9 = TRUE)
-  fit <- lca_cor(tm)
+  tm <- count_item_transitions(sim$pre, sim$post)
+  fit <- fit_item_lca_counts(tm)
 
-  gof <- fit_model(sim$pre, sim$post, fit$params["gamma", ],
-    fit$params[1:7, ],
-    force9 = TRUE
-  )
+  gof <- assess_item_lca_fit(fit, sim$pre, sim$post)
 
-  stat <- gof["chi-square", 1]
-  p <- gof["p-value", 1]
+  stat <- gof$statistics[1, "statistic"]
+  p <- gof$statistics[1, "p_value"]
 
   expect_false(is.na(p))
 
-  # p must match 1 df, not the 8 the old code charged. The reported statistic is
-  # rounded to three decimals, so allow for that but nothing more: the two
-  # candidate p-values are far further apart than the rounding.
+  # p must match 1 df, not the 8 the old code charged.
   p_df1 <- stats::pchisq(stat, df = 1, lower.tail = FALSE)
   p_df8 <- stats::pchisq(stat, df = 8, lower.tail = FALSE)
 
-  expect_equal(unname(p), p_df1, tolerance = 0.005)
+  expect_equal(unname(p), p_df1, tolerance = 1e-12)
   expect_gt(abs(p_df8 - p_df1), 0.02)
   expect_lt(abs(unname(p) - p_df1), abs(unname(p) - p_df8))
 })
@@ -240,10 +235,11 @@ test_that("the goodness of fit test uses the surviving degrees of freedom", {
 test_that("the saturated no-DK model reports no goodness of fit test", {
   pre <- data.frame(item1 = rep(c(1, 0, 0, 1), 50))
   pst <- data.frame(item1 = rep(c(1, 1, 0, 1), 50))
-  tm <- multi_transmat(pre, pst)
-  fit <- lca_cor(tm)
+  tm <- count_item_transitions(pre, pst)
+  fit <- fit_item_lca_counts(tm)
 
-  gof <- fit_model(pre, pst, fit$params["gamma", ], fit$params[1:3, ])
+  gof <- assess_item_lca_fit(fit, pre, pst)
 
-  expect_true(all(is.na(gof)))
+  expect_true(all(is.na(gof$statistics$statistic)))
+  expect_true(all(is.na(gof$statistics$p_value)))
 })

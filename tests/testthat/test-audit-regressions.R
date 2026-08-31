@@ -16,7 +16,7 @@ test_that("stnd_cor matches a hand computation with no missing data", {
   pre <- data.frame(item1 = c(1, 0, 0, 1, 0))
   pst <- data.frame(item1 = c(1, 1, 1, 1, 0))
 
-  res <- stnd_cor(pre, pst, lucky = 0.25)
+  res <- stnd_cor(pre, pst, guessing_probability = 0.25)
 
   # pre: 2 correct, 3 wrong -> 2 - 3/3 = 1, over 5 respondents
   expect_equal(res$pre[[1]], (2 - 3 / 3) / 5)
@@ -32,7 +32,7 @@ test_that("stnd_cor divides by responses, not rows, when data are missing", {
 
   res <- stnd_cor(
     pre, pst,
-    lucky = rep(0.25, 2), na_as = "missing"
+    guessing_probability = rep(0.25, 2), na_as = "missing"
   )
 
   # item2 pre: 2 correct, 2 wrong among the 4 who answered.
@@ -52,7 +52,7 @@ test_that("stnd_cor learning estimates do not shrink with the missing rate", {
 
   complete <- stnd_cor(
     data.frame(i = pre_full), data.frame(i = pst_full),
-    lucky = 0.25
+    guessing_probability = 0.25
   )$learn[[1]]
 
   for (rate in c(0.10, 0.25, 0.40)) {
@@ -63,7 +63,7 @@ test_that("stnd_cor learning estimates do not shrink with the missing rate", {
     b[drop] <- NA
     got <- stnd_cor(
       data.frame(i = a), data.frame(i = b),
-      lucky = 0.25,
+      guessing_probability = 0.25,
       na_as = "missing"
     )$learn[[1]]
 
@@ -79,7 +79,7 @@ test_that("stnd_cor handles pre and post missing on different rows", {
   pre <- data.frame(item1 = c(1, 0, NA, 1, 0))
   pst <- data.frame(item1 = c(1, 1, 1, NA, 0))
 
-  res <- stnd_cor(pre, pst, lucky = 0.25, na_as = "missing")
+  res <- stnd_cor(pre, pst, guessing_probability = 0.25, na_as = "missing")
 
   expect_equal(res$pre[[1]], (2 - 2 / 3) / 4) # 4 answered the pre-test
   expect_equal(res$pst[[1]], (3 - 1 / 3) / 4) # 4 answered the post-test
@@ -90,7 +90,7 @@ test_that("stnd_cor does not mix unmatched corrected totals", {
   pre <- data.frame(item1 = c(1, 0))
   pst <- data.frame(item1 = c(NA, 1))
 
-  res <- stnd_cor(pre, pst, lucky = 0.25, na_as = "missing")
+  res <- stnd_cor(pre, pst, guessing_probability = 0.25, na_as = "missing")
 
   expect_equal(res$pre[[1]], (1 - 1 / 3) / 2)
   expect_equal(res$pst[[1]], 1)
@@ -108,7 +108,7 @@ test_that("stnd_cor paired learning matches a simulation oracle", {
 
   res <- stnd_cor(
     data.frame(item1 = pre), data.frame(item1 = pst),
-    lucky = 0.25,
+    guessing_probability = 0.25,
     na_as = "missing"
   )
   corrected_mean <- function(x) {
@@ -123,7 +123,7 @@ test_that("stnd_cor returns NA without an observed denominator", {
   res <- stnd_cor(
     data.frame(item1 = c(1, NA)),
     data.frame(item1 = c(NA, 1)),
-    lucky = 0.25,
+    guessing_probability = 0.25,
     na_as = "missing"
   )
 
@@ -162,8 +162,8 @@ test_that("lca_se works for item counts other than two", {
         utils::capture.output(r <- lca_se(d$pre, d$pst, n_resamples = 3))
       )
     })
-    expect_length(as.numeric(r$se_effects), k + 1)
-    expect_true(all(is.finite(as.numeric(r$se_effects))))
+    expect_length(as.numeric(r$learning_standard_error), k + 1)
+    expect_true(all(is.finite(as.numeric(r$learning_standard_error))))
   }
 })
 
@@ -173,8 +173,8 @@ test_that("lca_se works when the data carry don't-know responses", {
   for (k in c(2, 3)) {
     d <- make_pre_post(k, dk = TRUE)
     utils::capture.output(r <- suppressWarnings(lca_se(d$pre, d$pst, n_resamples = 3)))
-    expect_length(as.numeric(r$se_effects), k + 1)
-    expect_true(all(is.finite(as.numeric(r$se_effects))))
+    expect_length(as.numeric(r$learning_standard_error), k + 1)
+    expect_true(all(is.finite(as.numeric(r$learning_standard_error))))
   }
 })
 
@@ -186,5 +186,22 @@ test_that("lca_se standard errors shrink as the sample grows", {
   utils::capture.output(s <- suppressWarnings(lca_se(small$pre, small$pst, n_resamples = 25)))
   utils::capture.output(l <- suppressWarnings(lca_se(large$pre, large$pst, n_resamples = 25)))
 
-  expect_lt(mean(as.numeric(l$se_effects)), mean(as.numeric(s$se_effects)))
+  expect_lt(
+    mean(as.numeric(l$learning_standard_error)),
+    mean(as.numeric(s$learning_standard_error))
+  )
+})
+
+test_that("lca_se has no hidden seed and preserves an explicit seed state", {
+  d <- make_pre_post(2, n = 200, seed = 321)
+  expect_null(formals(lca_se)$seed)
+
+  set.seed(654)
+  before <- get(".Random.seed", envir = .GlobalEnv)
+  first <- lca_se(d$pre, d$pst, n_resamples = 3, seed = 987)
+  after <- get(".Random.seed", envir = .GlobalEnv)
+  second <- lca_se(d$pre, d$pst, n_resamples = 3, seed = 987)
+
+  expect_identical(before, after)
+  expect_equal(first, second)
 })

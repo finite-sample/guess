@@ -19,7 +19,7 @@ test_that("complete workflow without DK works", {
   )
 
   # Step 1: Create transition matrix
-  trans_matrix <- multi_transmat(pre_test, pst_test)
+  trans_matrix <- count_item_transitions(pre_test, pst_test)
 
   expect_true(is.matrix(trans_matrix))
   expect_equal(nrow(trans_matrix), n_items)
@@ -28,7 +28,7 @@ test_that("complete workflow without DK works", {
   expect_equal(sum(trans_matrix), n_obs * n_items)
 
   # Step 2: Fit LCA model
-  lca_results <- lca_cor(trans_matrix)
+  lca_results <- fit_item_lca_counts(trans_matrix)
 
   expect_true(is.list(lca_results))
   expect_true("params" %in% names(lca_results))
@@ -41,18 +41,13 @@ test_that("complete workflow without DK works", {
   expect_true(all(lca_results$params <= 1, na.rm = TRUE))
 
   # Step 3: Calculate goodness of fit
-  fit_stats <- fit_model(
-    pre_test, pst_test,
-    lca_results$params["gamma", ],
-    lca_results$params[c("gg", "gk", "kk"), ]
-  )
+  fit_stats <- assess_item_lca_fit(lca_results, pre_test, pst_test)
 
-  expect_true(is.matrix(fit_stats))
-  expect_equal(dim(fit_stats), c(2, n_items))
-  expect_equal(rownames(fit_stats), c("chi-square", "p-value"))
+  expect_s3_class(fit_stats, "guess_gof")
+  expect_equal(dim(fit_stats$statistics), c(n_items, 4L))
   # The no-DK model is saturated, so there is no goodness of fit test to run.
-  expect_true(all(is.na(fit_stats["chi-square", ])))
-  expect_true(all(is.na(fit_stats["p-value", ])))
+  expect_true(all(is.na(fit_stats$statistics$statistic)))
+  expect_true(all(is.na(fit_stats$statistics$p_value)))
 
   # Step 4: Standard correction for comparison
   lucky <- rep(0.25, n_items) # Assume 4-option multiple choice
@@ -79,14 +74,14 @@ test_that("complete workflow with DK works", {
   )
 
   # Full workflow
-  trans_matrix <- multi_transmat(pre_test, pst_test)
+  trans_matrix <- count_item_transitions(pre_test, pst_test)
 
   expect_true(is.matrix(trans_matrix))
   expect_equal(nrow(trans_matrix), 2)
   expect_equal(ncol(trans_matrix), 9) # DK present, so 9 columns
 
   # LCA with DK data
-  lca_results <- lca_cor(trans_matrix)
+  lca_results <- fit_item_lca_counts(trans_matrix)
 
   expect_equal(nrow(lca_results$params), 8) # DK model has 8 parameters
   expect_equal(ncol(lca_results$params), 2)
@@ -104,21 +99,21 @@ test_that("workflow handles edge cases gracefully", {
   )
   pst_identical <- pre_identical # Identical
 
-  trans_matrix <- multi_transmat(pre_identical, pst_identical)
+  trans_matrix <- count_item_transitions(pre_identical, pst_identical)
 
   # Should have only diagonal transitions (x00 and x11)
   expect_equal(as.numeric(trans_matrix[, "x01"]), rep(0, 2))
   expect_equal(as.numeric(trans_matrix[, "x10"]), rep(0, 2))
 
   # LCA should still work
-  lca_results <- lca_cor(trans_matrix)
+  lca_results <- fit_item_lca_counts(trans_matrix)
   expect_true(all(lca_results$learning <= 0.1, na.rm = TRUE)) # Little to no learning
 
   # Case 2: Perfect learning (all wrong -> all right)
   pre_wrong <- data.frame(item1 = rep(0, 10))
   pst_right <- data.frame(item1 = rep(1, 10))
 
-  trans_matrix_perfect <- multi_transmat(pre_wrong, pst_right)
+  trans_matrix_perfect <- count_item_transitions(pre_wrong, pst_right)
 
   # Should have only x01 transitions
   expect_equal(trans_matrix_perfect[, "x00"], 0)
@@ -137,7 +132,7 @@ test_that("workflow handles edge cases gracefully", {
   )
 
   # By default NAs are observed don't know responses.
-  trans_matrix_na <- multi_transmat(pre_na, pst_na)
+  trans_matrix_na <- count_item_transitions(pre_na, pst_na)
   expect_true(is.matrix(trans_matrix_na))
   expect_equal(ncol(trans_matrix_na), 9)
   expect_equal(sum(trans_matrix_na), 10) # 5 observations * 2 items
@@ -157,12 +152,12 @@ test_that("workflows are consistent between approaches", {
   )
 
   # Method 1: Step by step
-  trans1 <- multi_transmat(pre_test, pst_test)
-  lca1 <- lca_cor(trans1)
+  trans1 <- count_item_transitions(pre_test, pst_test)
+  lca1 <- fit_item_lca_counts(trans1)
 
   # Method 2: Direct approach with same data
-  trans2 <- multi_transmat(pre_test, pst_test)
-  lca2 <- lca_cor(trans2)
+  trans2 <- count_item_transitions(pre_test, pst_test)
+  lca2 <- fit_item_lca_counts(trans2)
 
   # Results should be identical
   expect_equal(trans1, trans2)
@@ -193,12 +188,16 @@ test_that("subgroup analysis works in complete workflow", {
   subgroup <- rep(c(TRUE, FALSE), each = n / 2)
 
   # Full sample analysis
-  trans_full <- multi_transmat(pre_test, pst_test)
-  lca_full <- lca_cor(trans_full)
+  trans_full <- count_item_transitions(pre_test, pst_test)
+  lca_full <- fit_item_lca_counts(trans_full)
 
   # Subgroup analysis
-  trans_sub <- multi_transmat(pre_test, pst_test, subgroup = subgroup)
-  lca_sub <- lca_cor(trans_sub)
+  trans_sub <- count_item_transitions(
+    pre_test,
+    pst_test,
+    subgroup = subgroup
+  )
+  lca_sub <- fit_item_lca_counts(trans_sub)
 
   # Subgroup should have half the observations
   expect_equal(sum(trans_sub), sum(trans_full) / 2)

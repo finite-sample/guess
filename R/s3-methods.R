@@ -14,11 +14,17 @@
 #' @param n_items number of items
 #' @param n_obs total observations
 #' @param model_type "nodk" or "dk"
+#' @param diagnostics optimizer diagnostics by item
+#' @param aggregate optional separately fitted aggregate counts
 #' @param call original function call
 #' @return object of class "guess_fit"
 #' @keywords internal
 new_guess_fit <- function(params, learning, n_items, n_obs,
-                          model_type, call = NULL) {
+                          model_type, diagnostics = NULL,
+                          aggregate = NULL, call = NULL) {
+  if (is.null(names(learning)) && length(learning) == ncol(params)) {
+    names(learning) <- colnames(params)
+  }
   structure(
     list(
       params = params,
@@ -26,6 +32,8 @@ new_guess_fit <- function(params, learning, n_items, n_obs,
       n_items = n_items,
       n_obs = n_obs,
       model_type = model_type,
+      diagnostics = diagnostics,
+      aggregate = aggregate,
       call = call
     ),
     class = "guess_fit"
@@ -82,6 +90,19 @@ summary.guess_fit <- function(object, ...) {
   invisible(object)
 }
 
+#' Print method for item-level goodness-of-fit diagnostics
+#'
+#' @param x A `guess_gof` object.
+#' @param ... Ignored.
+#' @return `x`, invisibly.
+#' @export
+print.guess_gof <- function(x, ...) {
+  cat("Item-level Pearson goodness-of-fit diagnostics\n")
+  print(x$statistics)
+  cat("\nUse $observed, $expected, and $residuals for cell-level diagnostics.\n")
+  invisible(x)
+}
+
 #' Extract coefficients from guess_fit
 #'
 #' @param object guess_fit object
@@ -102,14 +123,15 @@ coef.guess_fit <- function(object, ...) {
 #' @param mean_ll mean log-likelihood
 #' @param total_ll total log-likelihood
 #' @param perplexity perplexity
-#' @param se standard error of perplexity across folds
-#' @param cv_type "items" or "individuals"
+#' @param se standard error of perplexity across folds, if available
+#' @param cv_type cross-validation unit
 #' @param k number of folds
+#' @param fold_id integer vector mapping each input row to its held-out fold
 #' @param call original function call
 #' @return object of class "guess_cv"
 #' @keywords internal
 new_guess_cv <- function(fold_results, mean_ll, total_ll, perplexity, se,
-                         cv_type, k, call = NULL) {
+                         cv_type, k, fold_id = NULL, call = NULL) {
   structure(
     list(
       fold_results = fold_results,
@@ -119,6 +141,7 @@ new_guess_cv <- function(fold_results, mean_ll, total_ll, perplexity, se,
       se = se,
       cv_type = cv_type,
       k = k,
+      fold_id = fold_id,
       call = call
     ),
     class = "guess_cv"
@@ -138,7 +161,9 @@ print.guess_cv <- function(x, ...) {
   cat("\nHeld-out Performance:\n")
   cat("  Perplexity:     ", format(round(x$perplexity, 3), nsmall = 3), "\n", sep = "")
   cat("  Mean LL/obs:    ", format(round(x$mean_ll, 4), nsmall = 4), "\n", sep = "")
-  cat("  SE:             ", format(round(x$se, 4), nsmall = 4), "\n", sep = "")
+  if (!is.na(x$se)) {
+    cat("  SE:             ", format(round(x$se, 4), nsmall = 4), "\n", sep = "")
+  }
 
   cat("\nInterpretation: Lower perplexity = better fit.\n")
   cat("Use $fold_results for per-fold details.\n")

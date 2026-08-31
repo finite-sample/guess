@@ -4,14 +4,18 @@
 \alias{format_transition_matrix}
 \title{Format transition matrix result with appropriate row and column names}
 \usage{
-format_transition_matrix(transition_list, n_items, add_aggregate = FALSE)
+format_transition_matrix(
+  transition_list,
+  item_names,
+  include_aggregate = FALSE
+)
 }
 \arguments{
 \item{transition_list}{list of transition vectors}
 
-\item{n_items}{number of items}
+\item{item_names}{item names in output row order}
 
-\item{add_aggregate}{whether to add aggregate row}
+\item{include_aggregate}{whether to add an aggregate row}
 }
 \value{
 formatted matrix

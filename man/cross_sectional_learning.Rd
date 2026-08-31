@@ -6,7 +6,7 @@
 \usage{
 cross_sectional_learning(
   pre_test,
-  pst_test,
+  post_test,
   na_as = c("dk", "missing"),
   missing_action = c("omit", "error")
 )
@@ -14,7 +14,7 @@ cross_sectional_learning(
 \arguments{
 \item{pre_test}{data.frame of pre-test responses}
 
-\item{pst_test}{data.frame of post-test responses}
+\item{post_test}{data.frame of post-test responses}
 
 \item{na_as}{classification of NA responses}
 

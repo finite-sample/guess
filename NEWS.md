@@ -28,6 +28,9 @@
 * Bootstrap and cross-validation computations retain one inferred response
   schema across resamples and folds.
 
+* DK model summaries and validation examples correctly identify learning as
+  `gk + dk`.
+
 # version 0.7.0 2026-08-02
 
 This release incorporates 0.6.0, which was tagged but never submitted to

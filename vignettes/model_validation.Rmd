@@ -584,7 +584,7 @@ dk_fit <- fit_item_lca(sim_dk$pre, sim_dk$post)
 
 cat("True learning (gk): 0.15\n")
 cat(sprintf("Estimated gk: %.3f\n", dk_fit$params["gk", 1]))
-cat(sprintf("\nTrue total learning (gk + kd): %.2f\n", 0.15 + 0.10))
+cat(sprintf("\nTrue total learning (gk + dk): %.2f\n", 0.15 + 0.10))
 cat(sprintf("Estimated total: %.3f\n", dk_fit$learning[1]))
 ```
 

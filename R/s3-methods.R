@@ -79,7 +79,7 @@ summary.guess_fit <- function(object, ...) {
   params <- object$params
   print(round(params, 4))
 
-  cat("\nLearning Estimates (gk", if (object$model_type == "dk") "+ kd" else "", "):\n", sep = "")
+  cat("\nLearning Estimates (gk", if (object$model_type == "dk") " + dk" else "", "):\n", sep = "")
   cat(rep("-", 50), "\n", sep = "")
   learning <- as.numeric(object$learning)
   names(learning) <- colnames(params)

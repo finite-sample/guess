@@ -65,6 +65,18 @@ test_that("fit_item_lca preserves named item pairing and DK schema", {
   expect_error(fit_item_lca(sim$pre, sim$post, response_schema = "binary"), "empty")
 })
 
+test_that("DK summaries label both learning transitions accurately", {
+  sim <- simulate_lca_dk(n = 1000, n_items = 1, seed = 804)
+  fit <- fit_item_lca(sim$pre, sim$post)
+  summary_output <- capture.output(summary(fit))
+
+  expect_match(
+    paste(summary_output, collapse = "\n"),
+    "Learning Estimates \\(gk \\+ dk\\):"
+  )
+  expect_false(any(grepl("Learning Estimates \\(gk \\+ kd\\):", summary_output)))
+})
+
 test_that("fit_item_lca applies missingness and optimizer controls", {
   sim <- simulate_lca(n = 1200, n_items = 2, seed = 803)
   pre_test <- sim$pre

@@ -164,6 +164,19 @@ test_that("validate_recovery requires a named feasible generating model", {
     validate_recovery(invalid_gamma, n = 100, n_sims = 2),
     "gamma"
   )
+  boundary_weight <- valid
+  boundary_weight["gg"] <- 0
+  boundary_weight["kk"] <- 0.70
+  expect_error(
+    validate_recovery(boundary_weight, n = 100, n_sims = 2),
+    "strictly between"
+  )
+  boundary_gamma <- valid
+  boundary_gamma["gamma"] <- 0
+  expect_error(
+    validate_recovery(boundary_gamma, n = 100, n_sims = 2),
+    "strictly between"
+  )
 })
 
 test_that("validate_recovery preserves caller RNG state", {
@@ -176,12 +189,12 @@ test_that("validate_recovery preserves caller RNG state", {
   expect_identical(before, after)
 })
 
-test_that("validate_recovery surfaces a failed replicate", {
+test_that("validate_recovery rejects degenerate generating models", {
   degenerate <- c(gg = 0, gk = 0, kk = 1, gamma = 0)
 
   expect_error(
     validate_recovery(degenerate, n = 10, n_items = 1, n_sims = 1, seed = 1),
-    "Simulation 1 failed: Optimization did not converge"
+    "strictly between"
   )
 })
 

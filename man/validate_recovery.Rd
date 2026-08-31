@@ -7,7 +7,7 @@
 validate_recovery(true_params, n = 500, n_items = 2, n_sims = 100, seed = NULL)
 }
 \arguments{
-\item{true_params}{Named numeric vector of true parameters.
+\item{true_params}{Named numeric vector of strictly interior true parameters.
 For no-DK model: c(gg=, gk=, kk=, gamma=)
 For DK model: c(gg=, gk=, gd=, kk=, dg=, dk=, dd=, gamma=)}
 

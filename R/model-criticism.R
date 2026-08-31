@@ -666,7 +666,7 @@ cross_sectional_learning_score <- function(
 #' Performs Monte Carlo simulations to assess parameter recovery of the
 #' LCA model. Useful for validating estimator performance.
 #'
-#' @param true_params Named numeric vector of true parameters.
+#' @param true_params Named numeric vector of strictly interior true parameters.
 #'   For no-DK model: c(gg=, gk=, kk=, gamma=)
 #'   For DK model: c(gg=, gk=, gd=, kk=, dg=, dk=, dd=, gamma=)
 #' @param n Integer. Sample size per simulation. Default 500.
@@ -735,8 +735,20 @@ validate_recovery <- function(true_params, n = 500, n_items = 2,
         abs(sum(class_weights) - 1) > sqrt(.Machine$double.eps)) {
     stop("Latent-class weights in true_params must be probabilities that sum to 1.", call. = FALSE)
   }
-  if (true_params[["gamma"]] < 0 || true_params[["gamma"]] > 1) {
-    stop("true_params$gamma must be a probability between 0 and 1.", call. = FALSE)
+  if (any(class_weights == 0 | class_weights == 1)) {
+    stop(
+      paste(
+        "Latent-class weights in true_params must be strictly between 0 and 1",
+        "for recovery validation."
+      ),
+      call. = FALSE
+    )
+  }
+  if (true_params[["gamma"]] <= 0 || true_params[["gamma"]] >= 1) {
+    stop(
+      "true_params$gamma must be strictly between 0 and 1 for recovery validation.",
+      call. = FALSE
+    )
   }
 
   estimates <- with_preserved_seed(seed, {

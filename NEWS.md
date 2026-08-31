@@ -31,6 +31,9 @@
 * DK model summaries and validation examples correctly identify learning as
   `gk + dk`.
 
+* `validate_recovery()` now rejects degenerate generating models at the
+  parameter boundary, where recovery diagnostics are not meaningful.
+
 # version 0.7.0 2026-08-02
 
 This release incorporates 0.6.0, which was tagged but never submitted to

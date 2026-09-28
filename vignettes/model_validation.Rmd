@@ -156,9 +156,13 @@ The LCA-adjusted estimates should be larger than naive estimates because they co
 
 For inference, use `lca_se()` to obtain bootstrapped standard errors:
 
-```{r workflow_se, eval = FALSE}
-se_results <- lca_se(pre_test, post_test, n_boot = 100)
+```{r workflow_se}
+se_results <- lca_se(pre_test, post_test, n_resamples = 100, seed = 123)
+round(se_results$learning_standard_error, 3)
 ```
+
+With ten respondents these standard errors are large; the example shows the
+call, not a usable sample size.
 
 ### Step 6: Assess Model Fit
 
@@ -592,7 +596,7 @@ cat(sprintf("Estimated total: %.3f\n", dk_fit$learning[1]))
 
 The package provides a convenience function for Monte Carlo validation:
 
-```{r validate_recovery_demo, eval = FALSE}
+```{r validate_recovery_demo}
 results <- validate_recovery(
   true_params = c(gg = 0.35, gk = 0.30, kk = 0.35, gamma = 0.25),
   n = 500,

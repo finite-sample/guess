@@ -1,3 +1,11 @@
+# guess (development version)
+
+* The "Using guess" vignette now runs its examples. They had all been
+  `eval = FALSE`, and eight had broken as the API changed, including both
+  `lca_se()` examples. Its simulation sections no longer report coverage that
+  `validate_recovery()` stopped returning in 0.8.0 or make claims about
+  inter-item correlation that apply only to `fit_person_lca()`.
+
 # version 0.8.0 2026-08-30
 
 ## Breaking Changes

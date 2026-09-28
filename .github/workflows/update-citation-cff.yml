@@ -1,0 +1,55 @@
+name: Update CITATION.cff
+
+# CITATION.cff is generated from DESCRIPTION and inst/CITATION; regenerate it
+# whenever either changes so the two never drift apart.
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - DESCRIPTION
+      - inst/CITATION
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-citation-cff:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: |
+            any::cffr
+            any::V8
+
+      # The top-level DOI is the software's; the paper's is the preferred
+      # citation. cffr would otherwise promote the paper's DOI and list the
+      # manual entry as a reference to itself.
+      - name: Update CITATION.cff
+        run: |
+          cffr::cff_write(
+            dependencies = FALSE,
+            keys = list(
+              doi = "10.32614/CRAN.package.guess",
+              identifiers = NULL,
+              references = NULL
+            )
+          )
+        shell: Rscript {0}
+
+      - name: Commit results
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CITATION.cff
+          git commit -m "Update CITATION.cff" || echo "No changes to commit"
+          git push origin || echo "No changes to commit"

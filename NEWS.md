@@ -6,6 +6,12 @@
   `validate_recovery()` stopped returning in 0.8.0 or make claims about
   inter-item correlation that apply only to `fit_person_lca()`.
 
+* `citation("guess")` now cites the Cor and Sood (2016) *Political Analysis*
+  paper for the method and the package for the software. The package entry
+  previously printed an empty year. A `CITATION.cff`, generated from
+  DESCRIPTION and `inst/CITATION` by cffr, gives GitHub its "Cite this
+  repository" entry.
+
 # version 0.8.0 2026-08-30
 
 ## Breaking Changes

@@ -1,0 +1,55 @@
+# ------------------------------------------------
+# CITATION.cff file created with {cffr} R package
+# See also: https://docs.ropensci.org/cffr/
+# ------------------------------------------------
+ 
+cff-version: 1.2.0
+message: 'To cite package "guess" in publications use:'
+type: software
+license: MIT
+title: 'guess: Adjust Estimates of Learning for Guessing'
+version: 0.8.0
+doi: 10.32614/CRAN.package.guess
+abstract: Provides tools to adjust estimates of learning for guessing-related bias
+  in educational and survey research. Implements standard guessing correction methods
+  and latent class models that leverage informative pre-post test transitions to account
+  for guessing behavior. The package helps researchers obtain more accurate estimates
+  of actual learning when respondents may guess on closed-ended knowledge items. For
+  theoretical background and empirical validation, see Cor and Sood (2016) <https://gsood.com/research/papers/guess.pdf>.
+authors:
+- family-names: Sood
+  given-names: Gaurav
+  email: gsood07@gmail.com
+- family-names: Cor
+  given-names: Ken
+  email: mcor@ualberta.ca
+preferred-citation:
+  type: article
+  title: 'Guessing and Forgetting: A Latent Class Model for Measuring Learning'
+  authors:
+  - family-names: Cor
+    given-names: Ken
+    email: mcor@ualberta.ca
+  - family-names: Sood
+    given-names: Gaurav
+    email: gsood07@gmail.com
+  journal: Political Analysis
+  year: '2016'
+  volume: '24'
+  issue: '2'
+  doi: 10.1093/pan/mpw010
+  start: '226'
+  end: '242'
+repository: https://CRAN.R-project.org/package=guess
+repository-code: https://github.com/finite-sample/guess
+url: https://finite-sample.github.io/guess/
+contact:
+- family-names: Sood
+  given-names: Gaurav
+  email: gsood07@gmail.com
+keywords:
+- adjust-estimates
+- bias
+- cran
+- learning
+

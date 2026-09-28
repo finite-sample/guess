@@ -19,20 +19,16 @@ abstract: Provides tools to adjust estimates of learning for guessing-related bi
 authors:
 - family-names: Sood
   given-names: Gaurav
-  email: gsood07@gmail.com
 - family-names: Cor
   given-names: Ken
-  email: mcor@ualberta.ca
 preferred-citation:
   type: article
   title: 'Guessing and Forgetting: A Latent Class Model for Measuring Learning'
   authors:
   - family-names: Cor
     given-names: Ken
-    email: mcor@ualberta.ca
   - family-names: Sood
     given-names: Gaurav
-    email: gsood07@gmail.com
   journal: Political Analysis
   year: '2016'
   volume: '24'
@@ -46,7 +42,6 @@ url: https://finite-sample.github.io/guess/
 contact:
 - family-names: Sood
   given-names: Gaurav
-  email: gsood07@gmail.com
 keywords:
 - adjust-estimates
 - bias

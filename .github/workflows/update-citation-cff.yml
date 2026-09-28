@@ -31,20 +31,8 @@ jobs:
             any::cffr
             any::V8
 
-      # The top-level DOI is the software's; the paper's is the preferred
-      # citation. cffr would otherwise promote the paper's DOI and list the
-      # manual entry as a reference to itself.
       - name: Update CITATION.cff
-        run: |
-          cffr::cff_write(
-            dependencies = FALSE,
-            keys = list(
-              doi = "10.32614/CRAN.package.guess",
-              identifiers = NULL,
-              references = NULL
-            )
-          )
-        shell: Rscript {0}
+        run: Rscript .github/scripts/update-citation-cff.R
 
       - name: Commit results
         run: |

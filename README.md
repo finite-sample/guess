@@ -1,4 +1,4 @@
-# guess
+# guess: how much learning was lucky guessing?
 
 Estimate learning from paired pre-test and post-test knowledge responses while
 accounting for lucky guesses and explicit "don't know" responses.

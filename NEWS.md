@@ -105,7 +105,7 @@ is 0.3.0, so 0.4.0, 0.5.x and 0.6.0 are all superseded here.
   `dk` (don't know -> know) take their place. The order is now `gg, gk, gd, kk, dg, dk,
   dd, gamma`. Code that indexes DK parameters by name or position must be updated.
   Learning is `gk + dk` -- those who learned the item from guessing, plus those who
-  learned it from confessed ignorance. It was `gk + kd`, which the vignette rationalised
+  learned it from confessed ignorance. It was `gk + kd`, which the vignette rationalized
   as "true learning plus those who learned but lost confidence".
 
 * **`simulate_lca_dk()` gains `dg` and `dk` arguments and loses `kg` and `kd`.** The
@@ -211,7 +211,7 @@ restriction `x1d/x0d = x10/x00`.
   the correct ones. `fit_nodk()` and `fit_dk()` remain exported and unchanged in
   behavior.
 
-* **The optimiser no longer prints its iteration trace.** `solnp()` is called with
+* **The optimizer no longer prints its iteration trace.** `solnp()` is called with
   `control = list(trace = 0)`, so `lca_fit()` and `lca_se()` are silent. A 100-resample
   bootstrap previously emitted hundreds of lines, which is how a genuine warning gets
   lost.

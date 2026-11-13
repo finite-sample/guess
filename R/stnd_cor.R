@@ -3,7 +3,7 @@
 #' Estimate of learning adjusted with standard correction for guessing.
 #' Correction is based on number of options per question.
 #' The function takes separate pre-test and post-test dataframes. Why do we
-#' need dataframes? To accomodate multiple items. The items can carry NA
+#' need dataframes? To accommodate multiple items. The items can carry NA
 #' (missing). Items must be in the same order in each dataframe. Assumes that
 #' respondents are posed same questions twice.
 #' The function also takes a \code{guessing_probability} vector --- the chance of getting a

@@ -9,7 +9,7 @@
 #
 # The design perturbs the class mix handed to the GOF statistic away from the
 # parameters that generated the data, by a known amount, so "more wrong" is a
-# number rather than a judgement.
+# number rather than a judgment.
 #
 # Measured over 100 replicates at n=500, alpha=0.05:
 #

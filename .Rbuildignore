@@ -25,3 +25,4 @@
 ^\.Ruserdata$
 ^Makefile$
 ^CITATION\.cff$
+^\.codespellrc$

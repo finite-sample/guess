@@ -33,7 +33,7 @@ If you assume that the data are missing completely at random, you can simply ign
 We now know a little bit about Don't Know. One generally strategy is to treat Don't Know responses as ignorance. But research suggests that on average there is approximately 3\% hidden knowledge behind Don't Know responses. See [DK Means DK](https://johnbullock.org/papers/DKs/DK.pdf) by Robert Luskin and John Bullock. Thus one can also choose to replace Don't Know responses with .03.
 
 3. **Related Knowledge**  
-People either know a particular piece of information or they don't. On an open-ended question, they may struggle to remember it but those kinds of concerns don't apply to closed-ended questions where the task is simply to identify the correct answer. What does on occassion happen on closed-ended questions is that people have related cognitions. So for instance, asked to identify the prime minister of France, the respondents sometimes know that one of the options is the king of Sudan and may guess randomly between the remaining options. But that isn't the same as knowing the prime minister of France. 
+People either know a particular piece of information or they don't. On an open-ended question, they may struggle to remember it but those kinds of concerns don't apply to closed-ended questions where the task is simply to identify the correct answer. What does on occasion happen on closed-ended questions is that people have related cognitions. So for instance, asked to identify the prime minister of France, the respondents sometimes know that one of the options is the king of Sudan and may guess randomly between the remaining options. But that isn't the same as knowing the prime minister of France. 
 
 #### Standard Correction for Guessing
 

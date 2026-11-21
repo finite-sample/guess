@@ -1,5 +1,9 @@
 # guess (development version)
 
+* `score_individual_lca()` counts every observed item even when a response has
+  zero probability under the fitted model. It evaluates each item's response
+  probabilities once across respondents.
+
 * The "Using guess" vignette now runs its examples. They had all been
   `eval = FALSE`, and eight had broken as the API changed, including both
   `lca_se()` examples. Its simulation sections no longer report coverage that

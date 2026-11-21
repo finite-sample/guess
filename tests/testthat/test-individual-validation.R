@@ -1,3 +1,20 @@
+test_that("impossible responses retain all observed pairs in either item order", {
+  knows <- c(gg = 0, gk = 0, kk = 1, gamma = 0.25)
+  fit <- structure(
+    list(params = cbind(a = knows, b = knows), model_type = "nodk"),
+    class = "guess_fit"
+  )
+  responses <- data.frame(a = c(0, 1, NA), b = c(1, 1, NA))
+  for (items in list(c("a", "b"), c("b", "a"))) {
+    score <- score_individual_lca(
+      fit, responses[items], responses[items], na_as = "missing"
+    )
+    expect_equal(score$individual_scores$log_likelihood, c(-Inf, 0, 0))
+    expect_equal(score$individual_scores$n_observations, c(2L, 2L, 0L))
+    expect_equal(score$n_observations, 4L)
+  }
+})
+
 test_that("score_individual_lca matches the aggregated held-out score", {
   sim <- simulate_lca(n = 120, n_items = 2, seed = 123)
   fit <- fit_item_lca(sim$pre, sim$post)

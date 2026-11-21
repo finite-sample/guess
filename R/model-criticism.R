@@ -227,25 +227,16 @@ individual_likelihood_details <- function(
   n_obs <- integer(n_ind)
   log_likelihoods <- numeric(n_ind)
 
-  for (i in seq_len(n_ind)) {
-    ll <- 0
-    for (j in seq_len(n_items)) {
-      params <- param_matrix[, j]
-      probs <- cell_probs(params)
-      cell <- response_to_cell(
-        pre_test[i, j], post_test[i, j], has_dk,
-        na_as = "missing", missing_action = "omit"
-      )
-
-      if (is.na(cell)) next
-      n_obs[i] <- n_obs[i] + 1L
-      if (probs[cell] <= 0) {
-        ll <- -Inf
-        break
-      }
-      ll <- ll + log(probs[cell])
-    }
-    log_likelihoods[i] <- ll
+  for (j in seq_len(n_items)) {
+    probs <- cell_probs(param_matrix[, j])
+    cells <- response_to_cell(
+      pre_test[[j]], post_test[[j]], has_dk,
+      na_as = "missing", missing_action = "omit"
+    )
+    observed <- !is.na(cells)
+    n_obs <- n_obs + observed
+    log_likelihoods[observed] <- log_likelihoods[observed] +
+      log(probs[cells[observed]])
   }
 
   list(log_likelihood = log_likelihoods, n_obs = n_obs)
